@@ -1,4 +1,6 @@
 import os
+
+from utils import get_nn_functor
 os.environ["CUDA_VISIBLE_DEVICES"]="-1"
 
 import tensorflow as tf
@@ -11,6 +13,7 @@ class DisCoCirc(keras.Model):
         self.vocab = vocab
         self.wire_dimension = wire_dimension
         self.nn_boxes = self.initialize_boxes(vocab, wire_dimension)
+        self.nn_functor = get_nn_functor(self.nn_boxes, wire_dimension)
 
 
     """
