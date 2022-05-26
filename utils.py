@@ -20,3 +20,4 @@ def get_star_removal_functor():
 
     f = Functor(ob=star_removal_ob, ar=star_removal_ar)
     return f
+    
