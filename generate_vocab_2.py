@@ -10,11 +10,7 @@ print('parser imported')
 
 # import Richie's CCG to Circ
 
-import sys
-
-sys.path.append('C:\\Users\\jonat\\documents\\py-projects\\text2circ')
-
-from discocirc import convert_sentence
+from text2circ.discocirc import convert_sentence
 
 
 #%%
