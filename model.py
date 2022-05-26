@@ -15,19 +15,14 @@ class DisCoCirc(keras.Model):
         self.nn_boxes = self.initialize_boxes(vocab, wire_dimension)
         self.nn_functor = get_nn_functor(self.nn_boxes, wire_dimension)
 
-
-    """
-    vocab = {'word1': hidden_layers_list,
-             'word2': hidden_layers_list,
-             ...}
-    """
+    #TODO do not hard-code hidden layers
     def initialize_boxes(self, vocab, wire_dimension):
         nn_boxes = {}
-        for word, hidden_layers_list in vocab.items():
+        for word in vocab:
             nn_boxes[word] = Network.dense_model(
                 len(word.dom) * wire_dimension,
                 len(word.cod) * wire_dimension,
-                hidden_layers_list
+                [10, 10] #hidden layers
             )
         return nn_boxes
 
