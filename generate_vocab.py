@@ -10,12 +10,12 @@ print('parser imported')
 
 # import Richie's CCG to Circ
 
-from text2circ.discocirc import convert_sentence
+from discocirc import convert_sentence
 
 
 #%%
 # read the file
-path = 'C:/Users/jonat/documents/py-projects/neural-discocirc/'
+path = ''
 
 with open(path+'tasks_1-20_v1-2/en/qa2_two-supporting-facts_train.txt') as f:
     lines = f.readlines()
