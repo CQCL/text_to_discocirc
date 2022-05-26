@@ -13,29 +13,10 @@ def get_nn_functor(nn_boxes, wire_dim):
 
 def get_star_removal_functor():
     def star_removal_ob(ty):
-        if ty.name == "*":
-            return Ty()
-        return ty
+        return Ty() if ty.name == "*" else ty
 
     def star_removal_ar(box):
-        if box.dom.count(Ty("*")) == 0 and box.cod.count(Ty("*")) == 0:
-            return box
-
-        dom = Ty()
-        for obj in box.dom:
-            if (obj != Ty("*")):
-                dom = dom @ obj
-            else:
-                dom = dom @ Ty()
-
-        cod = Ty()
-        for obj in box.cod:
-            if (obj != Ty("*")):
-                cod = dom @ obj
-            else:
-                cod = dom @ Ty()
-
-        return Box(box.name, dom, cod)
+        return Box(box.name, f(box.dom), f(box.cod))
 
     f = Functor(ob=star_removal_ob, ar=star_removal_ar)
     return f
