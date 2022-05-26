@@ -63,7 +63,7 @@ for i, line in enumerate(no_question_lines):
 
 print(vocab)
 
-pickle.dump( vocab, open( "task_vocab_dicts/qa1_test.p", "wb" ) )
+pickle.dump( vocab, open( "task_vocab_dicts/en_qa1_test.p", "wb" ) )
 
 
 
