@@ -39,4 +39,4 @@ answer_statements = []
 
 for question, answer_word in zip(questions, answers):
     question_word = question.split()[-1][:-1]
-    answer_statements.append('The '+question_word+' is in the '+answer_word)
+    answer_statements.append((question_word, answer_word))
