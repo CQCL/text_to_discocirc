@@ -17,7 +17,7 @@ from discocirc import convert_sentence
 # read the file
 path = ''
 
-with open(path+'tasks_1-20_v1-2/en/qa1_single-supporting-fact_test.txt') as f:
+with open(path+'tasks_1-20_v1-2/en/qa1_single-supporting-fact_train.txt') as f:
     lines = f.readlines()
 
 
@@ -63,7 +63,7 @@ for i, line in enumerate(no_question_lines):
 
 print(vocab)
 
-pickle.dump( vocab, open( "task_vocab_dicts/en_qa1_test.p", "wb" ) )
+pickle.dump( vocab, open( "task_vocab_dicts/en_qa1_train.p", "wb" ) )
 
 
 
