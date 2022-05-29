@@ -1,23 +1,19 @@
 # %%
 
-# import parser
+from discocirc import convert_sentence  # Richie's CCG to Circ
 from lambeq import BobcatParser
+from utils import get_star_removal_functor
+import pickle   # for saving vocab file
 
-parser = BobcatParser(verbose='suppress')
-print('parser imported')
-
-#%%
-
-# import Richie's CCG to Circ
-
-from discocirc import convert_sentence
+parser = BobcatParser(model_name_or_path='C:/Users/jonat/bert/')
+# parser = BobcatParser(verbose='suppress')
 
 
 #%%
 # read the file
 path = ''
 
-with open(path+'tasks_1-20_v1-2/en/qa2_two-supporting-facts_train.txt') as f:
+with open(path+'tasks_1-20_v1-2/en/qa2_two-supporting-facts_train_HYPHENATED.txt') as f:
     lines = f.readlines()
 
 
@@ -35,6 +31,9 @@ no_question_lines = [line.replace('\n','').replace('.',' ') for line in no_quest
 
 vocab = []
 
+# get the star removal functor to deal with frames
+functor = get_star_removal_functor()
+
 for i, line in enumerate(no_question_lines):
 
     # obtain circ for the line
@@ -42,7 +41,10 @@ for i, line in enumerate(no_question_lines):
     try:  # TODO: sentences invovlving cross-composition are not supported yet
         line_circ = convert_sentence(line_diag)
     except:
-        print("problematic line is: {}".format(line))
+        print("problematic line: {}".format(line))
+
+    # apply the star removal functor
+    line_circ = functor(line_circ)
 
     line_boxes = line_circ.boxes
 
@@ -56,5 +58,10 @@ for i, line in enumerate(no_question_lines):
 
 
 print(vocab)
+
+# save vocab file
+pickle.dump( vocab, open( "task_vocab_dicts/en_qa2_train_HYPHENATED.p", "wb" ) )
+
+
 
 #%%
