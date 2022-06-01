@@ -1,38 +1,27 @@
 import os
 
-from utils import get_nn_functor
-os.environ["CUDA_VISIBLE_DEVICES"]="-1"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 import tensorflow as tf
 from tensorflow import keras
-from discopy.neural import Network
 
-class DisCoCirc(keras.Model):
-    def __init__(self, vocab, wire_dimension, **kwargs):
-        super(DisCoCirc, self).__init__(**kwargs)
-        self.vocab = vocab
+from utils import get_nn_functor, initialize_boxes
+
+class DisCoCircTrainer(keras.Model):
+    def __init__(self, lexicon, wire_dimension, **kwargs):
+        super(DisCoCircTrainer, self).__init__(**kwargs)
+        self.lexicon = lexicon
         self.wire_dimension = wire_dimension
-        self.nn_boxes, self.trainable_models = self.initialize_boxes(vocab, wire_dimension)
+        self.nn_boxes, self.trainable_models = initialize_boxes(lexicon, wire_dimension)
         self.nn_functor = get_nn_functor(self.nn_boxes, wire_dimension)
+        self.loss_tracker = keras.metrics.Mean(name="loss")
 
-    #TODO do not hard-code hidden layers
-    def initialize_boxes(self, vocab, wire_dimension):
-        nn_boxes = {}
-        trainable_models=[]
-        for word in vocab:
-            nn_boxes[word] = Network.dense_model(
-                len(word.dom) * wire_dimension,
-                len(word.cod) * wire_dimension,
-                [10, 10] #hidden layers
-            )
-            trainable_models.append(nn_boxes[word].model)
-        return nn_boxes, trainable_models
-
-    def prepare_dataset(self, dataset):
+    def compile_dataset(self, dataset):
         self.dataset_size = len(dataset)
         self.dataset = []
         for context_circuit, test in dataset:
-            self.dataset.append([self.nn_functor(context_circuit), test])
+            context_circuit_model = self.nn_functor(context_circuit)
+            self.dataset.append([context_circuit_model.model, test])
     
     def train_step(self, batch):
         with tf.GradientTape() as tape:
