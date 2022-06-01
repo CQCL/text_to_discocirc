@@ -7,6 +7,7 @@ to maintain old copies of this code forever.
 from discopy.biclosed import Over, Under
 from discopy import biclosed, rigid
 from discopy.rewriting import InterchangerError
+from pulling_out import pulling_out_diagram
 
 
 def logical_form(diagram):
@@ -67,11 +68,11 @@ def swap_right(diagram, i):
         >> diagram[i+1:])
 
 
-def drag_out(diagram, i):
+def drag_out(diagram, i, stop):
     box = diagram.boxes[i]
     if box.dom:
         raise ValueError(f"{box} is not a word.")
-    while i > 0:
+    while i > stop:
         try:
             diagram = diagram.interchange(i-1, i)
             i -= 1
@@ -86,8 +87,8 @@ def drag_all(diagram):
     while i >= stop:
         box = diagram.boxes[i]
         if not box.dom:  # is word
-            diagram = drag_out(diagram, i)
-            i = len(diagram) - 1
+            diagram = drag_out(diagram, i, stop)
+            i = len(diagram)
             stop += 1
         i -= 1
     return diagram
@@ -260,6 +261,7 @@ def convert_sentence(diagram):
                 raise NotImplementedError
             diags[i:i+2] = [(new_diag, div)]
         step = rigid.Id().tensor(*[d[0] for d in diags])
+    step = pulling_out_diagram(step)
     step = merge_x(decomp(expand_diagram(drag_all(step))))
     # step = merge_x(expand_diagram(step))
     # res = merge_x(decomp(step))

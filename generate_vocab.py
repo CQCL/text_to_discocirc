@@ -1,23 +1,19 @@
 # %%
 
-# for saving vocab file
-import pickle
-# import parser
+from discocirc import convert_sentence  # Richie's CCG to Circ
 from lambeq import BobcatParser
 from utils import get_star_removal_functor
+import pickle   # for saving vocab file
 
 parser = BobcatParser(model_name_or_path='C:/Users/jonat/bert/')
 # parser = BobcatParser(verbose='suppress')
-
-# import Richie's CCG to Circ
-from discocirc import convert_sentence
 
 
 #%%
 # read the file
 path = ''
 
-with open(path+'tasks_1-20_v1-2/en/qa1_single-supporting-fact_test.txt') as f:
+with open(path+'tasks_1-20_v1-2/en/qa2_two-supporting-facts_train_HYPHENATED.txt') as f:
     lines = f.readlines()
 
 
@@ -35,7 +31,7 @@ no_question_lines = [line.replace('\n','').replace('.',' ') for line in no_quest
 
 vocab = []
 
-# get the star removal functor
+# get the star removal functor to deal with frames
 functor = get_star_removal_functor()
 
 for i, line in enumerate(no_question_lines):
@@ -63,7 +59,8 @@ for i, line in enumerate(no_question_lines):
 
 print(vocab)
 
-pickle.dump( vocab, open( "task_vocab_dicts/en_qa1_test.p", "wb" ) )
+# save vocab file
+pickle.dump( vocab, open( "task_vocab_dicts/en_qa2_train_HYPHENATED.p", "wb" ) )
 
 
 
