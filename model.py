@@ -24,12 +24,14 @@ class DisCoCircTrainer(keras.Model):
             self.dataset.append([context_circuit_model.model, test])
     
     def train_step(self, batch):
-        with tf.GradientTape() as tape:
-            loss = 0
-            for context_circuit_model, test in batch:
-                output_vector = context_circuit_model()
-                loss += self.compute_loss(output_vector, test)
-        grads = tape.gradient(loss, self.trainable_weights)
+        loss = 0
+        grads = None
+        for idx in batch:
+            loss, grd = self.train_step_for_sample(self.dataset[idx])
+            if grads is None:
+                grads = grd
+            else:
+                grads = [g1 + g2 for g1, g2 in zip(grads, grd)]
 
         self.optimizer.apply_gradients((grad, weights)
             for (grad, weights) in zip(grads, self.trainable_weights)
@@ -39,8 +41,19 @@ class DisCoCircTrainer(keras.Model):
         return {
             "loss": self.loss_tracker.result(),
         }
+
+    @tf.function
+    def train_step_for_sample(self, dataset):
+        with tf.GradientTape() as tape:
+            context_circuit_model, test = dataset
+            output_vector = context_circuit_model(tf.convert_to_tensor([[]]))
+            loss = self.compute_loss(output_vector, test)
+            grad = tape.gradient(loss, self.trainable_weights, unconnected_gradients=tf.UnconnectedGradients.ZERO)
+        return loss, grad
     
     #TODO implement loss function
+    @tf.function
     def compute_loss(self, output_vector, test):
-        return 0
+        # person, location = test
+        return tf.reduce_sum(1 - output_vector)
 
