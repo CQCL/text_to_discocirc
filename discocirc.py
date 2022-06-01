@@ -74,7 +74,6 @@ def drag_out(diagram, i, stop):
     while i > stop:
         try:
             diagram = diagram.interchange(i-1, i)
-            diagram.draw() # for debugging
             i -= 1
         except InterchangerError:
             diagram = swap_right(diagram, i)
@@ -88,7 +87,7 @@ def drag_all(diagram):
         box = diagram.boxes[i]
         if not box.dom:  # is word
             diagram = drag_out(diagram, i, stop)
-            i = len(diagram) - 1
+            i = len(diagram)
             stop += 1
         i -= 1
     return diagram
