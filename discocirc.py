@@ -7,6 +7,7 @@ to maintain old copies of this code forever.
 from discopy.biclosed import Over, Under
 from discopy import biclosed, rigid
 from discopy.rewriting import InterchangerError
+from pulling_out import pulling_out_diagram
 
 
 def logical_form(diagram):
@@ -260,6 +261,7 @@ def convert_sentence(diagram):
                 raise NotImplementedError
             diags[i:i+2] = [(new_diag, div)]
         step = rigid.Id().tensor(*[d[0] for d in diags])
+    step = pulling_out_diagram(step)
     step = merge_x(decomp(expand_diagram(drag_all(step))))
     # step = merge_x(expand_diagram(step))
     # res = merge_x(decomp(step))

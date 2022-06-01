@@ -195,7 +195,7 @@ for line in test_context:
 context_circ = sentence_circuits[0]
 
 for circ in sentence_circuits[1:]:
-    context_circ = compose_circuits(circ, context_circ)
+    context_circ = compose_circuits(context_circ, circ)
 
 context_circ.draw()
 
