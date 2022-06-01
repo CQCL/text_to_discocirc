@@ -104,14 +104,11 @@ def compose_circuits(circ1, circ2):
 
     # TODO: assume for now that the no. of output wires
     # = the number of initial nouns, and that no swapping occurs
-    try:
-        assert circ1.cod == Ty(*['n']*no_nouns1)
-        assert circ2.cod == Ty(*['n']*no_nouns2)
-    except:
-        print("ERROR")
+    if (circ1.cod != Ty(*['n']*no_nouns1) or 
+        circ2.cod != Ty(*['n']*no_nouns2)):
         print(repr(circ1))
         print(repr(circ2))
-        return None
+        raise Exception("The types do not lign up.")
 
     # record pulled up nouns
     nouns_circ1 = circ1.boxes[:no_nouns1]
