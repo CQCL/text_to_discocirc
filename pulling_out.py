@@ -1,5 +1,8 @@
 from discopy import Diagram, Ty, Box
 
+from discocirc import Frame, drag_all
+from generate_context_circuit import init_nouns
+
 
 def pull_out_of_frame(diagram, opening_box_index):
     # ---------- 1. find closing box -----------
@@ -82,3 +85,28 @@ def pulling_out_diagram(diagram):
             diagram = pull_out_of_frame(diagram, i)
 
     return diagram
+
+def pulling_out_diagram_new(diagram):
+    # find all frames
+    # TODO: check: do we have to restart once we find a frame?
+    for i, box in enumerate(diagram.boxes):
+        # identify start of a frame
+        if not isinstance(box, Frame):
+            return   
+        
+        insides_with_nouns_removed = []
+        inside_nouns = []
+        for inside in box._insides:
+            x, y = pull_out_of_frame_new(inside)
+            insides_with_nouns_removed.append(x)
+            inside_nouns.append(y)
+
+    return diagram
+
+def pull_out_of_frame_new(diagram):
+    diagram = drag_all(diagram)
+
+    no_nouns = init_nouns(diagram)+1
+    insides_with_nouns_removed = diagram[no_nouns:]
+    inside_nouns = diagram[:no_nouns]
+    return insides_with_nouns_removed, inside_nouns
