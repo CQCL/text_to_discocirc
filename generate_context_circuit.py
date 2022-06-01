@@ -8,9 +8,9 @@ from lambeq import BobcatParser
 from utils import get_star_removal_functor
 
 from discopy.rigid import Ty, Diagram, Box
-from discocirc import drag_all # drags nouns to top of circuit diagram
+from drag_up import drag_all # drags nouns to top of circuit diagram
 import numpy as np # for inverse permutation
-
+from discocirc_utils import init_nouns
 
 # parser = BobcatParser(verbose='suppress')
 parser = BobcatParser(model_name_or_path='C:/Users/jonat/bert/')
@@ -33,23 +33,6 @@ test_context = ['Mary moved to the bathroom',
 
 
 
-# %%
-
-def init_nouns(circ):
-    """
-    takes in a circuit with some number of nouns as the initial boxes
-    returns the index of the last of these initial nouns
-    """
-    # check there actually are initial nouns
-    assert circ.boxes[0].dom == Ty()
-
-    index = -1
-    for i in range(len(circ.boxes)-1):
-        if circ.boxes[i].dom ==Ty() and circ.boxes[i+1].dom != Ty():
-            index = i # index of the last n oun
-            break
-
-    return index
 
 # %%
 

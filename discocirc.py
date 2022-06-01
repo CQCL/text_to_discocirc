@@ -6,114 +6,41 @@ to maintain old copies of this code forever.
 
 from discopy.biclosed import Over, Under
 from discopy import biclosed, rigid
-from discopy.rewriting import InterchangerError
 from pulling_out import pulling_out_diagram
+from drag_up import drag_all
+from frame import Frame, decomp
 
 
-def logical_form(diagram):
-    if isinstance(diagram, Frame):
-        insides = [logical_form(d) for d in diagram._insides]
-        slots = ['?'] * len(diagram._slots)
-        return f'{diagram.name}({", ".join(insides + slots)})'
-    if isinstance(diagram, rigid.Box):
-        return diagram.name
-    if isinstance(diagram, rigid.Diagram) and len(diagram) == 1:
-        return logical_form(diagram.boxes[0])
-    return logical_form(diagram.boxes[-1]) + '(' + logical_form(diagram[:-1]) + ')'
-
-
-class Frame(rigid.Box):
-    def __init__(self, name, dom, cod, insides, slots):
-        self._insides = insides
-        self._slots = slots
-        super().__init__(name, dom, cod)
-        self.drawing_name = logical_form(self)
-
-    def insert(self, inside):
-        if not self._slots:
-            raise Exception('No slot!')
-        slot = self._slots[0]
-        if inside.dom != slot.dom or inside.cod != slot.cod:
-            raise ValueError("inside doesn't match box")
-        name, dom, cod = self.name, self.dom, self.cod
-        insides, slots = self._insides, self._slots
-        return type(self)(name, dom, cod, insides + [inside], slots[1:])
-
-    def _decompose(self):
-        s = rigid.Ty('*')
-        inside_dom = rigid.Ty().tensor(
-            *[s @ b.dom for b in self._insides + self._slots]) @ s
-        inside_cod = rigid.Ty().tensor(
-            *[s @ b.cod for b in self._insides + self._slots]) @ s
-        w = rigid.Id(s)
-        inside = [w @ decomp(b)
-                  for b in self._insides + self._slots]
-        top = rigid.Box(f'[{self.name}]', self.dom, inside_dom)
-        bot = rigid.Box(f'[\\{self.name}]', inside_cod, self.cod)
-        mid = rigid.Id().tensor(*inside) @ w
-        # equation(top, mid, bot)
-        return top >> mid >> bot
-
-
-def swap_right(diagram, i):
-    left, box, right = diagram.layers[i]
-    if box.dom:
-        raise ValueError(f"{box} is not a word.")
-
-    new_left, new_right = left @ right[0:1], right[1:]
-    new_layer = rigid.Id(new_left) @ box @ rigid.Id(new_right)
-    return (
-        diagram[:i]
-        >> new_layer.permute(len(new_left), len(new_left) - 1)
-        >> diagram[i+1:])
-
-
-def drag_out(diagram, i, stop):
-    box = diagram.boxes[i]
-    if box.dom:
-        raise ValueError(f"{box} is not a word.")
-    while i > stop:
-        try:
-            diagram = diagram.interchange(i-1, i)
-            i -= 1
-        except InterchangerError:
-            diagram = swap_right(diagram, i)
-    return diagram
-
-
-def drag_all(diagram):
-    i = len(diagram) - 1
-    stop = 0
-    while i >= stop:
-        box = diagram.boxes[i]
-        if not box.dom:  # is word
-            diagram = drag_out(diagram, i, stop)
-            i = len(diagram)
-            stop += 1
-        i -= 1
-    return diagram
-
-
-def expand_box(box):
+def expand_box(box, last_n_n):
     n, s = map(rigid.Ty, 'ns')
     if isinstance(box, Frame):
         name, dom, cod = box.name, box.dom, box.cod
         insides = [expand_diagram(b) for b in box._insides]
         box = Frame(name, dom, cod, insides, box._slots)
+    if s.objects[0] in box.dom.objects:
+        pos = box.dom.objects.index(s.objects[0])
+        left, right = box.dom[:pos], box.dom[pos+1:]
+        box = rigid.Box(box.name, left @ last_n_n @ right, box.cod)
     if s.objects[0] not in box.cod:
-        return box
+        return box, None
     assert box.cod.count(s) == 1
     n_n = n ** box.dom.count(n)
     pos = box.cod.objects.index(s.objects[0])
-    left, right = rigid.Id(box.cod[:pos]), rigid.Id(box.cod[pos+1:])
-    expander = rigid.Box('x', s, n_n)
-    return box >> left @ expander @ right
+    left, right = box.cod[:pos], box.cod[pos+1:]
+    if isinstance(box, Frame):
+        expanded = Frame(box.name, box.dom, left @ n_n @ right, box._insides, box._slots)
+    else:
+        expanded = rigid.Box(box.name, box.dom, left @ n_n @ right)
+    return expanded, n_n
 
 
 def expand_diagram(diagram):
     new_diag = rigid.Id(diagram.dom)
+    last_n_n = None
     for left, box, right in diagram.layers:
-        box = expand_box(box)
+        box, n_n = expand_box(box, last_n_n)
+        if n_n:
+            last_n_n = n_n
         left, right = map(rigid.Id, (left, right))
         try:
             new_diag = new_diag >> left @ box @ right
@@ -262,14 +189,13 @@ def convert_sentence(diagram):
             diags[i:i+2] = [(new_diag, div)]
         step = rigid.Id().tensor(*[d[0] for d in diags])
     step = pulling_out_diagram(step)
-    step = merge_x(decomp(expand_diagram(drag_all(step))))
-    # step = merge_x(expand_diagram(step))
-    # res = merge_x(decomp(step))
-    # res = drag_all(res)
-    # return res
+    step = drag_all(step)
+    step = expand_diagram(step)
+    step = decomp(step)
+
     return step
 
+def sentence2circ(parser, sentence):
+    return convert_sentence(parser.sentence2tree(sentence).to_biclosed_diagram())
 
-decomp = rigid.Functor(
-    ob=lambda x: x,
-    ar=lambda b: b._decompose() if hasattr(b, '_decompose') else b)
+
