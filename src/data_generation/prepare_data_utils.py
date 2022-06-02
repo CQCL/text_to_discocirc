@@ -6,9 +6,10 @@
 from lambeq import BobcatParser
 
 from discopy.rigid import Ty, Diagram, Box, Swap, Id
-from drag_up import drag_all # drags nouns to top of circuit diagram
 import numpy as np # for inverse permutation
-from discocirc_utils import init_nouns
+
+from src.discocirc.discocirc_utils import init_nouns
+from src.discocirc.drag_up import drag_all
 
 parser = BobcatParser(verbose='suppress')
 # parser = BobcatParser(model_name_or_path='C:/Users/jonat/bert/')
