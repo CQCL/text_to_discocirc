@@ -14,6 +14,7 @@ class DisCoCircTrainer(keras.Model):
         self.wire_dimension = wire_dimension
         self.nn_boxes, self.trainable_models = initialize_boxes(lexicon, wire_dimension)
         self.nn_functor = get_nn_functor(self.nn_boxes, wire_dimension)
+        self.is_in_question = self.question_model()
         self.loss_tracker = keras.metrics.Mean(name="loss")
 
     def compile_dataset(self, dataset):
@@ -22,6 +23,13 @@ class DisCoCircTrainer(keras.Model):
         for context_circuit, test in dataset:
             context_circuit_model = self.nn_functor(context_circuit)
             self.dataset.append([context_circuit_model.model, test])
+    
+    def question_model(self):
+        input = keras.Input(shape=(2 * self.wire_dimension))
+        output = keras.layers.Dense(self.wire_dimension, activation=tf.nn.relu)(input)
+        output = keras.layers.Dense(self.wire_dimension / 2, activation=tf.nn.relu)(output)
+        output = keras.layers.Dense(1)(output)
+        return keras.Model(inputs=input, outputs=output)
     
     def train_step(self, batch):
         losses = 0
