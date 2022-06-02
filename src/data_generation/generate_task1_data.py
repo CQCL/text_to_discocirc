@@ -9,8 +9,8 @@ import pickle
 
 from lambeq import BobcatParser
 from prepare_data_utils import compose_circuits, task_file_reader
-from discocirc import convert_sentence
-from utils import get_star_removal_functor
+from discocirc.discocirc import convert_sentence
+from discocirc.discocirc_utils import get_star_removal_functor
 
 parser = BobcatParser(verbose='suppress')
 # parser = BobcatParser(model_name_or_path='C:/Users/jonat/bert/')

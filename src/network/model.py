@@ -5,7 +5,7 @@ os.environ["CUDA_VISIBLE_DEVICES"]="1"
 import tensorflow as tf
 from tensorflow import keras
 
-from utils import get_nn_functor, initialize_boxes
+from network.utils import get_nn_functor, initialize_boxes
 
 class DisCoCircTrainer(keras.Model):
     def __init__(self, lexicon, wire_dimension, **kwargs):

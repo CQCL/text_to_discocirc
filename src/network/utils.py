@@ -1,6 +1,5 @@
 from discopy.monoidal import Functor
 from discopy import PRO
-from discopy.rigid import Ty, Box
 
 from src.network.network import Network
 
@@ -28,14 +27,3 @@ def initialize_boxes(lexicon, wire_dimension, hidden_layers=[10, 10]):
         trainable_models.append(nn_boxes[word].model)
     return nn_boxes, trainable_models
 
-
-def get_star_removal_functor():
-    def star_removal_ob(ty):
-        return Ty() if ty.name == "*" else ty
-
-    def star_removal_ar(box):
-        return Box(box.name, f(box.dom), f(box.cod))
-
-    f = Functor(ob=star_removal_ob, ar=star_removal_ar)
-    return f
-    

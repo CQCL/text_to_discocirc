@@ -1,8 +1,8 @@
 # %%
 
-from discocirc import convert_sentence  # Richie's CCG to Circ
+from discocirc.discocirc import convert_sentence  # Richie's CCG to Circ
 from lambeq import BobcatParser
-from utils import get_star_removal_functor
+from discocirc.discocirc_utils import get_star_removal_functor
 import pickle   # for saving vocab file
 
 parser = BobcatParser(model_name_or_path='C:/Users/jonat/bert/')

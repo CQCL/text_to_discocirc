@@ -1,4 +1,7 @@
 from discopy.rigid import Ty
+from discopy.rigid import Ty, Box
+from discopy.monoidal import Functor
+
 
 def init_nouns(circ):
     """
@@ -13,3 +16,14 @@ def init_nouns(circ):
             break
 
     return index
+
+def get_star_removal_functor():
+    def star_removal_ob(ty):
+        return Ty() if ty.name == "*" else ty
+
+    def star_removal_ar(box):
+        return Box(box.name, f(box.dom), f(box.cod))
+
+    f = Functor(ob=star_removal_ob, ar=star_removal_ar)
+    return f
+    
