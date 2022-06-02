@@ -14,6 +14,7 @@ class DisCoCircTrainer(keras.Model):
         self.wire_dimension = wire_dimension
         self.nn_boxes, self.trainable_models = initialize_boxes(lexicon, wire_dimension)
         self.nn_functor = get_nn_functor(self.nn_boxes, wire_dimension)
+        self.is_in_question = self.question_model()
         self.loss_tracker = keras.metrics.Mean(name="loss")
 
     def compile_dataset(self, dataset):
@@ -22,6 +23,13 @@ class DisCoCircTrainer(keras.Model):
         for context_circuit, test in dataset:
             context_circuit_model = self.nn_functor(context_circuit)
             self.dataset.append([context_circuit_model.model, test])
+
+    def question_model(self):
+        input = keras.Input(shape=(2 * self.wire_dimension))
+        output = keras.layers.Dense(self.wire_dimension, activation=tf.nn.relu)(input)
+        output = keras.layers.Dense(self.wire_dimension / 2, activation=tf.nn.relu)(output)
+        output = keras.layers.Dense(1)(output)
+        return keras.Model(inputs=input, outputs=output)
     
     def train_step(self, batch):
         losses = 0
@@ -48,13 +56,24 @@ class DisCoCircTrainer(keras.Model):
         with tf.GradientTape() as tape:
             context_circuit_model, test = dataset
             output_vector = context_circuit_model(tf.convert_to_tensor([[]]))
-            loss = self.compute_loss(output_vector, test)
+            loss = self.compute_loss(output_vector[0], test)
             grad = tape.gradient(loss, self.trainable_weights, unconnected_gradients=tf.UnconnectedGradients.ZERO)
         return loss, grad
     
-    #TODO implement loss function
     @tf.function
     def compute_loss(self, output_vector, test):
-        # person, location = test
-        return tf.reduce_sum(1 - output_vector)
+        person, location = test
+        total_wires = output_vector.shape[0] / self.wire_dimension
+        person_vector = output_vector[person * self.wire_dimension : (person + 1) * self.wire_dimension]
+        answer_prob = []
+        for i in range(total_wires):
+            location_vector = output_vector[i * self.wire_dimension : (i + 1) * self.wire_dimension]
+            answer_prob.append(
+                self.question_model(tf.concat([person_vector, location_vector], axis=0))
+            )
+        answer_prob = answer_prob[:person] + answer_prob[person + 1:]
+        answer_prob = tf.convert_to_tensor(answer_prob)
+        labels = tf.one_hot(location, total_wires)
+        labels = labels[:person] + labels[person + 1:]
+        return tf.nn.softmax_cross_entropy_with_logits(logits=answer_prob, labels=labels)
 
