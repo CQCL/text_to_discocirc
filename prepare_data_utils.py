@@ -1,37 +1,58 @@
-############################################################
-# generate context circuits from context sentences
-############################################################
-#%%
+###############################################################################
+# Useful functions for constructing task data
+###############################################################################
 
-from discocirc import convert_sentence
+# import pickle   # for saving data into file
 from lambeq import BobcatParser
-from utils import get_star_removal_functor
 
 from discopy.rigid import Ty, Diagram, Box, Swap, Id
 from drag_up import drag_all # drags nouns to top of circuit diagram
 import numpy as np # for inverse permutation
 from discocirc_utils import init_nouns
 
-parser = BobcatParser(verbose='suppress')
-# parser = BobcatParser(model_name_or_path='C:/Users/jonat/bert/')
+# parser = BobcatParser(verbose='suppress')
+parser = BobcatParser(model_name_or_path='C:/Users/jonat/bert/')
 
 
 #%%
 
-test_context = [
-    'Mary moved to the bathroom',
-    'Sandra journeyed to the bathroom',
-    'Mary got the football there',
-    'John went to the kitchen',
-    'Mary went back to the kitchen',
-    'Mary went back to the garden',
-    'Sandra went back to the office',
-    'John moved to the office',
-    'Sandra journeyed to the hallway',
-    'Daniel went back to the kitchen',
-    'Mary dropped the football',
-    'John got the milk there'
-]
+# read the .txt file
+def task_file_reader(path):
+    """
+    reads the .txt file at path
+    returns 3 lists of equal length
+    - context sentences, questions, and answers
+    """
+    with open(path) as f:
+        lines = f.readlines()
+
+
+    # split the lines into stories
+    # record the first line location of new stories
+    story_splits = [i for i, line in enumerate(lines) if line[0:2] == '1 ']
+    # have no more need for line indices - delete these
+    lines = [' '.join(line.split(' ')[1:]) for line in lines]
+    # also delete . and \n
+    lines = [line.replace('.', '').replace('\n','') for line in lines]
+    stories = [lines[i:j] for i, j in zip(story_splits, story_splits[1:]+[None])]
+
+    # create context and QnA pairs
+    contexts = []
+    qnas = []
+    for story in stories:
+        # record the lines in the story corresponding to questions
+        question_splits = [i for i, line in enumerate(story) if '?' in line]
+        for index in question_splits:
+            # record the context corresponding to each question
+            contexts.append([line for line in story[:index] if '?' not in line])
+            # record the question
+            qnas.append(story[index])
+
+
+    # split qna into questions and answers
+    questions = [qna.split(' \t')[0] for qna in qnas]
+    answers = [qna.split('\t')[1] for qna in qnas]
+    return contexts, questions, answers
 
 
 # %%
@@ -107,14 +128,14 @@ def compose_circuits(circ1, circ2):
     # print(repr(circ1))
     # TODO: drag_all is a little bit broken
     circ1 = noun_sort((drag_all(circ1)))
-    circ1.draw()
+    # circ1.draw()
 
     for noun in reversed(unused_nouns):
         circ2 = noun @ circ2
 
     # TODO: drag_all
     circ2 = noun_sort((drag_all(circ2)))
-    circ2.draw()
+    # circ2.draw()
 
     # record new pulled up nouns
     nouns_circ1 = circ1.boxes[:init_nouns(circ1) + 1]
@@ -130,23 +151,3 @@ def compose_circuits(circ1, circ2):
     # TODO: switch inv_perm and perm once the permute() function has been fixed
     circ = circ1.permute(*inv_perm) >> circ2[len(nouns_circ2):].permute(*perm)
     return circ
-
-
-# %%
-
-# generate the circuits for the individual sentences
-sentence_circuits = []
-
-for line in test_context:
-    line_diag = parser.sentence2tree(line).to_biclosed_diagram()
-    line_diag = convert_sentence(line_diag)
-    sentence_circuits.append(line_diag)
-
-context_circ = sentence_circuits[0]
-
-for circ in sentence_circuits[1:]:
-    context_circ = compose_circuits(context_circ, circ)
-
-context_circ.draw(figsize=[20, 80], path="circuit.pdf")
-
-# %%
