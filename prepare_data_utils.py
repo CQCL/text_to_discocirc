@@ -10,8 +10,8 @@ from drag_up import drag_all # drags nouns to top of circuit diagram
 import numpy as np # for inverse permutation
 from discocirc_utils import init_nouns
 
-# parser = BobcatParser(verbose='suppress')
-parser = BobcatParser(model_name_or_path='C:/Users/jonat/bert/')
+parser = BobcatParser(verbose='suppress')
+# parser = BobcatParser(model_name_or_path='C:/Users/jonat/bert/')
 
 
 #%%
