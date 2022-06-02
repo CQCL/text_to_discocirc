@@ -51,7 +51,7 @@ class DisCoCircTrainer(keras.Model):
             "loss": self.loss_tracker.result(),
         }
 
-    # @tf.function
+    @tf.function
     def train_step_for_sample(self, dataset):
         with tf.GradientTape() as tape:
             context_circuit_model, test = dataset
@@ -63,17 +63,19 @@ class DisCoCircTrainer(keras.Model):
     @tf.function
     def compute_loss(self, output_vector, test):
         person, location = test
-        total_wires = output_vector.shape[0] / self.wire_dimension
+        total_wires = output_vector.shape[0] // self.wire_dimension
         person_vector = output_vector[person * self.wire_dimension : (person + 1) * self.wire_dimension]
         answer_prob = []
         for i in range(total_wires):
             location_vector = output_vector[i * self.wire_dimension : (i + 1) * self.wire_dimension]
             answer_prob.append(
-                self.question_model(tf.concat([person_vector, location_vector], axis=0))
+                self.is_in_question(
+                    tf.expand_dims(tf.concat([person_vector, location_vector], axis=0), axis=0)
+                )[0][0]
             )
-        answer_prob = answer_prob[:person] + answer_prob[person + 1:]
         answer_prob = tf.convert_to_tensor(answer_prob)
+        answer_prob = tf.concat([answer_prob[:person], answer_prob[person+1:]], axis=0)
         labels = tf.one_hot(location, total_wires)
-        labels = labels[:person] + labels[person + 1:]
+        labels = tf.concat([labels[:person], labels[person+1:]], axis=0)
         return tf.nn.softmax_cross_entropy_with_logits(logits=answer_prob, labels=labels)
 
