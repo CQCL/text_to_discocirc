@@ -34,6 +34,6 @@ def get_qa_numbers(task_file='tasks_1-20_v1-2/en/qa1_single-supporting-fact_trai
     for i, (question, answer) in enumerate(q_a_pairs):
         q_id = find_wire(diags[i], question)
         a_id = find_wire(diags[i], answer)
-        q_a_pairs.append((q_id, a_id))
+        q_a_number_pairs.append((q_id, a_id))
 
     return q_a_number_pairs
