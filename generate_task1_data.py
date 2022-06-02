@@ -5,14 +5,15 @@
 
 #%%
 # some instructions specific to task 1
+import pickle
 
 from lambeq import BobcatParser
 from prepare_data_utils import compose_circuits, task_file_reader
 from discocirc import convert_sentence
 from utils import get_star_removal_functor
 
-# parser = BobcatParser(verbose='suppress')
-parser = BobcatParser(model_name_or_path='C:/Users/jonat/bert/')
+parser = BobcatParser(verbose='suppress')
+# parser = BobcatParser(model_name_or_path='C:/Users/jonat/bert/')
 
 #%%
 
@@ -45,10 +46,17 @@ for i, context in enumerate(contexts):
     for circ in sentence_circuits[1:]:
         context_circ = compose_circuits(context_circ, circ)
 
-    if i % 20 == 0:
+    if i % 10 == 0:
         print('finished context {}'.format(i))
 
+    if i % 50 == 0:
+        with open('context_circuits.pkl', 'wb') as fh:
+            pickle.dump(context_circuits, fh)
+
     context_circuits.append(context_circ)
+
+with open('context_circuits.pkl', 'wb') as fh:
+    pickle.dump(context_circuits, fh)
 
 #%%
 
@@ -70,18 +78,18 @@ for i, context in enumerate(contexts):
 # %%
 
 # generate the circuits for the individual sentences
-sentence_circuits = []
-
-for line in test_context:
-    line_diag = parser.sentence2tree(line).to_biclosed_diagram()
-    line_diag = convert_sentence(line_diag)
-    sentence_circuits.append(line_diag)
-
-context_circ = sentence_circuits[0]
-
-for circ in sentence_circuits[1:]:
-    context_circ = compose_circuits(context_circ, circ)
-
-context_circ.draw(figsize=[20, 80], path="circuit.pdf")
+# sentence_circuits = []
+#
+# for line in test_context:
+#     line_diag = parser.sentence2tree(line).to_biclosed_diagram()
+#     line_diag = convert_sentence(line_diag)
+#     sentence_circuits.append(line_diag)
+#
+# context_circ = sentence_circuits[0]
+#
+# for circ in sentence_circuits[1:]:
+#     context_circ = compose_circuits(context_circ, circ)
+#
+# context_circ.draw(figsize=[20, 80], path="circuit.pdf")
 
 # %%
