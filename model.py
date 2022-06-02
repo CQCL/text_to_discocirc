@@ -20,7 +20,10 @@ class DisCoCircTrainer(keras.Model):
     def compile_dataset(self, dataset):
         self.dataset_size = len(dataset)
         self.dataset = []
+        count = 0
         for context_circuit, test in dataset:
+            print(count)
+            count += 1
             context_circuit_model = self.nn_functor(context_circuit)
             self.dataset.append([context_circuit_model.model, test])
 
@@ -35,7 +38,7 @@ class DisCoCircTrainer(keras.Model):
         losses = 0
         grads = None
         for idx in batch:
-            loss, grd = self.train_step_for_sample(self.dataset[idx])
+            loss, grd = self.train_step_for_sample(self.dataset[int(idx.numpy())])
             losses += loss
             if grads is None:
                 grads = grd
@@ -79,3 +82,5 @@ class DisCoCircTrainer(keras.Model):
         labels = tf.concat([labels[:person], labels[person+1:]], axis=0)
         return tf.nn.softmax_cross_entropy_with_logits(logits=answer_prob, labels=labels)
 
+    def call(self, idx):
+        return idx
