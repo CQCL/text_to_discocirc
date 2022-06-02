@@ -1,7 +1,7 @@
-from discopy.neural import Network
 from discopy.monoidal import Functor
 from discopy import PRO
 from discopy.rigid import Ty, Box
+from Network import Network
 
 def get_nn_functor(nn_boxes, wire_dim):
     def neural_ob(t):

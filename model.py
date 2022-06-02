@@ -24,10 +24,11 @@ class DisCoCircTrainer(keras.Model):
             self.dataset.append([context_circuit_model.model, test])
     
     def train_step(self, batch):
-        loss = 0
+        losses = 0
         grads = None
         for idx in batch:
             loss, grd = self.train_step_for_sample(self.dataset[idx])
+            losses += loss
             if grads is None:
                 grads = grd
             else:
@@ -37,12 +38,12 @@ class DisCoCircTrainer(keras.Model):
             for (grad, weights) in zip(grads, self.trainable_weights)
             if grad is not None)
 
-        self.loss_tracker.update_state(loss)
+        self.loss_tracker.update_state(losses)
         return {
             "loss": self.loss_tracker.result(),
         }
 
-    @tf.function
+    # @tf.function
     def train_step_for_sample(self, dataset):
         with tf.GradientTape() as tape:
             context_circuit_model, test = dataset
