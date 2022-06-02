@@ -56,11 +56,10 @@ for i, line in enumerate(no_question_lines):
         print("{} of {}".format(i,len(no_question_lines)))
         print("vocab size = {}".format(len(vocab)))
 
-
 print(vocab)
 
 # save vocab file
-pickle.dump( vocab, open( "task_vocab_dicts/en_qa2_train_HYPHENATED.p", "wb" ) )
+pickle.dump(vocab, open("task_vocab_dicts/en_qa2_train_HYPHENATED.p", "wb"))
 
 
 
