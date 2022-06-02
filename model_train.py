@@ -22,7 +22,7 @@ discotrainer = DisCoCircTrainer(vocab, 20)
 
 
 print('parsing sentences...')
-diag = parser.sentence2tree('Mary moved to the bathroom').to_biclosed_diagram()
+diag = parser.sentence2tree('Mary went').to_biclosed_diagram()
 diag = convert_sentence(diag)
 diag = get_star_removal_functor()(diag)
 

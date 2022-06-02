@@ -42,17 +42,32 @@ class Network(monoidal.Box):
         model = keras.Model(inputs=inputs, outputs=outputs)
         return Network(PRO(dom), PRO(cod), model)
 
+    def swap(left, right, ar_factory=None, swap_factory=None):
+        left_len = len(left)
+        dim = left_len + len(right)
+
+        inputs = keras.Input(shape=(dim,))
+        model1 = keras.layers.Lambda(
+            lambda x: x[:, :left_len], )(inputs)
+        model2 = keras.layers.Lambda(
+            lambda x: x[:, left_len:], )(inputs)
+
+        outputs = keras.layers.Concatenate()([model2, model1])
+        model = keras.Model(inputs=inputs, outputs=outputs)
+        return Network(PRO(dim), PRO(dim), model)
+
+
     @staticmethod
     def id(dim):
         inputs = keras.Input(shape=(len(dim),))
         return Network(dim, dim, keras.Model(inputs=inputs, outputs=inputs))
 
     @staticmethod
-    def dense_model(dom, cod, hidden_layer_dims=[], activation=tf.nn.relu):
+    def dense_model(dom, cod, name=None, hidden_layer_dims=[], activation=tf.nn.relu):
         inputs = keras.Input(shape=(dom,))
         model = inputs
         for dim in hidden_layer_dims:
             model = keras.layers.Dense(dim, activation=activation, bias_initializer="glorot_uniform")(model)
         outputs = keras.layers.Dense(cod, bias_initializer="glorot_uniform")(model)
-        model = keras.Model(inputs=inputs, outputs=outputs)
+        model = keras.Model(inputs=inputs, outputs=outputs, name=name)
         return Network(PRO(dom), PRO(cod), model)

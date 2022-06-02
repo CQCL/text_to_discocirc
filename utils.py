@@ -19,7 +19,8 @@ def initialize_boxes(lexicon, wire_dimension, hidden_layers=[10, 10]):
         nn_boxes[word] = Network.dense_model(
             len(word.dom) * wire_dimension,
             len(word.cod) * wire_dimension,
-            hidden_layer_dims=hidden_layers
+            hidden_layer_dims=hidden_layers,
+            name = word.name
         )
         trainable_models.append(nn_boxes[word].model)
     return nn_boxes, trainable_models
