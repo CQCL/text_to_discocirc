@@ -8,7 +8,7 @@
 import pickle
 
 from lambeq import BobcatParser
-from prepare_data_utils import compose_circuits, task_file_reader
+from data_generation.prepare_data_utils import compose_circuits, task_file_reader
 from discocirc.discocirc import convert_sentence
 from discocirc.discocirc_utils import get_star_removal_functor
 

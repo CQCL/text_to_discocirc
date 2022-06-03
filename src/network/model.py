@@ -82,5 +82,6 @@ class DisCoCircTrainer(keras.Model):
         labels = tf.concat([labels[:person], labels[person+1:]], axis=0)
         return tf.nn.softmax_cross_entropy_with_logits(logits=answer_prob, labels=labels)
 
+    @tf.function
     def call(self, idx):
         return idx

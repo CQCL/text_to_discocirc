@@ -2,7 +2,7 @@ import pickle
 
 from discopy import Ty
 
-from prepare_data_utils import task_file_reader
+from data_generation.prepare_data_utils import task_file_reader
 
 def find_wire(diagram, name):
     index = 0
@@ -18,8 +18,8 @@ def find_wire(diagram, name):
 
 
 
-def get_qa_numbers(task_file='tasks_1-20_v1-2/en/qa1_single-supporting-fact_train.txt',
-                   context_circuits="context_circuits.pkl"):
+def get_qa_numbers(task_file='data/tasks_1-20_v1-2/en/qa1_single-supporting-fact_train.txt',
+                   context_circuits="data/discocirc_diagrams/context_circuits.pkl"):
     contexts, questions, answers = task_file_reader(task_file)
 
     q_a_pairs = []

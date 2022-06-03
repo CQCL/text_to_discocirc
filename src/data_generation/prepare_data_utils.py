@@ -8,8 +8,8 @@ from lambeq import BobcatParser
 from discopy.rigid import Ty, Diagram, Box, Swap, Id
 import numpy as np # for inverse permutation
 
-from src.discocirc.discocirc_utils import init_nouns
-from src.discocirc.drag_up import drag_all
+from discocirc.discocirc_utils import init_nouns
+from discocirc.drag_up import drag_all
 
 parser = BobcatParser(verbose='suppress')
 # parser = BobcatParser(model_name_or_path='C:/Users/jonat/bert/')

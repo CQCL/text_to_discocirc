@@ -11,16 +11,16 @@ from tensorflow import keras
 
 from network.model import DisCoCircTrainer
 
-
-with open('task_vocab_dicts/en_qa1_train.p', 'rb') as f:
+     
+with open('data/task_vocab_dicts/en_qa1_train.p', 'rb') as f:
     vocab = pickle.load(f)
 
 print('initializing model...')
 discocirc_trainer = DisCoCircTrainer(vocab, 20)
 
 print('loading pickled dataset...')
-pickle_off = open("context_circuits.pkl", "rb")
-context_circuits = pickle.load(pickle_off)
+with open("data/discocirc_diagrams/context_circuits.pkl", "rb") as f:
+    context_circuits = pickle.load(f)
 q_a_number_pairs = get_qa_numbers()
 
 star_removal_functor = get_star_removal_functor()
