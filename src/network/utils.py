@@ -19,11 +19,17 @@ def initialize_boxes(lexicon, wire_dimension, hidden_layers=[10, 10]):
     trainable_models=[]
     for word in lexicon:
         #TODO add names to the model. It does not like [box] and [\box].
+        name = word.name
+        if '\\' in name:
+            name = name.replace('\\', '')
+            name = name[1:-1] + '_end'
+        elif '[' in name:
+            name = name[1:-1] + '_begin'
         nn_boxes[word] = Network.dense_model(
             len(word.dom) * wire_dimension,
             len(word.cod) * wire_dimension,
             hidden_layer_dims=hidden_layers,
-            # name = word.name
+            name = name
         )
         trainable_models.append(nn_boxes[word].model)
     return nn_boxes, trainable_models
