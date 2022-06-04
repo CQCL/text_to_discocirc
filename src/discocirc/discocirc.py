@@ -6,9 +6,9 @@ to maintain old copies of this code forever.
 
 from discopy.biclosed import Over, Under
 from discopy import biclosed, rigid
-from pulling_out import pulling_out_diagram
-from drag_up import drag_all
-from frame import Frame, decomp
+from discocirc.pulling_out import pulling_out_diagram
+from discocirc.drag_up import drag_all
+from discocirc.frame import Frame, decomp
 
 
 def expand_box(box, last_n_n):

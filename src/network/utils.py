@@ -1,7 +1,8 @@
 from discopy.monoidal import Functor
 from discopy import PRO
 
-from src.network.network import Network
+from network.network import Network
+from tensorflow import keras
 
 
 def get_nn_functor(nn_boxes, wire_dim):

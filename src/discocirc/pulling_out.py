@@ -1,8 +1,8 @@
 from discopy import Diagram, Ty, Box, rigid
 
-from frame import Frame
-from drag_up import drag_all, drag_out
-from discocirc_utils import init_nouns
+from discocirc.frame import Frame
+from discocirc.drag_up import drag_all, drag_out
+from discocirc.discocirc_utils import init_nouns
 
 
 def pull_out_of_frame_old(diagram, opening_box_index):
