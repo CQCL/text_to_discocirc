@@ -1,28 +1,48 @@
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 import tensorflow as tf
 from tensorflow import keras
 
-from network.utils import get_nn_functor, initialize_boxes
+from network.utils import get_fast_nn_functor, initialize_boxes
+
 
 class DisCoCircTrainer(keras.Model):
-    def __init__(self, lexicon, wire_dimension, **kwargs):
+    def __init__(self, nn_boxes, wire_dimension, is_in_question=None, compiled_dataset=None, **kwargs):
         super(DisCoCircTrainer, self).__init__(**kwargs)
-        self.lexicon = lexicon
+        self.nn_boxes = nn_boxes
+        self.trainable_models = [box.model for box in nn_boxes.values()]
         self.wire_dimension = wire_dimension
-        self.nn_boxes, self.trainable_models = initialize_boxes(lexicon, wire_dimension)
-        self.nn_functor = get_nn_functor(self.nn_boxes, wire_dimension)
+        self.nn_functor = get_fast_nn_functor(self.nn_boxes, wire_dimension)
+        self.dataset = compiled_dataset
+        if is_in_question is None:
         self.is_in_question = self.question_model()
+        else:
+            self.is_in_question = is_in_question
         self.loss_tracker = keras.metrics.Mean(name="loss")
+
+    @staticmethod
+    def from_lexicon(lexicon, wire_dimension, **kwargs):
+        nn_boxes, trainable_models = initialize_boxes(lexicon, wire_dimension)
+        return DisCoCircTrainer(nn_boxes, wire_dimension, compiled_dataset=None, **kwargs)
+
+    def save_models(self, path):
+        with open(path, "wb") as f:
+            pickle.dump((self.nn_boxes, self.wire_dimension, self.is_in_question), f)
+    
+    @staticmethod
+    def load_models(path):
+        with open(path, "rb") as f:
+            nn_boxes, wire_dimension, is_in_question = pickle.load(f)
+        return DisCoCircTrainer(nn_boxes, wire_dimension, is_in_question, compiled_dataset=None)
 
     def compile_dataset(self, dataset):
         self.dataset_size = len(dataset)
         self.dataset = []
         count = 0
         for context_circuit, test in dataset:
-            print(count)
+            print(count + 1, "/", len(dataset), end="\r")
             count += 1
             context_circuit_model = self.nn_functor(context_circuit)
             self.dataset.append([context_circuit_model.model, test])
