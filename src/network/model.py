@@ -2,6 +2,7 @@ import os
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
+import pickle
 import tensorflow as tf
 from tensorflow import keras
 
@@ -17,11 +18,11 @@ class DisCoCircTrainer(keras.Model):
         self.nn_functor = get_fast_nn_functor(self.nn_boxes, wire_dimension)
         self.dataset = compiled_dataset
         if is_in_question is None:
-        self.is_in_question = self.question_model()
+            self.is_in_question = self.question_model()
         else:
             self.is_in_question = is_in_question
         self.loss_tracker = keras.metrics.Mean(name="loss")
-
+        
     @staticmethod
     def from_lexicon(lexicon, wire_dimension, **kwargs):
         nn_boxes, trainable_models = initialize_boxes(lexicon, wire_dimension)
@@ -102,6 +103,28 @@ class DisCoCircTrainer(keras.Model):
         labels = tf.concat([labels[:person], labels[person+1:]], axis=0)
         return tf.nn.softmax_cross_entropy_with_logits(logits=answer_prob, labels=labels)
 
-    @tf.function
     def call(self, idx):
-        return idx
+        circ, q_a = self.dataset[int(idx.numpy())]
+        output_vector = circ(tf.convert_to_tensor([[]]))[0]
+        person, location = q_a
+        total_wires = output_vector.shape[0] // self.wire_dimension
+        person_vector = output_vector[person * self.wire_dimension : (person + 1) * self.wire_dimension]
+        answer_prob = []
+        for i in range(total_wires):
+            location_vector = output_vector[i * self.wire_dimension : (i + 1) * self.wire_dimension]
+            answer_prob.append(
+                self.is_in_question(
+                    tf.expand_dims(tf.concat([person_vector, location_vector], axis=0), axis=0)
+                )[0][0]
+            )
+        answer_prob = tf.convert_to_tensor(answer_prob)
+        answer_prob = tf.nn.softmax(answer_prob)
+        return answer_prob
+
+    def fit(self, epochs, batch_size=32, **kwargs):
+        if self.dataset is None:
+            raise ValueError("Dataset not compiled")
+        input_index_dataset = tf.data.Dataset.range(self.dataset_size)
+        input_index_dataset = input_index_dataset.shuffle(self.dataset_size)
+        input_index_dataset = input_index_dataset.batch(batch_size)
+        return super(DisCoCircTrainer, self).fit(input_index_dataset, epochs=epochs, **kwargs)
