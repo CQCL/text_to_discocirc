@@ -1,14 +1,11 @@
 import os
+
 os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 import pickle
 from datetime import datetime
-
-import tensorflow as tf
 from tensorflow import keras
 
-from data_generation.generate_answer_pair_number import get_qa_numbers
-from discocirc.discocirc_utils import get_star_removal_functor
 from network.model import DisCoCircTrainer
 
 
@@ -36,5 +33,4 @@ tbCallBack = keras.callbacks.TensorBoard(log_dir='logs/{}'.format(datetime.now()
 print('training...')
 discocirc_trainer.fit(epochs=200, batch_size=32, callbacks=[tbCallBack])
 
-# discocirc_trainer.save_models('./saved_models/trained_model_boxes_' + datetime.utcnow().strftime("%B_%d_%H_%M") +'.pkl')
-
+discocirc_trainer.save_models('./saved_models/trained_model_boxes_' + datetime.utcnow().strftime("%B_%d_%H_%M") +'.pkl')

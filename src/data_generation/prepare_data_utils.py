@@ -5,7 +5,7 @@
 # import pickle   # for saving data into file
 from lambeq import BobcatParser
 
-from discopy.rigid import Ty, Diagram, Box, Swap, Id
+from discopy.rigid import Ty
 import numpy as np # for inverse permutation
 
 from discocirc.discocirc_utils import init_nouns

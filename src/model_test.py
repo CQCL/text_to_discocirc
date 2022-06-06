@@ -1,11 +1,8 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
-from data_generation.generate_answer_pair_number import get_qa_numbers
-from discocirc.discocirc_utils import get_star_removal_functor
 import pickle
 import numpy as np
-import tensorflow as tf
 from tensorflow import keras
 from sklearn.metrics import accuracy_score
 

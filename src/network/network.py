@@ -1,9 +1,4 @@
-# -*- coding: utf-8 -*-
-
-"""
-"""
-
-from discopy import cat, config, messages, monoidal, rigid
+from discopy import monoidal
 from discopy.monoidal import PRO
 import tensorflow as tf
 from tensorflow import keras
