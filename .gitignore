@@ -136,5 +136,4 @@ babi_dataset/
 
 .vscode
 
-saved_models/
 logs/
