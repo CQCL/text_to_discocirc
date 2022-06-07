@@ -1,13 +1,13 @@
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import pickle
 import numpy as np
 from tensorflow import keras
 
 from network.model import DisCoCircTrainer
-from network.utils import get_test_accuracy
+from network.utils import get_accuracy
 
 
 print('initializing model...')
@@ -24,6 +24,6 @@ discocirc_trainer(0)
 
 
 
-accuracy = get_test_accuracy(discocirc_trainer, dataset)
+accuracy = get_accuracy(discocirc_trainer, discocirc_trainer.dataset)
 
 print("The accuracy on the test set is", accuracy)

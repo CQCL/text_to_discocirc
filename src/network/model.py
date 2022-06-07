@@ -38,15 +38,19 @@ class DisCoCircTrainer(keras.Model):
             nn_boxes, wire_dimension, is_in_question = pickle.load(f)
         return DisCoCircTrainer(nn_boxes, wire_dimension, is_in_question, compiled_dataset=None)
 
-    def compile_dataset(self, dataset):
-        self.dataset_size = len(dataset)
-        self.dataset = []
+    def compile_dataset(self, dataset, validation = False):
+        model_dataset = []
         count = 0
         for context_circuit, test in dataset:
             print(count + 1, "/", len(dataset), end="\r")
             count += 1
             context_circuit_model = self.nn_functor(context_circuit)
-            self.dataset.append([context_circuit_model.model, test])
+            model_dataset.append([context_circuit_model.model, test])
+        if validation:
+            self.validation_dataset = model_dataset
+        else:
+            self.dataset = model_dataset
+            self.dataset_size = len(dataset)
 
     def question_model(self):
         input = keras.Input(shape=(2 * self.wire_dimension))
@@ -79,34 +83,21 @@ class DisCoCircTrainer(keras.Model):
     def train_step_for_sample(self, dataset):
         with tf.GradientTape() as tape:
             context_circuit_model, test = dataset
-            output_vector = context_circuit_model(tf.convert_to_tensor([[]]))
-            loss = self.compute_loss(output_vector[0], test)
+            loss = self.compute_loss(context_circuit_model, test)
             grad = tape.gradient(loss, self.trainable_weights, unconnected_gradients=tf.UnconnectedGradients.ZERO)
         return loss, grad
     
     @tf.function
-    def compute_loss(self, output_vector, test):
+    def compute_loss(self, context_circuit_model, test):
         person, location = test
-        total_wires = output_vector.shape[0] // self.wire_dimension
-        person_vector = output_vector[person * self.wire_dimension : (person + 1) * self.wire_dimension]
-        answer_prob = []
-        for i in range(total_wires):
-            location_vector = output_vector[i * self.wire_dimension : (i + 1) * self.wire_dimension]
-            answer_prob.append(
-                self.is_in_question(
-                    tf.expand_dims(tf.concat([person_vector, location_vector], axis=0), axis=0)
-                )[0][0]
-            )
-        answer_prob = tf.convert_to_tensor(answer_prob)
-        answer_prob = tf.concat([answer_prob[:person], answer_prob[person+1:]], axis=0)
-        labels = tf.one_hot(location, total_wires)
-        labels = tf.concat([labels[:person], labels[person+1:]], axis=0)
+        answer_prob = self.call((context_circuit_model, person))
+        labels = tf.one_hot(location, len(answer_prob))
         return tf.nn.softmax_cross_entropy_with_logits(logits=answer_prob, labels=labels)
 
-    def call(self, idx):
-        circ, q_a = self.dataset[int(idx.numpy())]
+    @tf.function
+    def call(self, circ_person):
+        circ, person = circ_person
         output_vector = circ(tf.convert_to_tensor([[]]))[0]
-        person, location = q_a
         total_wires = output_vector.shape[0] // self.wire_dimension
         person_vector = output_vector[person * self.wire_dimension : (person + 1) * self.wire_dimension]
         answer_prob = []

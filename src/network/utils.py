@@ -86,14 +86,14 @@ def initialize_boxes(lexicon, wire_dimension, hidden_layers=[10, 10]):
     return nn_boxes, trainable_models
 
 
-def get_test_accuracy(discocirc_trainer, dataset):
+def get_accuracy(discocirc_trainer, dataset):
     location_predicted = []
     location_true = []
     for i in range(len(dataset)):
         print('predicting {} / {}'.format(i, len(dataset)), end='\r')
-        probs = discocirc_trainer(i)
+        probs = discocirc_trainer((dataset[i][0], dataset[i][1][0]))
         location_predicted.append(np.argmax(probs))
-        location_true.append(dataset[1][i][1])
+        location_true.append(dataset[i][1][1])
     accuracy = accuracy_score(location_true, location_predicted)
     return accuracy
 
