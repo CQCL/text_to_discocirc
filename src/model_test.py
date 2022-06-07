@@ -1,12 +1,13 @@
 import os
+
 os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 import pickle
 import numpy as np
 from tensorflow import keras
-from sklearn.metrics import accuracy_score
 
 from network.model import DisCoCircTrainer
+from network.utils import get_test_accuracy
 
 
 print('initializing model...')
@@ -21,12 +22,8 @@ discocirc_trainer.compile_dataset(dataset)
 discocirc_trainer.compile(optimizer=keras.optimizers.Adam(), run_eagerly=True)
 discocirc_trainer(0)
 
-location_predicted = []
-location_true = []
-for i in range(len(dataset)):
-    print('predicting {} / {}'.format(i, len(dataset)), end='\r')
-    probs = discocirc_trainer(i)
-    location_predicted.append(np.argmax(probs))
-    location_true.append(dataset[1][i][1])
 
-print(accuracy_score(location_true, location_predicted))
+
+accuracy = get_test_accuracy(discocirc_trainer, dataset)
+
+print("The accuracy on the test set is", accuracy)

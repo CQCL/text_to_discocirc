@@ -1,8 +1,10 @@
 from discopy.monoidal import Functor
 from discopy import PRO
 
-from network.network import Network
+import numpy as np
+from sklearn.metrics import accuracy_score
 from tensorflow import keras
+from network.network import Network
 
 
 def get_nn_functor(nn_boxes, wire_dim):
@@ -82,4 +84,16 @@ def initialize_boxes(lexicon, wire_dimension, hidden_layers=[10, 10]):
         )
         trainable_models.append(nn_boxes[word].model)
     return nn_boxes, trainable_models
+
+
+def get_test_accuracy(discocirc_trainer, dataset):
+    location_predicted = []
+    location_true = []
+    for i in range(len(dataset)):
+        print('predicting {} / {}'.format(i, len(dataset)), end='\r')
+        probs = discocirc_trainer(i)
+        location_predicted.append(np.argmax(probs))
+        location_true.append(dataset[1][i][1])
+    accuracy = accuracy_score(location_true, location_predicted)
+    return accuracy
 
