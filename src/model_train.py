@@ -9,9 +9,10 @@ from datetime import datetime
 from tensorflow import keras
 
 from network.callbacks import ValidationAccuracy
-from network.model import DisCoCircTrainer
+from network.model import DisCoCircTrainerIsIn
 
 from sklearn.model_selection import train_test_split
+
 
 WIRE_DIMENSION = 20
 
@@ -20,14 +21,13 @@ with open('data/task_vocab_dicts/en_qa1_train.p', 'rb') as f:
     vocab = pickle.load(f)
 
 print('initializing model...')
-discocirc_trainer = DisCoCircTrainer.from_lexicon(vocab, WIRE_DIMENSION)
+discocirc_trainer = DisCoCircTrainerIsIn.from_lexicon(vocab, WIRE_DIMENSION)
 
 print('loading pickled dataset...')
 with open("data/pickled_dataset/dataset_task1_train.pkl", "rb") as f:
     dataset = pickle.load(f)
 
-dataset = dataset[:10]
-train_dataset, validation_dataset = train_test_split(dataset, test_size=0.5, random_state=1)
+train_dataset, validation_dataset = train_test_split(dataset, test_size=0.1, random_state=1)
 
 
 print('compiling train dataset')
