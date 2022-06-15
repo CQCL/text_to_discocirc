@@ -7,19 +7,20 @@ from network.utils import get_fast_nn_functor, initialize_boxes
 
 
 class DisCoCircTrainerBase(ABC, keras.Model):
-    def __init__(self, nn_boxes, wire_dimension, compiled_dataset=None, **kwargs):
+    def __init__(self, nn_boxes, wire_dimension, compiled_dataset=None, lexicon=None, **kwargs):
         super(DisCoCircTrainerBase, self).__init__(**kwargs)
         self.nn_boxes = nn_boxes
         self.trainable_models = [box.model for box in nn_boxes.values()]
         self.wire_dimension = wire_dimension
         self.nn_functor = get_fast_nn_functor(self.nn_boxes, wire_dimension)
         self.dataset = compiled_dataset
-        self.loss_tracker = keras.metrics.Mean(name="loss")
+        self.lexicon = lexicon
+        self.loss_tracker = keras.metrics.Mean(name="loss")    
 
     @classmethod
     def from_lexicon(cls, lexicon, wire_dimension, **kwargs):
         nn_boxes, trainable_models = initialize_boxes(lexicon, wire_dimension)
-        return cls(nn_boxes, wire_dimension, compiled_dataset=None, **kwargs)
+        return cls(nn_boxes, wire_dimension, compiled_dataset=None, lexicon=lexicon, **kwargs)
 
     def save_models(self, path):
         kwargs = {

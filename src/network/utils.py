@@ -97,3 +97,14 @@ def get_accuracy(discocirc_trainer, dataset):
     accuracy = accuracy_score(location_true, location_predicted)
     return accuracy
 
+def get_classification_vocab(lexicon):
+    vocab = []
+    for box in lexicon:
+        name = box.name
+        if '[' in name:
+            name = name.replace('\\', '')
+            name = name[1:-1]
+        if name not in vocab:
+            vocab.append(name)
+    return vocab
+    

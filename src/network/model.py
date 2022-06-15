@@ -11,7 +11,6 @@ class DisCoCircTrainerIsIn(DisCoCircTrainerBase):
             self.is_in_question = self.question_model()
         else:
             self.is_in_question = is_in_question
-        self.loss_tracker = keras.metrics.Mean(name="loss")
 
     def save_models(self, path):
         kwargs = {
