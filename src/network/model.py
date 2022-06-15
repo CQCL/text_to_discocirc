@@ -29,14 +29,19 @@ class DisCoCircTrainer(keras.Model):
         return DisCoCircTrainer(nn_boxes, wire_dimension, compiled_dataset=None, **kwargs)
 
     def save_models(self, path):
+        kwargs = {
+            "nn_boxes": self.nn_boxes,
+            "wire_dimension": self.wire_dimension,
+            "is_in_question": self.is_in_question
+        }
         with open(path, "wb") as f:
-            pickle.dump((self.nn_boxes, self.wire_dimension, self.is_in_question), f)
+            pickle.dump(kwargs, f)
     
-    @staticmethod
-    def load_models(path):
+    @classmethod
+    def load_models(cls, path):
         with open(path, "rb") as f:
-            nn_boxes, wire_dimension, is_in_question = pickle.load(f)
-        return DisCoCircTrainer(nn_boxes, wire_dimension, is_in_question, compiled_dataset=None)
+            kwargs = pickle.load(f)
+        return cls(**kwargs)
 
     def compile_dataset(self, dataset, validation = False):
         model_dataset = []
