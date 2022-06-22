@@ -2,12 +2,18 @@
 # Useful functions for constructing task data
 ###############################################################################
 
-# import pickle   # for saving data into file
+import os, sys
+
+p = os.path.abspath('..') # should be path for \src
+sys.path.insert(1, p)
+
+
 from lambeq import BobcatParser
 
 from discopy.rigid import Ty
 import numpy as np # for inverse permutation
 
+from discocirc.discocirc import convert_sentence
 from discocirc.discocirc_utils import init_nouns
 from discocirc.drag_up import drag_all
 
@@ -152,3 +158,24 @@ def compose_circuits(circ1, circ2):
     # TODO: switch inv_perm and perm once the permute() function has been fixed
     circ = circ1.permute(*inv_perm) >> circ2[len(nouns_circ2):].permute(*perm)
     return circ
+
+def generate_context_circuit(context):
+    """
+    Parameters:
+    -----------
+    context : list
+        List of context sentences.
+
+    Returns:
+    --------
+    context_circ : discopy.rigid.Diagram
+    """
+    sentence_circuits = []
+    for sentence in context:
+        sentence_diag = parser.sentence2tree(sentence).to_biclosed_diagram()
+        sentence_diag = convert_sentence(sentence_diag)
+        sentence_circuits.append(sentence_diag)
+    context_circ = sentence_circuits[0]
+    for circ in sentence_circuits[1:]:
+        context_circ = compose_circuits(context_circ, circ)
+    return context_circ
