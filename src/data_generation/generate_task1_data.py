@@ -12,7 +12,6 @@ sys.path.insert(1, p)
 # some instructions specific to task 1
 import pickle
 
-from lambeq import BobcatParser
 from data_generation.generate_answer_pair_number import get_qa_numbers
 from data_generation.prepare_data_utils import generate_context_circuit, task_file_reader
 from discocirc.discocirc_utils import get_star_removal_functor
