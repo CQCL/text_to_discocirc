@@ -45,6 +45,7 @@ class DisCoCircTrainerTextspace(DisCoCircTrainerBase):
     
     @tf.function
     def compute_loss(self, context_circuit_model, test):
+        # test is a tuple containing (question_circuit_model, answer_word)
         question_circuit_model, answer_word = test
         answer_prob = self.call((context_circuit_model, question_circuit_model))
         answer_index = self.classification_vocab.index(answer_word)
@@ -53,6 +54,9 @@ class DisCoCircTrainerTextspace(DisCoCircTrainerBase):
 
     @tf.function
     def call(self, context_question):
+        """
+        The model's forward pass
+        """
         context_circuit, question_circuit = context_question
         context_vector = self.circuit_to_textspace(
             context_circuit(tf.convert_to_tensor([[]]))[0]

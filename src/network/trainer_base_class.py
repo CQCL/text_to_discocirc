@@ -19,6 +19,16 @@ class DisCoCircTrainerBase(ABC, keras.Model):
 
     @classmethod
     def from_lexicon(cls, lexicon, wire_dimension, **kwargs):
+        """
+        Factory method to create a DisCoCircTrainer from a lexicon.
+
+        Parameters
+        ----------
+        lexicon : list
+            list of discopy boxes in the lexicon.
+        wire_dimension : int
+            dimension of the noun wires.
+        """
         nn_boxes, trainable_models = initialize_boxes(lexicon, wire_dimension)
         return cls(nn_boxes, wire_dimension, compiled_dataset=None, lexicon=lexicon, **kwargs)
 
@@ -37,6 +47,10 @@ class DisCoCircTrainerBase(ABC, keras.Model):
         return cls(**kwargs)
 
     def compile_dataset(self, dataset, validation = False):
+        """
+        applies the nn_functor to the list of context circuit diagrams,
+        and saves these
+        """
         model_dataset = []
         count = 0
         for context_circuit, test in dataset:

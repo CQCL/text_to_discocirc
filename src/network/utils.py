@@ -66,6 +66,16 @@ def get_fast_nn_functor(nn_boxes, wire_dim):
 
 #TODO do not hard-code hidden layers
 def initialize_boxes(lexicon, wire_dimension, hidden_layers=[10, 10]):
+    """
+    Returns a dict of neural networks, and a list of models
+
+    Parameters
+    ----------
+    lexicon : list
+        List of discopy boxes in the lexicon.
+    wire_dimension : int
+        Dimension of the noun wires.
+    """
     nn_boxes = {}
     trainable_models=[]
     for word in lexicon:
@@ -98,6 +108,17 @@ def get_accuracy(discocirc_trainer, dataset):
     return accuracy
 
 def get_classification_vocab(lexicon):
+    """
+    Parameters:
+    -----------
+    lexicon : list
+        list of discopy boxes
+
+    Returns:
+    --------
+    vocab : list
+        list of names of boxes (modulo frames)
+    """
     vocab = []
     for box in lexicon:
         name = box.name
