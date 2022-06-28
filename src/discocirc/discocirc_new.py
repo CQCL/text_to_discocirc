@@ -15,7 +15,6 @@ class Term:
 
     def __call__(self, x: Term) -> Term:
         return Term(self.name, self.ccg, self.output_ccg, [*self.args, x])
-        # return Term(self.name, self.ccg, [*self.args, x])
 
     def __repr__(self) -> str:
         args = self.args
@@ -134,17 +133,13 @@ parser = BobcatParser()
 
 
 def type_check_term(term):
-    if len(term.args) == 0:
-        return term.ccg
-
+    ccg = term.ccg
     for arg in term.args:
-        if type_check_term(arg) is None:
+        if not get_ccg_input(ccg) == type_check_term(arg):
             return None
+        ccg = get_ccg_output(ccg)
 
-    if get_ccg_input(term.ccg) == term.args[0].ccg:
-        return get_ccg_output(term.ccg)
-    else:
-        return None
+    return ccg
 
 
 # %%
@@ -179,10 +174,18 @@ def set_ccg_output(ccg, output):
 
 
 def normalpull(term):
+    """
+    Given a hyperbox pull out the arguments.
+
+    :param term: Term - hyperbox who's arguments will be pulled out.
+                 We assume that all internal hyperboxes are fully pulled out.
+    :return: The same term with arguments pulled out.
+    """
     assert (is_hyperbox(term.ccg))
 
     ccg = term.args[0].ccg
     pulled_out_args = []
+    no_pulled_out = 0
     for ar in term.args[0].args.copy():
         # If current ccg is hyperbox, the input should go inside
         # (by recursive property of pulling out, we assume all internal
@@ -192,7 +195,8 @@ def normalpull(term):
             continue
 
         pulled_out_args.append((type(ccg), ar.output_ccg))
-        term.args.insert(1, ar)
+        term.args.insert(1 + no_pulled_out, ar)
+        no_pulled_out += 1
         term.args[0].args.remove(ar)
 
         ccg = get_ccg_output(ccg)
@@ -247,28 +251,30 @@ def run_sentence(sentence):
     ccg_parse = parser.sentence2tree(sentence).to_biclosed_diagram()
     term = make_term(ccg_parse)
     diag = make_diagram(term)
-    diag.draw()
+    # diag.draw()
+    assert(type_check_term(term) is not None)
 
     new_term = recurse_pull(term)
-    print(type_check_term(new_term))
     new_diag = make_diagram(new_term)
 
     new_diag.draw()
+    assert(type_check_term(term) is not None)
 
 
 sentences = [
     'Alice quickly rapidly gives flowers to Bob',
     'Alice quickly gives flowers to Bob',
-    # 'Alice quickly loves very red Bob',
-    # 'Alice fully loves Bob',
-    # 'Alice quickly eats',
-    # 'Alice quickly eats fish',
-    # 'Alice quickly eats red fish',
-    # 'Alice quickly loves very red Bob',
-    # 'Alice quickly rapidly loudly loves very very red Bob',
-    # 'Alice quickly and rapidly loves Bob and very red Claire',
-    # 'Alice loves Bob',
+    'Alice quickly loves very red Bob',
+    'Alice fully loves Bob',
+    'Alice quickly eats',
+    'Alice quickly eats fish',
+    'Alice quickly eats red fish',
+    'Alice quickly loves very red Bob',
+    'Alice quickly rapidly loudly loves very very red Bob',
+    'Alice quickly and rapidly loves Bob and very red Claire',
+    'Alice loves Bob',
 ]
+
 for sentence in sentences:
     run_sentence(sentence)
 
