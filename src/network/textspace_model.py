@@ -15,7 +15,7 @@ class DisCoCircTrainerTextspace(DisCoCircTrainerBase):
                  classification_vocab = None,
                  **kwargs):
         super().__init__(nn_boxes, wire_dimension, **kwargs)
-        self.circuit_to_textspace = TextSpace(max_wire_num, textspace_dimension)
+        self.circuit_to_textspace = TextSpace(wire_dimension, max_wire_num, textspace_dimension)
         self.max_wire_num = max_wire_num
         self.textspace_dimension = textspace_dimension
         self.classification_vocab = classification_vocab
@@ -24,6 +24,25 @@ class DisCoCircTrainerTextspace(DisCoCircTrainerBase):
                 raise ValueError("Either lexicon or classification_vocab must be provided")
             self.classification_vocab = get_classification_vocab(self.lexicon)
         self.qna_classifier = self.qna_classifier()
+
+    def compile_dataset(self, dataset, validation = False):
+        """
+        applies the nn_functor to the list of context and question circuit diagrams,
+        and saves these
+        """
+        model_dataset = []
+        count = 0
+        for context_circuit, test in dataset:
+            print(count + 1, "/", len(dataset), end="\r")
+            count += 1
+            context_circuit_model = self.nn_functor(context_circuit)
+            question_circuit_model = self.nn_functor(test[0])
+            model_dataset.append([context_circuit_model.model, (question_circuit_model.model, test[1])])
+        if validation:
+            self.validation_dataset = model_dataset
+        else:
+            self.dataset = model_dataset
+            self.dataset_size = len(dataset)
 
     def save_models(self, path):
         kwargs = {
