@@ -1,4 +1,8 @@
 import os
+# path nonsense
+import sys
+p = os.path.abspath('..') # this should the the path to \Neural-DisCoCirc
+# sys.path.insert(1, p)
 
 from network.utils import get_accuracy
 
@@ -17,14 +21,15 @@ from sklearn.model_selection import train_test_split
 WIRE_DIMENSION = 20
 
 print('loading vocabulary...')
-with open('data/task_vocab_dicts/en_qa1_train.p', 'rb') as f:
+with open(p+'/data/task_vocab_dicts/en_qa1.p', 'rb') as f:
     vocab = pickle.load(f)
 
 print('initializing model...')
 discocirc_trainer = DisCoCircTrainerIsIn.from_lexicon(vocab, WIRE_DIMENSION)
 
 print('loading pickled dataset...')
-with open("data/pickled_dataset/dataset_task1_train.pkl", "rb") as f:
+with open(p+"/data/pickled_dataset/dataset_task1_train.pkl", "rb") as f:
+    # dataset is a tuple (context_circuit,(question_word_index, answer_word_index))
     dataset = pickle.load(f)
 
 train_dataset, validation_dataset = train_test_split(dataset, test_size=0.1, random_state=1)
