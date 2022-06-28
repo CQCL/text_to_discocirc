@@ -173,9 +173,10 @@ def set_ccg_output(ccg, output):
         ccg.left = output
 
 
-def normalpull(term):
+def pull_single_hyperbox_hole(term):
     """
-    Given a hyperbox pull out the arguments.
+    Given a hyperbox pull out the arguments of the next hole.
+    For hyperboxes with multiple holes, this has to be called multiple times.
 
     :param term: Term - hyperbox who's arguments will be pulled out.
                  We assume that all internal hyperboxes are fully pulled out.
@@ -189,18 +190,21 @@ def normalpull(term):
     for ar in term.args[0].args.copy():
         # If current ccg is hyperbox, the input should go inside
         # (by recursive property of pulling out, we assume all internal
-        # hyperboxes to already be pulled out correctly)
+        # hyperboxes to already be pulled out correctly).
+        # Thus, they should take exactly one input, which we don't pull out.
         if is_hyperbox(ccg):
             ccg = get_ccg_output(ccg)
             continue
 
         pulled_out_args.append((type(ccg), ar.output_ccg))
-        term.args.insert(1 + no_pulled_out, ar)
-        no_pulled_out += 1
+        term.args.insert(no_pulled_out + 1, ar)
         term.args[0].args.remove(ar)
 
+        no_pulled_out += 1
         ccg = get_ccg_output(ccg)
 
+    # Update the ccg_type in reverse order such that the first argument pulled
+    # out is the last added to the ccg and thus the next input
     for ccg_type, ccg in reversed(pulled_out_args):
         if ccg_type == Over:
             term.ccg.left = Over(term.ccg.left, ccg)
@@ -212,7 +216,14 @@ def normalpull(term):
     return term
 
 
-def hyperpull(term):
+def pull_hyperbox(term):
+    """
+    Given a hyperbox pull out the arguments of all the holes.
+
+    :param term: Term - hyperbox who's arguments will be pulled out.
+                 We assume that all internal hyperboxes are fully pulled out.
+    :return: The same term with arguments pulled out.
+    """
     assert (is_hyperbox(term.ccg))
 
     if len(term.args) == 0:
@@ -222,14 +233,15 @@ def hyperpull(term):
     # If the hyperbox term has multiple holes
     # (i.e after the first hole it's still a hyperbox), continue pulling
     if is_hyperbox(get_ccg_output(term.ccg)):
-        new_term = hyperpull(
+        new_term = pull_hyperbox(
             Term('', get_ccg_output(term.ccg),
                  get_ccg_output(term.ccg), term.args[1:]))
         set_ccg_output(term.ccg, new_term.ccg)
         term.args = [term.args[0]] + new_term.args
 
+    # Pull out of current hole
     if get_ccg_input(term.ccg) != term.args[0].ccg:
-        term = normalpull(term)
+        term = pull_single_hyperbox_hole(term)
 
     return term
 
@@ -240,7 +252,7 @@ def recurse_pull(term):
         term.args[i] = recurse_pull(term.args[i])
 
     if is_hyperbox(term.ccg):
-        term = hyperpull(term)
+        term = pull_hyperbox(term)
 
     return term
 
