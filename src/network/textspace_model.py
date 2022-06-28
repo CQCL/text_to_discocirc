@@ -66,4 +66,3 @@ class DisCoCircTrainerTextspace(DisCoCircTrainerBase):
         )
         classifier_input = tf.concat([context_vector, question_vector], axis=1)
         return self.qna_classifier(classifier_input)
-

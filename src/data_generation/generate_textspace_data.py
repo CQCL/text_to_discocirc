@@ -12,15 +12,15 @@ sys.path.insert(1, p)
 ######################################
 
 import pickle
-from data_generation.prepare_data_utils import generate_context_circuit, task_file_reader
+from data_generation.prepare_data_utils import task_file_reader
 from discocirc.discocirc_utils import get_star_removal_functor
+from discocirc.text_to_circuit import text_to_circuit
 
 #%%
 
 p = os.path.abspath('../..') # this should be the path to \Neural-DisCoCirc
 TASK_FILE = p+'/data/tasks_1-20_v1-2/en/qa1_single-supporting-fact_train.txt'
 SAVE_FILE = p+'/data/pickled_dataset/textspace_dataset_task1_train.pkl'
-# p = os.path.abspath('../..') # this should be the path to \Neural-DisCoCirc
 # TASK_FILE = p+'\\data\\tasks_1-20_v1-2\\en\\qa1_single-supporting-fact_train.txt'
 # SAVE_FILE = p+'\\data\\pickled_dataset\\textspace_dataset_task1_test.pkl'
 
@@ -35,7 +35,7 @@ contexts, questions, answers = task_file_reader(TASK_FILE)
 context_circuits = []
 for i, context in enumerate(contexts):
     # a list of all the circuits for sentences in this context
-    context_circ = generate_context_circuit(context)
+    context_circ = text_to_circuit(context)
     context_circuits.append(context_circ)
     print('finished context {}'.format(i), end='\r')
 
@@ -45,7 +45,7 @@ questions = [question[:-1] for question in questions]
 # generate question circuits
 question_circuits = []
 for i, question in enumerate(questions):
-    question_circ = generate_context_circuit([question])
+    question_circ = text_to_circuit([question])
     question_circuits.append(question_circ)
     print('finished question {}'.format(i), end ='\r')
 
