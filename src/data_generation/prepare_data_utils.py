@@ -4,17 +4,14 @@
 
 import os, sys
 
-p = os.path.abspath('..') # should be path for \src
+# should be path for \src
+p = os.path.abspath('..') 
 sys.path.insert(1, p)
 
 
 from lambeq import BobcatParser
 
 from discopy.rigid import Ty
-import numpy as np # for inverse permutation
-
-from discocirc.discocirc_utils import init_nouns
-from discocirc.drag_up import drag_all
 
 parser = BobcatParser(verbose='suppress')
 # parser = BobcatParser(model_name_or_path='C:/Users/jonat/bert/')

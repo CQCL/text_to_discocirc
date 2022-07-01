@@ -1,6 +1,5 @@
 from lambeq import BobcatParser
 import numpy as np
-from data_generation.prepare_data_utils import compose_circuits, noun_sort
 
 from discocirc.discocirc import convert_sentence
 from discocirc.discocirc_utils import init_nouns
