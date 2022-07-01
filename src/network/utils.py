@@ -95,8 +95,19 @@ def initialize_boxes(lexicon, wire_dimension, hidden_layers=[10, 10]):
         trainable_models.append(nn_boxes[word].model)
     return nn_boxes, trainable_models
 
+def get_accuracy_textspace(discocirc_trainer, dataset):
+    location_predicted = []
+    location_true = []
+    for i in range(len(dataset)):
+        print('predicting {} / {}'.format(i, len(dataset)), end='\r')
+        probs = discocirc_trainer((dataset[i][0], dataset[i][1][0]))
+        predicted_word = discocirc_trainer.classification_vocab[np.argmax(probs)]
+        location_predicted.append(predicted_word)
+        location_true.append(dataset[i][1][1])
+    accuracy = accuracy_score(location_true, location_predicted)
+    return accuracy
 
-def get_accuracy(discocirc_trainer, dataset):
+def get_accuracy_isin(discocirc_trainer, dataset):
     location_predicted = []
     location_true = []
     for i in range(len(dataset)):

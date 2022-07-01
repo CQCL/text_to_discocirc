@@ -3,9 +3,9 @@ import os
 p = os.path.abspath('.')
 # p = os.path.abspath('..') # this should the the path to \Neural-DisCoCirc
 
-from network.utils import get_accuracy
+from network.utils import get_accuracy_isin
 
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import pickle
 from datetime import datetime
@@ -46,11 +46,11 @@ tb_callback = keras.callbacks.TensorBoard(log_dir='logs/{}'.format(datetime.now(
                                          write_images=True,
                                          update_freq='batch',
                                          )
-validation_callback = ValidationAccuracy(interval=1)                                         
+validation_callback = ValidationAccuracy(get_accuracy_isin, interval=1)                                         
 print('training...')
 discocirc_trainer.fit(epochs=100, batch_size=32, callbacks=[tb_callback, validation_callback])
 
-accuracy = get_accuracy(discocirc_trainer, discocirc_trainer.dataset)
+accuracy = get_accuracy_isin(discocirc_trainer, discocirc_trainer.dataset)
 print("The accuracy on the train set is", accuracy)
 
 discocirc_trainer.save_models('./saved_models/trained_model_boxes_' + datetime.utcnow().strftime("%B_%d_%H_%M") +'.pkl')
