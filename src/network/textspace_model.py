@@ -13,17 +13,29 @@ class DisCoCircTrainerTextspace(DisCoCircTrainerBase):
                  max_wire_num = 20,
                  textspace_dimension = 200,
                  classification_vocab = None,
+                 qna_classifier_model = None,
+                 space_expansion = None,
+                 space_contraction = None,
                  **kwargs):
         super().__init__(nn_boxes, wire_dimension, **kwargs)
-        self.circuit_to_textspace = TextSpace(wire_dimension, max_wire_num, textspace_dimension)
+        self.circuit_to_textspace = TextSpace(
+            wire_dimension, 
+            max_wire_num, 
+            textspace_dimension, 
+            space_expansion,
+            space_contraction
+        )            
         self.max_wire_num = max_wire_num
         self.textspace_dimension = textspace_dimension
         self.classification_vocab = classification_vocab
+        # if classification_vocab is empty, construct it from lexicon
         if self.classification_vocab is None:
             if self.lexicon is None:
                 raise ValueError("Either lexicon or classification_vocab must be provided")
             self.classification_vocab = get_classification_vocab(self.lexicon)
-        self.qna_classifier_model = self.qna_classifier()
+        self.qna_classifier_model = qna_classifier_model
+        if self.qna_classifier_model is None:    
+            self.qna_classifier_model = self.qna_classifier()
 
     def compile_dataset(self, dataset, validation = False):
         """
@@ -47,9 +59,14 @@ class DisCoCircTrainerTextspace(DisCoCircTrainerBase):
     def save_models(self, path):
         kwargs = {
             "nn_boxes": self.nn_boxes,
+            "qna_classifier_model": self.qna_classifier_model,
+            "space_expansion": self.circuit_to_textspace.space_expansion,
+            "space_contraction": self.circuit_to_textspace.space_contraction,
             "wire_dimension": self.wire_dimension,
             "max_wire_num": self.max_wire_num,
-            "textspace_dimension": self.textspace_dimension
+            "textspace_dimension": self.textspace_dimension,
+            "classification_vocab": self.classification_vocab,
+            "lexicon": self.lexicon
         }
         with open(path, "wb") as f:
             pickle.dump(kwargs, f)
@@ -78,10 +95,10 @@ class DisCoCircTrainerTextspace(DisCoCircTrainerBase):
         """
         context_circuit, question_circuit = context_question
         context_vector = self.circuit_to_textspace(
-            context_circuit(tf.convert_to_tensor([[]]))[0]
+            context_circuit(tf.convert_to_tensor([[]]))
         )
         question_vector = self.circuit_to_textspace(
-            question_circuit(tf.convert_to_tensor([[]]))[0]
+            question_circuit(tf.convert_to_tensor([[]]))
         )
         classifier_input = tf.concat([context_vector, question_vector], axis=1)
         return self.qna_classifier_model(classifier_input)
