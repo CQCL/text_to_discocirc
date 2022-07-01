@@ -1,8 +1,7 @@
 import os
 # path nonsense
-import sys
-p = os.path.abspath('..') # this should the the path to \Neural-DisCoCirc
-# sys.path.insert(1, p)
+p = os.path.abspath('.')
+# p = os.path.abspath('..') # this should the the path to \Neural-DisCoCirc
 
 from network.utils import get_accuracy
 

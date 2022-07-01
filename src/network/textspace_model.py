@@ -23,7 +23,7 @@ class DisCoCircTrainerTextspace(DisCoCircTrainerBase):
             if self.lexicon is None:
                 raise ValueError("Either lexicon or classification_vocab must be provided")
             self.classification_vocab = get_classification_vocab(self.lexicon)
-        self.qna_classifier = self.qna_classifier()
+        self.qna_classifier_model = self.qna_classifier()
 
     def compile_dataset(self, dataset, validation = False):
         """
@@ -68,7 +68,7 @@ class DisCoCircTrainerTextspace(DisCoCircTrainerBase):
         question_circuit_model, answer_word = test
         answer_prob = self.call((context_circuit_model, question_circuit_model))
         answer_index = self.classification_vocab.index(answer_word)
-        true_answer = tf.one_hot(answer_index, answer_prob.shape[0])
+        true_answer = tf.one_hot(answer_index, answer_prob.shape[1])
         return keras.metrics.mean_squared_error(true_answer, answer_prob)
 
     @tf.function
@@ -84,4 +84,4 @@ class DisCoCircTrainerTextspace(DisCoCircTrainerBase):
             question_circuit(tf.convert_to_tensor([[]]))[0]
         )
         classifier_input = tf.concat([context_vector, question_vector], axis=1)
-        return self.qna_classifier(classifier_input)
+        return self.qna_classifier_model(classifier_input)
