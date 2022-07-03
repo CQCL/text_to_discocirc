@@ -133,6 +133,13 @@ parser = BobcatParser()
 
 
 def type_check_term(term):
+    """
+    Given a term, check if all the arguments match the required ccg.
+
+    :param term: Term - The term which should be type checked.
+    :return: None - If term does not type check.
+        ccg - The output type of the term, if it type checks.
+    """
     ccg = term.ccg
     for arg in term.args:
         if not get_ccg_input(ccg) == type_check_term(arg):
@@ -143,13 +150,22 @@ def type_check_term(term):
 
 
 # %%
-def is_hyperbox(ccg):
-    if isinstance(ccg, Over):
-        return isinstance(ccg.right, (Over, Under))
-    elif isinstance(ccg, Under):
-        return isinstance(ccg.left, (Over, Under))
+def get_hyperholes(term):
+    """
+    Finds the position of all the holes a given term has,
+    i.e. all the inputs that are processes
 
-    return False
+    :param term: Term - for which the hyperholes should be found.
+    :return: List - position in argument list of all hyperholes.
+    """
+    hyperholes = []
+    ccg = term.ccg
+    for i, arg in enumerate(term.args):
+        if isinstance(get_ccg_input(ccg), (Over, Under)):
+            hyperholes.append(i)
+        ccg = get_ccg_output(ccg)
+
+    return hyperholes
 
 
 def get_ccg_input(ccg):
@@ -173,104 +189,84 @@ def set_ccg_output(ccg, output):
         ccg.left = output
 
 
-def pull_single_hyperbox_hole(term):
+def pull_single_hyperhole(term, hole_position):
     """
-    Given a hyperbox pull out the arguments of the next hole.
+    Given a hyperbox pull out the arguments of the specified hole.
     For hyperboxes with multiple holes, this has to be called multiple times.
 
     :param term: Term - hyperbox who's arguments will be pulled out.
                  We assume that all internal hyperboxes are fully pulled out.
-    :return: The same term with arguments pulled out.
+    :param hole_position: int - the argument position of the hole which should
+                be pulled out.
     """
-    assert (is_hyperbox(term.ccg))
+    inner_term = term.args[hole_position]
 
-    ccg = term.args[0].ccg
+    ccg = inner_term.ccg
     pulled_out_args = []
-    no_pulled_out = 0
-    for ar in term.args[0].args.copy():
-        # If current ccg is hyperbox, the input should go inside
+
+    inner_term_hyperholes = get_hyperholes(inner_term)
+
+    for i, ar in enumerate(inner_term.args.copy()):
+        # If current argument should go into a hyper hole: skip
         # (by recursive property of pulling out, we assume all internal
         # hyperboxes to already be pulled out correctly).
         # Thus, they should take exactly one input, which we don't pull out.
-        if is_hyperbox(ccg):
+        if i in inner_term_hyperholes:
             ccg = get_ccg_output(ccg)
             continue
 
+        # Pull out the argument
+        term.args.insert(hole_position + len(pulled_out_args) + 1, ar)
         pulled_out_args.append((type(ccg), ar.output_ccg))
-        term.args.insert(no_pulled_out + 1, ar)
-        term.args[0].args.remove(ar)
+        inner_term.args.remove(ar)
 
-        no_pulled_out += 1
         ccg = get_ccg_output(ccg)
 
     # Update the ccg_type in reverse order such that the first argument pulled
     # out is the last added to the ccg and thus the next input
+    term_ccg = term.ccg
+    for i in range(hole_position):
+        term_ccg = get_ccg_output(term_ccg)
+
     for ccg_type, ccg in reversed(pulled_out_args):
         if ccg_type == Over:
-            term.ccg.left = Over(term.ccg.left, ccg)
-            term.ccg.right = Over(term.ccg.right, ccg)
+            term_ccg.left = Over(term_ccg.left, ccg)
+            term_ccg.right = Over(term_ccg.right, ccg)
         elif ccg_type == Under:
-            term.ccg.left = Under(ccg, term.ccg.left)
-            term.ccg.right = Under(ccg, term.ccg.right)
-
-    return term
-
-
-def pull_hyperbox(term):
-    """
-    Given a hyperbox pull out the arguments of all the holes.
-
-    :param term: Term - hyperbox who's arguments will be pulled out.
-                 We assume that all internal hyperboxes are fully pulled out.
-    :return: The same term with arguments pulled out.
-    """
-    assert (is_hyperbox(term.ccg))
-
-    if len(term.args) == 0:
-        # If no args, then nothing to pull out
-        return term
-
-    # If the hyperbox term has multiple holes
-    # (i.e after the first hole it's still a hyperbox), continue pulling
-    if is_hyperbox(get_ccg_output(term.ccg)):
-        new_term = pull_hyperbox(
-            Term('', get_ccg_output(term.ccg),
-                 get_ccg_output(term.ccg), term.args[1:]))
-        set_ccg_output(term.ccg, new_term.ccg)
-        term.args = [term.args[0]] + new_term.args
-
-    # Pull out of current hole
-    if get_ccg_input(term.ccg) != term.args[0].ccg:
-        term = pull_single_hyperbox_hole(term)
-
-    return term
+            term_ccg.left = Under(ccg, term_ccg.left)
+            term_ccg.right = Under(ccg, term_ccg.right)
 
 
 # %%
 def recurse_pull(term):
+    """
+    Given a term, recursively pull out all the hyperboxes to get a fully
+    pulled out term.
+
+    :param term: Term - The term which should be pulled out.
+    """
     for i in range(len(term.args)):
-        term.args[i] = recurse_pull(term.args[i])
+        recurse_pull(term.args[i])
 
-    if is_hyperbox(term.ccg):
-        term = pull_hyperbox(term)
-
-    return term
+    hyper_holes = get_hyperholes(term)
+    for hole in hyper_holes:
+        pull_single_hyperhole(term, hole)
 
 
 # %%
-
+# ----- TODO:  This is just for testing purposes. Remove after development ----
 def run_sentence(sentence):
     ccg_parse = parser.sentence2tree(sentence).to_biclosed_diagram()
+
     term = make_term(ccg_parse)
     diag = make_diagram(term)
     # diag.draw()
-    assert(type_check_term(term) is not None)
+    assert (type_check_term(term) is not None)
 
-    new_term = recurse_pull(term)
-    new_diag = make_diagram(new_term)
-
+    recurse_pull(term)
+    new_diag = make_diagram(term)
     new_diag.draw()
-    assert(type_check_term(term) is not None)
+    assert (type_check_term(term) is not None)
 
 
 sentences = [
@@ -284,7 +280,8 @@ sentences = [
     'Alice quickly loves very red Bob',
     'Alice quickly rapidly loudly loves very very red Bob',
     'Alice quickly and rapidly loves Bob and very red Claire',
-    'Alice loves Bob',
+    'I know of Alice loving Bob',
+    'I surely know quickly of Alice quickly loving Bob',
 ]
 
 for sentence in sentences:
