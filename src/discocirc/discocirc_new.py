@@ -105,6 +105,7 @@ def make_word(name, ccg, *diags):
     cod = rigid.Ty(ccg[0].name)
     if not inside:  # not a frame
         return above >> rigid.Box(name, dom, cod)
+    # TODO: add frame here
     top = rigid.Box(f'[{name}]', dom, inside.dom)
     bot = rigid.Box(f'[\\{name}]', inside.cod, cod)
     return above >> top >> inside >> bot
@@ -150,22 +151,22 @@ def type_check_term(term):
 
 
 # %%
-def get_hyperholes(term):
+def get_holes(term):
     """
     Finds the position of all the holes a given term has,
     i.e. all the inputs that are processes
 
-    :param term: Term - for which the hyperholes should be found.
-    :return: List - position in argument list of all hyperholes.
+    :param term: Term - for which the holes should be found.
+    :return: List - position in argument list of all holes.
     """
-    hyperholes = []
+    holes = []
     ccg = term.ccg
-    for i, arg in enumerate(term.args):
+    for i in range(len(term.args)):
         if isinstance(get_ccg_input(ccg), (Over, Under)):
-            hyperholes.append(i)
+            holes.append(i)
         ccg = get_ccg_output(ccg)
 
-    return hyperholes
+    return holes
 
 
 def get_ccg_input(ccg):
@@ -189,7 +190,7 @@ def set_ccg_output(ccg, output):
         ccg.left = output
 
 
-def pull_single_hyperhole(term, hole_position):
+def pull_single_hole(term, hole_position):
     """
     Given a hyperbox pull out the arguments of the specified hole.
     For hyperboxes with multiple holes, this has to be called multiple times.
@@ -204,14 +205,14 @@ def pull_single_hyperhole(term, hole_position):
     ccg = inner_term.ccg
     pulled_out_args = []
 
-    inner_term_hyperholes = get_hyperholes(inner_term)
+    inner_term_holes = get_holes(inner_term)
 
     for i, ar in enumerate(inner_term.args.copy()):
         # If current argument should go into a hyper hole: skip
         # (by recursive property of pulling out, we assume all internal
         # hyperboxes to already be pulled out correctly).
         # Thus, they should take exactly one input, which we don't pull out.
-        if i in inner_term_hyperholes:
+        if i in inner_term_holes:
             ccg = get_ccg_output(ccg)
             continue
 
@@ -225,7 +226,7 @@ def pull_single_hyperhole(term, hole_position):
     # Update the ccg_type in reverse order such that the first argument pulled
     # out is the last added to the ccg and thus the next input
     term_ccg = term.ccg
-    for i in range(hole_position):
+    for _ in range(hole_position):
         term_ccg = get_ccg_output(term_ccg)
 
     for ccg_type, ccg in reversed(pulled_out_args):
@@ -248,16 +249,15 @@ def recurse_pull(term):
     for i in range(len(term.args)):
         recurse_pull(term.args[i])
 
-    hyper_holes = get_hyperholes(term)
+    hyper_holes = get_holes(term)
     for hole in hyper_holes:
-        pull_single_hyperhole(term, hole)
+        pull_single_hole(term, hole)
 
 
 # %%
 # ----- TODO:  This is just for testing purposes. Remove after development ----
 def run_sentence(sentence):
     ccg_parse = parser.sentence2tree(sentence).to_biclosed_diagram()
-
     term = make_term(ccg_parse)
     diag = make_diagram(term)
     # diag.draw()
@@ -280,8 +280,16 @@ sentences = [
     'Alice quickly loves very red Bob',
     'Alice quickly rapidly loudly loves very very red Bob',
     'Alice quickly and rapidly loves Bob and very red Claire',
-    'I know of Alice loving Bob',
+    'I know of Alice loving and hating Bob',
     'I surely know quickly of Alice quickly loving Bob',
+    "Alice knows of Bob liking Claire and Dave hating Eve",
+    'Alice loves Bob and Bob loves Claire',
+    'Alice knows that Bob loves Claire',
+    'Alice runs',
+    'Alice runs to the kitchen',
+    'Alice knows that Bob loves Claire, Claire hates Bob',
+    'Alice loves Bob and Claire loves Dave',
+    'Alice loves Bob and Bob loves Claire'
 ]
 
 for sentence in sentences:
