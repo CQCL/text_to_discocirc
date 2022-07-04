@@ -1,19 +1,24 @@
 # %%
 
+import os
+import sys
+p = os.path.abspath('..') # this should be the path to \src
+sys.path.insert(1, p)
+
 from discocirc.discocirc import convert_sentence  # Richie's CCG to Circ
 from lambeq import BobcatParser
 from discocirc.discocirc_utils import get_star_removal_functor
 import pickle   # for saving vocab file
 
-parser = BobcatParser(model_name_or_path='C:/Users/jonat/bert/')
-# parser = BobcatParser(verbose='suppress')
+# parser = BobcatParser(model_name_or_path='C:/Users/jonat/bert/')
+parser = BobcatParser(verbose='suppress')
 
 
 #%%
 # read the file
-path = ''
+path = os.path.abspath('../..') # this should be the path to \Neural-DisCoCirc
 
-with open(path+'tasks_1-20_v1-2/en/qa2_two-supporting-facts_train_HYPHENATED.txt') as f:
+with open(path+'/data/tasks_1-20_v1-2/en/qa1_single-supporting-fact_test.txt') as f:
     lines = f.readlines()
 
 
@@ -58,9 +63,19 @@ for i, line in enumerate(no_question_lines):
 
 print(vocab)
 
-# save vocab file
-pickle.dump(vocab, open("task_vocab_dicts/en_qa2_train_HYPHENATED.p", "wb"))
+#%%
 
+# add additional vocab from questions, using a representative question
+line_diag = parser.sentence2tree('Where is Daniel').to_biclosed_diagram()
+line_circ = convert_sentence(line_diag)
+# star removal
+line_circ = functor(line_circ)
+line_boxes = line_circ.boxes
+for box in line_boxes:
+    if box not in vocab:
+        vocab.append(box)
 
 
 #%%
+# save vocab file
+pickle.dump(vocab, open(path+"/data/task_vocab_dicts/en_qa1.p", "wb"))

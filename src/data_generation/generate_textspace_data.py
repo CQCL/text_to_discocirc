@@ -4,8 +4,10 @@
 # path nonsense
 import os, sys
 
+# we want p = the absolute path to \src
 # p = os.path.abspath('.\src')
-p = os.path.abspath('..') # this should the the path to \src
+p = os.path.abspath('..') 
+
 print('PATH IS ', p)
 sys.path.insert(1, p)
 
@@ -18,16 +20,15 @@ from discocirc.text_to_circuit import text_to_circuit
 
 #%%
 
-p = os.path.abspath('../..') # this should be the path to \Neural-DisCoCirc
-TASK_FILE = p+'/data/tasks_1-20_v1-2/en/qa1_single-supporting-fact_train.txt'
-SAVE_FILE = p+'/data/pickled_dataset/textspace_dataset_task1_train.pkl'
-# TASK_FILE = p+'\\data\\tasks_1-20_v1-2\\en\\qa1_single-supporting-fact_train.txt'
+# this should be the path to \Neural-DisCoCirc
+p = os.path.abspath('../..') 
+
+TASK_FILE = p+'/data/tasks_1-20_v1-2/en/qa1_single-supporting-fact_test.txt'
+SAVE_FILE = p+'/data/pickled_dataset/textspace_dataset_task1_test.pkl'
+# TASK_FILE = p+'\\data\\tasks_1-20_v1-2\\en\\qa1_single-supporting-fact_test.txt'
 # SAVE_FILE = p+'\\data\\pickled_dataset\\textspace_dataset_task1_test.pkl'
 
-
 contexts, questions, answers = task_file_reader(TASK_FILE)
-
-
 
 # %%
 

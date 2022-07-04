@@ -2,16 +2,23 @@ import tensorflow as tf
 from tensorflow import keras
 
 class TextSpace(keras.Model):
-    def __init__(self, wire_dim, max_wire_num, textspace_dim):
+    def __init__(self, wire_dim, max_wire_num, textspace_dim, space_expansion=None, space_contraction=None):
         super(TextSpace, self).__init__()
         self.wire_dim = wire_dim
         self.max_wire_num = max_wire_num
         self.textspace_dim = textspace_dim
         self.latent_dim = max_wire_num * wire_dim
-        self.space_expansion = self.define_model(self.wire_dim, self.latent_dim)
-        self.space_contraction = self.define_model(self.latent_dim, self.textspace_dim)
+        if space_expansion is None:
+            self.space_expansion = self.define_model(self.wire_dim, self.latent_dim)
+        else:
+            self.space_expansion = space_expansion
+        if space_contraction is None:
+            self.space_contraction = self.define_model(self.latent_dim, self.textspace_dim)
+        else:
+            self.space_contraction = space_contraction
 
     def call(self, circuit_vector):
+        circuit_vector = circuit_vector[0]
         num_wires = circuit_vector.shape[0] // self.wire_dim
         wire_vectors = tf.split(circuit_vector, num_or_size_splits=num_wires, axis=0)
         wire_vectors = tf.convert_to_tensor(wire_vectors)
