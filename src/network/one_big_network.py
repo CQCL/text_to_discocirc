@@ -1,7 +1,7 @@
 from tkinter import HIDDEN
 import tensorflow as tf
 from tensorflow import keras
-from discopy import Box
+from discopy import Box, Swap, Ty
 
 
 class MyDenseLayer(keras.layers.Layer):
@@ -151,6 +151,18 @@ class NeuralDisCoCirc(keras.Model):
                 w, b = self.get_box_layers([input_dim] + self.hidden_layers + [output_dim])
                 self.lexicon_weights[word] = w
                 self.lexicon_biases[word] = b
+
+        swap = Swap(Ty('n'), Ty('n'))
+        e = tf.eye(self.wire_dimension)
+        z = tf.zeros([self.wire_dimension, self.wire_dimension])
+        a = tf.concat((z, e), axis=1)
+        b = tf.concat((e, z), axis=1)
+        swap_mat = tf.concat((a, b), axis=0)
+
+        self.lexicon_weights[swap] = ([swap_mat] + [tf.eye(2 * self.wire_dimension)]
+                                      * len(self.hidden_layers))
+        self.lexicon_biases[swap] = ([tf.zeros((2 * self.wire_dimension,))]
+                                     * (1 + len(self.hidden_layers)))
 
 
 # import pickle
