@@ -73,6 +73,11 @@ class NeuralDisCoCirc(keras.Model):
         model_biases = []
         model_activation_masks = []
 
+        inputs = []
+        for box in diagram.foliation()[0].boxes:
+            inputs.append(self.states[box])
+        model_input = tf.concat(inputs, axis=0)
+
         for fol in diagram.foliation()[1:]:
             layer_weights = [[]]
             layer_biases = [[]]
@@ -123,7 +128,8 @@ class NeuralDisCoCirc(keras.Model):
             activation_masks = [tf.concat(a, axis=0) for a in layer_activation_masks]
             model_activation_masks += activation_masks
 
-        return {"weights": model_weights,
+        return {"input": model_input,
+                "weights": model_weights,
                 "biases": model_biases,
                 "masks": model_activation_masks,
                 }
