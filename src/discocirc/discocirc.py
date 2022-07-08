@@ -82,7 +82,7 @@ def make_word(name, ccg, *diags):
         ccg_input = get_ccg_input(ccg)
         if isinstance(ccg_input, (Over, Under)):
             box = diags[i] if i < len(diags) else make_word('?', ccg_input)
-            insides = [box] + insides if isinstance(ccg, Over) \
+            insides = [box] + insides if isinstance(ccg, Under) \
                 else insides + [box]
         else:
             t = rigid.Ty(ccg_input[0].name)
