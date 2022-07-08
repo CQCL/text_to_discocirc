@@ -4,6 +4,11 @@ from dataclasses import dataclass
 from discopy import biclosed, rigid
 from discopy.biclosed import Over, Under
 
+from discocirc.discocirc_utils import get_ccg_output, get_ccg_input
+from discocirc.expand_s_types import expand_s_types
+from discocirc.frame import Frame
+from discocirc.pulling_out import recurse_pull
+
 
 @dataclass
 class Term:
@@ -70,52 +75,40 @@ def make_term(diagram):
 
 def make_word(name, ccg, *diags):
     above = rigid.Id()
-    inside = rigid.Id()
+    insides = []
     i = 0
-    wire = rigid.Id(rigid.Ty('*'))
+
     while isinstance(ccg, (Over, Under)):
-        if isinstance(ccg, Over):
-            if isinstance(ccg.right, (Over, Under)):
-                box = diags[i] if i < len(diags) else make_word('?', ccg.right)
-                if not inside:
-                    inside = wire @ box @ wire
-                else:
-                    inside = inside @ box @ wire
-            else:
-                t = rigid.Ty(ccg.right[0].name)
-                box = diags[i] if i < len(diags) else rigid.Id(t)
-                above = above @ box
-            ccg = ccg.left
+        ccg_input = get_ccg_input(ccg)
+        if isinstance(ccg_input, (Over, Under)):
+            box = diags[i] if i < len(diags) else make_word('?', ccg_input)
+            insides = [box] + insides if isinstance(ccg, Over) \
+                else insides + [box]
         else:
-            if isinstance(ccg.left, (Over, Under)):
-                box = diags[i] if i < len(diags) else make_word('?', ccg.left)
-                if not inside:
-                    inside = wire @ box @ wire
-                else:
-                    inside = wire @ box @ inside
-            else:
-                t = rigid.Ty(ccg.left[0].name)
-                box = diags[i] if i < len(diags) else rigid.Id(t)
-                above = box @ above
-            ccg = ccg.right
+            t = rigid.Ty(ccg_input[0].name)
+            box = diags[i] if i < len(diags) else rigid.Id(t)
+            above = above @ box if isinstance(ccg, Over) \
+                else box @ above
+
+        ccg = get_ccg_output(ccg)
         i += 1
 
     dom = above.cod
     cod = rigid.Ty(ccg[0].name)
-    if not inside:  # not a frame
+    if len(insides) == 0:  # not a frame
         return above >> rigid.Box(name, dom, cod)
-    # TODO: add frame here
-    top = rigid.Box(f'[{name}]', dom, inside.dom)
-    bot = rigid.Box(f'[\\{name}]', inside.cod, cod)
-    return above >> top >> inside >> bot
+
+    return above >> Frame(name, dom, cod, insides)
 
 
 def decomp(term):
     if term is None:
         return None
+
     if isinstance(term, Compose):
         dummy = Term('?', biclosed.Ty('n'), biclosed.Ty('n'), [])
         return term.func1(term.func2(dummy))
+
     args = [decomp(arg) for arg in term.args]
     return Term(term.name, term.ccg, term.output_ccg, args)
 
@@ -124,3 +117,21 @@ def make_diagram(term):
     term = decomp(term)
     diags = map(make_diagram, term.args)
     return make_word(term.name, term.ccg, *diags)
+
+
+def convert_sentence(diagram):
+    term = make_term(diagram)
+    recurse_pull(term)
+
+    step = make_diagram(term)
+    step = expand_s_types(step)
+    step = (Frame.get_decompose_functor())(step)
+
+    return step
+
+
+def sentence2circ(parser, sentence):
+    biclosed_diag = parser.sentence2tree(sentence).to_biclosed_diagram()
+    return convert_sentence(biclosed_diag)
+
+
