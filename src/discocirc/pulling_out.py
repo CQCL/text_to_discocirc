@@ -16,6 +16,8 @@ def get_holes(term):
     ccg = term.ccg
     for i in range(len(term.args)):
         if isinstance(get_ccg_input(ccg), (Over, Under)):
+                # or get_ccg_input(ccg) == rigid.Ty('p')\
+                # or get_ccg_input(ccg) == rigid.Ty('s'):
             holes.append(i)
         ccg = get_ccg_output(ccg)
 
@@ -101,5 +103,11 @@ def recurse_pull(term):
         recurse_pull(term.args[i])
 
     hyper_holes = get_holes(term)
-    for hole in hyper_holes:
-        pull_single_hole(term, hole)
+    num_holes = len(hyper_holes)
+    for i in range(len(hyper_holes)):
+        pull_single_hole(term, hyper_holes[i])
+
+        # As we pull out arguments, the position of the holes changes.
+        # The number of holes should not. Hence the assertion.
+        hyper_holes = get_holes(term)
+        assert(len(hyper_holes) == num_holes)
