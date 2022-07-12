@@ -5,8 +5,9 @@ from discopy import Box, Swap, Ty
 
 
 class MyDenseLayer(keras.layers.Layer):
-    def call(self, x, kernel, bias):
-        return tf.einsum("bi,bij->bj", x, kernel) + bias
+    def call(self, input, weights, bias, mask):
+        out = tf.einsum("bi,bij->bj", input, weights) + bias
+        return tf.where(tf.cast(mask, dtype=tf.bool), tf.nn.relu(out), out)
 
 
 class NeuralDisCoCirc(keras.Model):
@@ -18,17 +19,73 @@ class NeuralDisCoCirc(keras.Model):
         self.initialize_lexicon_weights(lexicon)
 
     @tf.function(jit_compile=True)
-    def call(self, x, weights, biases):
-        weights = tf.transpose(weights, perm=[1,0,2,3])
-        biases = tf.transpose(biases, perm=[1,0,2])
-        output = x
-        for i in range(tf.shape(weights)[0]):
-            output = self.dense_layer(output, weights[i], biases[i])
+    def call(self, diagrams):
+        inputs, weights, biases, masks = self.batch_diagrams(diagrams)
+        output = inputs
+        for i in range(len(weights)):
+            output = self.dense_layer(output, weights[i], biases[i], masks[i])
         return output
 
-    # TODO: batch the diagrams to make use of MyDenseLayer()
     def batch_diagrams(self, diagrams):
-        pass
+        diagrams = [self.diagram_parameters[d] for d in diagrams]
+        max_len = max([len(d["weights"]) for d in diagrams])
+
+        max_layer_size = [(0, 0) for _ in max_len]
+        for d in diagrams:
+            weights = d["weights"]
+            diff = max_len - len(weights)
+
+            for i in range(len(weights)):
+                max_layer_size[i][0] = max(max_layer_size[i][0],
+                                           weights[i].shape[0])
+                max_layer_size[i][1] = max(max_layer_size[i][1],
+                                           weights[i].shape[1])
+
+            if diff > 0:
+                d["weights"] += [[tf.eye(d["weights"][-1].shape[1])] * diff]
+                d["biases"] += [[tf.zeros((d["weights"][-1].shape[1],))] * diff]
+
+        batched_weights = []
+        batched_biases = []
+        batched_masks = []
+        for i in range(max_len):
+            layers = [(d["weights"][i], d["biases"][i], d["masks"][i])
+                      for d in diagrams]
+
+            layer_weights = []
+            layer_biases = []
+            layer_masks = []
+            for w, b, m in layers:
+                diff = (0, 0)
+                diff[0] = max(max_layer_size[i][0] - w.shape[0], 0)
+                diff[1] = max(max_layer_size[i][1] - w.shape[1], 0)
+
+                w_paddings = tf.zeros([[0, diff[0]], [0, diff[1]]])
+                block_diag = self._make_block_diag(w)
+                block_diag = tf.pad(block_diag, w_paddings, "CONSTANT")
+                layer_weights.append(block_diag)
+
+                b += [tf.zeros((diff[1],))]
+                layer_biases.append(tf.concat(b, axis=0))
+
+                m += [tf.zeros((diff[1],))]
+                layer_masks.append(tf.concat(m, axis=0))
+
+            batched_weights.append(tf.stack(layer_weights, axis=0))
+            batched_biases.append(tf.stack(layer_biases, axis=0))
+            batched_masks.append(tf.stack(layer_masks, axis=0))
+
+        inputs = [d["inputs"] for d in diagrams]
+        max_len = max([len(i) for i in inputs])
+
+        for i in inputs:
+            diff = max_len - len(i)
+            if diff > 0:
+                i += [tf.zeros((max_len,))]
+
+        batched_inputs = tf.stack([tf.concat(i, axis=0) for i in inputs], axis=0)
+
+        return batched_inputs, batched_weights, batched_biases, batched_masks
 
     def get_box_layers(self, layers):
         weights = [
@@ -72,11 +129,7 @@ class NeuralDisCoCirc(keras.Model):
         model_weights = []
         model_biases = []
         model_activation_masks = []
-
-        inputs = []
-        for box in diagram.foliation()[0].boxes:
-            inputs.append(self.states[box])
-        model_input = tf.concat(inputs, axis=0)
+        model_input = [self.states[box] for box in diagram.foliation()[0].boxes]
 
         for fol in diagram.foliation()[1:]:
             layer_weights = [[]]
@@ -119,14 +172,17 @@ class NeuralDisCoCirc(keras.Model):
                     layer_biases[i] += ([tf.zeros((self.wire_dimension,))] * len(right))
                     layer_activation_masks[i] += ([tf.zeros((self.wire_dimension,))] * len(right))
 
-            weight_matrices = [self._make_block_diag(w) for w in layer_weights]
-            model_weights += weight_matrices
+            # weight_matrices = [self._make_block_diag(w) for w in layer_weights]
+            # model_weights += weight_matrices
+            model_weights += layer_weights
 
-            bias_vectors = [tf.concat(b, axis=0) for b in layer_biases]
-            model_biases += bias_vectors
+            # bias_vectors = [tf.concat(b, axis=0) for b in layer_biases]
+            # model_biases += bias_vectors
+            model_biases += layer_biases
 
-            activation_masks = [tf.concat(a, axis=0) for a in layer_activation_masks]
-            model_activation_masks += activation_masks
+            # activation_masks = [tf.concat(a, axis=0) for a in layer_activation_masks]
+            # model_activation_masks += activation_masks
+            model_activation_masks += layer_activation_masks
 
         return {"input": model_input,
                 "weights": model_weights,
