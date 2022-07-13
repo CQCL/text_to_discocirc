@@ -1,201 +1,137 @@
-"""
-WARNING: this code is NOT ready for public consumption.
-Please don't copy around into notebooks, or else I will be forced
-to maintain old copies of this code forever.
-"""
+from __future__ import annotations
+from dataclasses import dataclass
 
-from discopy.biclosed import Over, Under
 from discopy import biclosed, rigid
-from discocirc.pulling_out import pulling_out_diagram
-from discocirc.drag_up import drag_all
-from discocirc.frame import Frame, decomp
+from discopy.biclosed import Over, Under
+
+from discocirc.discocirc_utils import get_ccg_output, get_ccg_input
+from discocirc.expand_s_types import expand_s_types
+from discocirc.frame import Frame
+from discocirc.pulling_out import recurse_pull
 
 
-def expand_box(box, last_n_n):
-    n, s = map(rigid.Ty, 'ns')
-    if isinstance(box, Frame):
-        name, dom, cod = box.name, box.dom, box.cod
-        insides = [expand_diagram(b) for b in box._insides]
-        box = Frame(name, dom, cod, insides, box._slots)
-    if s.objects[0] in box.dom.objects:
-        pos = box.dom.objects.index(s.objects[0])
-        left, right = box.dom[:pos], box.dom[pos+1:]
-        box = rigid.Box(box.name, left @ last_n_n @ right, box.cod)
-    if s.objects[0] not in box.cod:
-        return box, None
-    assert box.cod.count(s) == 1
-    n_n = n ** box.dom.count(n)
-    pos = box.cod.objects.index(s.objects[0])
-    left, right = box.cod[:pos], box.cod[pos+1:]
-    if isinstance(box, Frame):
-        expanded = Frame(box.name, box.dom, left @ n_n @ right, box._insides, box._slots)
-    else:
-        expanded = rigid.Box(box.name, box.dom, left @ n_n @ right)
-    return expanded, n_n
+@dataclass
+class Term:
+    name: str
+    ccg: biclosed.Ty
+    output_ccg: biclosed.Ty
+    args: list[Term]
+
+    def __call__(self, x: Term) -> Term:
+        return Term(self.name, self.ccg, self.output_ccg, [*self.args, x])
+
+    def __repr__(self) -> str:
+        args = self.args
+        if args:
+            return f"{self.name}({args=})"
+        return self.name
 
 
-def expand_diagram(diagram):
-    new_diag = rigid.Id(diagram.dom)
-    last_n_n = None
-    for left, box, right in diagram.layers:
-        box, n_n = expand_box(box, last_n_n)
-        if n_n:
-            last_n_n = n_n
-        left, right = map(rigid.Id, (left, right))
-        try:
-            new_diag = new_diag >> left @ box @ right
-        except Exception:
-            n, s = map(rigid.Ty, 'ns')
-            n_n = n ** (len(new_diag.cod) - len((left @ box @ right).dom) + 1)
-            pos = box.dom.objects.index(s.objects[0])
-            _left, _right = rigid.Id(box.dom[:pos]), rigid.Id(box.dom[pos+1:])
-            expander = rigid.Box('x', n_n, s)
-            new_diag = (
-                new_diag >> left @ (_left @ expander @ _right >> box) @ right)
-    return new_diag
+@dataclass
+class Compose:
+    func1: Term
+    func2: Term
+
+    def __call__(self, x: Term) -> Term:
+        return self.func1(self.func2(x))
+
+    def __repr__(self) -> str:
+        return f"({self.func1} o {self.func2})"
 
 
-def merge_x(diagram):
-    if isinstance(diagram, Frame):
-        name, dom, cod = diagram.name, diagram.dom, diagram.cod
-        insides, slots = diagram._insides, diagram._slots
-        insides = [merge_x(inside) for inside in insides]
-        return type(diagram)(name, dom, cod, insides, slots)
+@dataclass
+class TR:
+    arg: Term
 
-    new_diag = rigid.Id(diagram.dom)
-    layers = list(diagram.layers)
-    i = 0
-    while i < len(layers):
-        left, box, right = layers[i]
-        if isinstance(box, Frame):
-            box = merge_x(box)
-        if i + 1 < len(layers):
-            _, next_box, _ = layers[i + 1]
-            if next_box.name == 'x':
-                # time to merge
-                name, dom, cod = box.name, box.dom, next_box.cod
-                if not isinstance(box, Frame):
-                    box = type(box)(name, dom, cod)
+    def __call__(self, x: Term) -> Term:
+        return x(self.arg)
+
+
+def make_term(diagram):
+    terms = []
+    for box, offset in zip(diagram.boxes, diagram.offsets):
+        if not box.dom:  # is word
+            terms.append(Term(box.name, box.cod, box.cod, []))
+        else:
+            if len(box.dom) == 2:
+                if box.name.startswith("FA"):
+                    term = terms[offset](terms[offset + 1])
+                elif box.name.startswith("BA"):
+                    term = terms[offset + 1](terms[offset])
+                elif box.name.startswith("FC"):
+                    term = Compose(terms[offset], terms[offset + 1])
+                elif box.name.startswith("BC") or box.name.startswith("BX"):
+                    term = Compose(terms[offset + 1], terms[offset])
                 else:
-                    insides, slots = box._insides, box._slots
-                    box = type(box)(name, dom, cod, insides, slots)
-                layers.pop(i + 1)
-        new_diag >>= rigid.Id(left) @ box @ rigid.Id(right)
-        i += 1
-    return new_diag
+                    raise NotImplementedError
+                term.output_ccg = box.cod
+                terms[offset:offset + 2] = [term]
+            elif box.name == "Curry(BA(n >> s))":
+                terms[offset] = TR(terms[offset])
+            else:
+                raise NotImplementedError
+    return terms[0]
 
 
-def order(t):
-    if isinstance(t, Over):
-        return max(order(t.right) + 1, order(t.left))
-    if isinstance(t, Under):
-        return max(order(t.left) + 1, order(t.right))
-    return 0
-
-# over: out << inp
-# under: inp >> out
-
-
-def convert_type(ccg_t):
-    outside_dom, outside_cod = rigid.Ty(), rigid.Ty()
+def make_word(name, ccg, *diags):
+    above = rigid.Id()
     insides = []
+    i = 0
 
-    div = 0
-    while isinstance(ccg_t, (Over, Under)):
-        if isinstance(ccg_t, Over):
-            inp, out = ccg_t.right, ccg_t.left
-        else:  # is under
-            inp, out = ccg_t.left, ccg_t.right
-        if not isinstance(inp, (Over, Under)):  # is basic type
-            new_t = biclosed.biclosed2rigid(inp)
-            if isinstance(ccg_t, Over):
-                outside_dom = outside_dom @ new_t
-            else:  # is under
-                outside_dom = new_t @ outside_dom
-                div += 1
-        else:  # time to bubble
-            # TODO whats up with _inside?
-            _dom, _cod, _div, _inside = convert_type(inp)
-            insides.append((_dom, _cod, _div))
-        ccg_t = out
-    outside_cod = biclosed.biclosed2rigid(ccg_t)
-    return outside_dom, outside_cod, div, insides
+    while isinstance(ccg, (Over, Under)):
+        ccg_input = get_ccg_input(ccg)
+        if isinstance(ccg_input, (Over, Under)):
+            box = diags[i] if i < len(diags) else make_word('?', ccg_input)
+            insides = [box] + insides if isinstance(ccg, Under) \
+                else insides + [box]
+        else:
+            t = rigid.Ty(ccg_input[0].name)
+            box = diags[i] if i < len(diags) else rigid.Id(t)
+            above = above @ box if isinstance(ccg, Over) \
+                else box @ above
 
+        ccg = get_ccg_output(ccg)
+        i += 1
 
-def convert_word(word):
-    t = word.cod
-    dom, cod, div, insides = convert_type(t)
-    if insides:
-        # TODO treat _div properly
-        slots = [rigid.Box('[]', dom, cod)
-                 for (dom, cod, _div) in insides]
-        return Frame(word.name, dom, cod, [], slots), div
-    return rigid.Box(word.name, dom, cod), div
+    dom = above.cod
+    cod = rigid.Ty(ccg[0].name)
+    if len(insides) == 0:  # not a frame
+        return above >> rigid.Box(name, dom, cod)
+
+    return above >> Frame(name, dom, cod, insides)
 
 
-def insert_frame(diagram, new_box):
-    for i, (left, box, right) in enumerate(diagram.layers):
-        if isinstance(box, Frame):
-            layer = rigid.Id(left) @ box.insert(new_box) @ rigid.Id(right)
-            return diagram[:i] >> layer >> diagram[i+1:]
-    raise Exception('No frame!')
+def decomp(term):
+    if term is None:
+        return None
+
+    if isinstance(term, Compose):
+        dummy = Term('?', biclosed.Ty('n'), biclosed.Ty('n'), [])
+        return term.func1(term.func2(dummy))
+
+    args = [decomp(arg) for arg in term.args]
+    return Term(term.name, term.ccg, term.output_ccg, args)
+
+
+def make_diagram(term):
+    term = decomp(term)
+    diags = map(make_diagram, term.args)
+    return make_word(term.name, term.ccg, *diags)
 
 
 def convert_sentence(diagram):
-    diags = []
+    term = make_term(diagram)
+    recurse_pull(term)
 
-    for box, offset in zip(diagram.boxes, diagram.offsets):
-        i = 0
-        off = offset
-        # find the first box to contract
-        while i < len(diags) and off >= len(diags[i][0].cod):
-            off -= len(diags[i][0].cod)
-            i += 1
-        if off == 0 and not box.dom:
-            diags.insert(i, convert_word(box))
-        else:
-            # always a binary box  TODO unary rules
-            if len(box.dom) == 1:
-                raise NotImplementedError
-            (left, left_div), (right, right_div) = diags[i], diags[i+1]
-            if "FA" in box.name:
-                ord = order(box.dom[0:1].right)
-                if ord == 0:  # compose
-                    new_diag = (
-                        rigid.Id(left.dom[:left_div]) @ right @
-                        rigid.Id(left.dom[left_div + 1:])
-                        >> left)
-                    div = left_div
-                elif ord >= 1:  # put inside
-                    new_diag = insert_frame(left, right)
-                    div = left_div
-                else:
-                    raise NotImplementedError
-            elif "BA" in box.name:
-                ord = order(box.dom[1:2].left)
-                if ord == 0:  # compose
-                    new_diag = (
-                        rigid.Id(right.dom[:right_div - 1]) @ left @
-                        rigid.Id(right.dom[right_div:])
-                        >> right)
-                    div = right_div - 1
-                elif ord >= 1:  # put inside
-                    new_diag = insert_frame(right, left)
-                    div = right_div
-                else:
-                    raise NotImplementedError
-            else:
-                raise NotImplementedError
-            diags[i:i+2] = [(new_diag, div)]
-        step = rigid.Id().tensor(*[d[0] for d in diags])
-    step = pulling_out_diagram(step)
-    step = drag_all(step)
-    step = expand_diagram(step)
-    step = decomp(step)
+    step = make_diagram(term)
+    step = expand_s_types(step)
+    step = (Frame.get_decompose_functor())(step)
 
     return step
 
+
 def sentence2circ(parser, sentence):
-    return convert_sentence(parser.sentence2tree(sentence).to_biclosed_diagram())
+    biclosed_diag = parser.sentence2tree(sentence).to_biclosed_diagram()
+    return convert_sentence(biclosed_diag)
 
 

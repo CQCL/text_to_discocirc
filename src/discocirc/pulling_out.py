@@ -1,91 +1,113 @@
-from discopy import Ty, rigid
+from discopy import rigid
+from discopy.biclosed import Over, Under
 
-from discocirc.frame import Frame
-from discocirc.drag_up import drag_all, drag_out
-from discocirc.discocirc_utils import init_nouns
+from discocirc.discocirc_utils import get_ccg_input, get_ccg_output
 
 
-def pulling_out_diagram(diagram):
+def get_holes(term):
     """
-    Return diagram where all states inside of frames have been pulled out.
+    Finds the position of all the holes a given term has,
+    i.e. all the inputs that are processes
 
-    :param diagram: Diagram -- Original diagram.
-    :return: Diagram -- New diagram with states pulled out of frames.
+    :param term: Term - for which the holes should be found.
+    :return: List - position in argument list of all holes.
     """
-    new_diag = rigid.Id(diagram.dom)
+    holes = []
+    ccg = term.ccg
+    for i in range(len(term.args)):
+        if isinstance(get_ccg_input(ccg), (Over, Under)):
+                # or get_ccg_input(ccg) == rigid.Ty('p')\
+                # or get_ccg_input(ccg) == rigid.Ty('s'):
+            holes.append(i)
+        ccg = get_ccg_output(ccg)
 
-    # Iterate over all layers and rebuild the diagram by pulling all insides out of frame
-    for left, box, right in diagram.layers:
-        if not isinstance(box, Frame):
-            # Current layer not a frame
-            new_diag = new_diag >> rigid.Id(left) @ box @ rigid.Id(right)
+    return holes
+
+
+def pull_single_hole(term, hole_position):
+    """
+    Given a hyperbox pull out the arguments of the specified hole.
+    For hyperboxes with multiple holes, this has to be called multiple times.
+
+    :param term: Term - hyperbox who's arguments will be pulled out.
+                 We assume that all internal hyperboxes are fully pulled out.
+    :param hole_position: int - the argument position of the hole which should
+                be pulled out.
+    """
+    inner_term = term.args[hole_position]
+
+    ccg = inner_term.ccg
+    pulled_out_args = []
+    hole_filling_args = []
+
+    inner_term_holes = get_holes(inner_term)
+
+    for i, arg in enumerate(inner_term.args.copy()):
+        # If current argument should go into a hole: skip
+        # (by recursive property of pulling out, we assume all internal
+        # hyperboxes to already be pulled out correctly).
+        # Thus, they should take exactly one input, which we don't pull out.
+        if i in inner_term_holes:
+            arg_ccg = arg.ccg
+            for _ in arg.args:
+                arg_ccg = get_ccg_output(arg_ccg)
+
+            hole_filling_args.append((type(ccg), arg_ccg))
+            ccg = get_ccg_output(ccg)
             continue
 
-        list_insides_without_nouns = []
-        list_former_inside_states = []
-        num_pulled_out = 0
+        # Pull out the argument
+        term.args.insert(hole_position + len(pulled_out_args) + 1, arg)
+        pulled_out_args.append((type(ccg), arg.output_ccg))
+        inner_term.args.remove(arg)
 
-        # Pull out each individual inside
-        for inside in box._insides:
-            new_insides, former_inside_states = pull_inside_out_of_frame(inside)
-            num_pulled_out += len(former_inside_states)
-            list_insides_without_nouns.append(new_insides)
-            list_former_inside_states.append(former_inside_states)
+        ccg = get_ccg_output(ccg)
 
-        # Rebuild pulled out layer
-        if num_pulled_out > 0:
-            new_pulled_out_nouns = rigid.Id()
-            for states_diag in list_former_inside_states:
-                new_pulled_out_nouns = new_pulled_out_nouns @ states_diag
-            new_diag = new_diag >> rigid.Id(left) @ new_pulled_out_nouns @ rigid.Id(right)
+    # Update the ccg_type in reverse order such that the first argument pulled
+    # out is the last added to the ccg and thus the next input
+    new_inner_ccg = inner_term.ccg
+    for _ in range(len(pulled_out_args) + len(hole_filling_args)):
+        new_inner_ccg = get_ccg_output(new_inner_ccg)
 
-        frame_domain = box.dom @ Ty('n') ** num_pulled_out
-        new_frame = Frame(box.name, frame_domain, box.cod, list_insides_without_nouns, box._slots)
-        new_diag = new_diag >> rigid.Id(left) @ new_frame @ rigid.Id(right)
+    term_ccg = term.ccg
+    for _ in range(hole_position):
+        term_ccg = get_ccg_output(term_ccg)
 
-    return new_diag
+    for ccg_type, ccg in reversed(pulled_out_args):
+        if ccg_type == Over:
+            term_ccg.left = Over(term_ccg.left, ccg)
+            term_ccg.right = Over(term_ccg.right, ccg)
+            new_inner_ccg = Over(new_inner_ccg, ccg)
+        elif ccg_type == Under:
+            term_ccg.left = Under(ccg, term_ccg.left)
+            term_ccg.right = Under(ccg, term_ccg.right)
+            new_inner_ccg = Under(ccg, new_inner_ccg)
+
+    for ccg_type, ccg in reversed(hole_filling_args):
+        if ccg_type == Over:
+            new_inner_ccg = Over(new_inner_ccg, ccg)
+        elif ccg_type == Under:
+            new_inner_ccg = Under(ccg, new_inner_ccg)
+
+    inner_term.ccg = new_inner_ccg
 
 
-def pull_inside_out_of_frame(diagram):
+def recurse_pull(term):
     """
-    Return the updated insides of a frame after pulling out the states and boxes only acting on pulled out states.
+    Given a term, recursively pull out all the hyperboxes to get a fully
+    pulled out term.
 
-    :param diagram: (Single) insides of a frame to pull states out of.
-    :return: Diagram -- new insides,
-            Diag -- States and boxes acting on states which were pulled out.
+    :param term: Term - The term which should be pulled out.
     """
-    # Iteratively pull out diagram
-    diagram = pulling_out_diagram(diagram)
-    diagram = drag_all(diagram)
+    for i in range(len(term.args)):
+        recurse_pull(term.args[i])
 
-    num_nouns = init_nouns(diagram) + 1
-    if num_nouns == 0:
-        # Nothing to pull out
-        return diagram, diagram[:0]
+    holes = get_holes(term)
+    num_holes = len(holes)
+    for i in range(len(holes)):
+        pull_single_hole(term, holes[i])
 
-    inside_nouns = diagram[:num_nouns]
-    nouns_offset_begin = inside_nouns.offsets[0]
-    nouns_offset_end = inside_nouns.offsets[-1]
-
-    # Find all processes that only act on states that are being pulled out. These will be pulled out too
-    pull_out_index = num_nouns
-    addition_pull_outs = 0
-    for box, offset in zip(diagram[num_nouns:].boxes, diagram[num_nouns:].offsets):
-        if len(box.dom) <= num_nouns \
-                and offset >= nouns_offset_begin \
-                and offset + len(box.dom) - 1 <= nouns_offset_end:
-            diagram = drag_out(diagram, num_nouns + addition_pull_outs, pull_out_index)
-            pull_out_index += 1
-        addition_pull_outs += 1
-
-    # New insides are all remaining non-state boxes
-    new_insides = diagram[pull_out_index:]
-
-    # Build diagram of pulled out boxes without any identities surrounding the states
-    pulled_out_nouns = rigid.Id()
-    current_cod = Ty()
-    for state in diagram.boxes[:pull_out_index]:
-        pulled_out_nouns = pulled_out_nouns >> (rigid.Id(current_cod) @ state)
-        current_cod = current_cod @ state.cod
-
-    return new_insides, pulled_out_nouns
+        # As we pull out arguments, the position of the holes changes.
+        # The number of holes should not. Hence the assertion.
+        holes = get_holes(term)
+        assert(len(holes) == num_holes)
