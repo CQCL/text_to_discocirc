@@ -43,7 +43,7 @@ def pull_single_hole(term, hole_position):
     inner_term_holes = get_holes(inner_term)
 
     for i, arg in enumerate(inner_term.args.copy()):
-        # If current argument should go into a hyper hole: skip
+        # If current argument should go into a hole: skip
         # (by recursive property of pulling out, we assume all internal
         # hyperboxes to already be pulled out correctly).
         # Thus, they should take exactly one input, which we don't pull out.
@@ -102,12 +102,12 @@ def recurse_pull(term):
     for i in range(len(term.args)):
         recurse_pull(term.args[i])
 
-    hyper_holes = get_holes(term)
-    num_holes = len(hyper_holes)
-    for i in range(len(hyper_holes)):
-        pull_single_hole(term, hyper_holes[i])
+    holes = get_holes(term)
+    num_holes = len(holes)
+    for i in range(len(holes)):
+        pull_single_hole(term, holes[i])
 
         # As we pull out arguments, the position of the holes changes.
         # The number of holes should not. Hence the assertion.
-        hyper_holes = get_holes(term)
-        assert(len(hyper_holes) == num_holes)
+        holes = get_holes(term)
+        assert(len(holes) == num_holes)
