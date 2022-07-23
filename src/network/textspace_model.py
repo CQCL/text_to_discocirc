@@ -12,6 +12,7 @@ class DisCoCircTrainerTextspace(DisCoCircTrainerBase):
                  wire_dimension,
                  max_wire_num = 20,
                  textspace_dimension = 200,
+                 latent_dimension = None,
                  classification_vocab = None,
                  qna_classifier_model = None,
                  space_expansion = None,
@@ -22,6 +23,7 @@ class DisCoCircTrainerTextspace(DisCoCircTrainerBase):
             wire_dimension, 
             max_wire_num, 
             textspace_dimension, 
+            latent_dimension, 
             space_expansion,
             space_contraction
         )            
@@ -73,9 +75,9 @@ class DisCoCircTrainerTextspace(DisCoCircTrainerBase):
 
     def qna_classifier(self):
         input = keras.Input(shape=(2 * self.textspace_dimension))
-        output = keras.layers.Dense(self.textspace_dimension, activation=tf.nn.relu)(input)
+        # output = keras.layers.Dense(self.textspace_dimension, activation=tf.nn.relu)(input)
         output = keras.layers.Dense(self.textspace_dimension / 2, activation=tf.nn.relu)(input)
-        output = keras.layers.Dense(self.textspace_dimension / 4, activation=tf.nn.relu)(input)
+        # output = keras.layers.Dense(self.textspace_dimension / 4, activation=tf.nn.relu)(input)
         output = keras.layers.Dense(len(self.classification_vocab), activation=tf.nn.softmax)(output)
         return keras.Model(inputs=input, outputs=output)
     

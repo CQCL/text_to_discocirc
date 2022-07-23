@@ -1,8 +1,8 @@
 #%%
 import os
-# path nonsense
+# this should the the path to \Neural-DisCoCirc
 p = os.path.abspath('.')
-# p = os.path.abspath('..') # this should the the path to \Neural-DisCoCirc
+# p = os.path.abspath('..') 
 
 from network.utils import get_accuracy_textspace
 
@@ -18,7 +18,6 @@ from network.textspace_model import DisCoCircTrainerTextspace
 from sklearn.model_selection import train_test_split
 
 
-WIRE_DIMENSION = 20
 
 #%%
 
@@ -27,7 +26,14 @@ with open(p+'/data/task_vocab_dicts/en_qa1.p', 'rb') as f:
     vocab = pickle.load(f)
 
 print('initializing model...')
-discocirc_trainer = DisCoCircTrainerTextspace.from_lexicon(vocab, WIRE_DIMENSION)
+kwargs = {
+    "lexicon": vocab,
+    "wire_dimension": 10,
+    "textspace_dimension": 50,
+    "latent_dimension": 100,
+    "hidden_layers": [5]
+}
+discocirc_trainer = DisCoCircTrainerTextspace.from_lexicon(**kwargs)
 
 #%%
 
@@ -64,4 +70,4 @@ print("The accuracy on the train set is", accuracy)
 
 #%%
 
-discocirc_trainer.save_models('./saved_models/textspace_trained_model_boxes_' + datetime.utcnow().strftime("%B_%d_%H_%M") +'.pkl')
+discocirc_trainer.save_models(p+'/saved_models/textspace_trained_model_boxes_' + datetime.utcnow().strftime("%B_%d_%H_%M") +'.pkl')

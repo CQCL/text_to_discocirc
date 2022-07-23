@@ -64,6 +64,6 @@ class Network(monoidal.Box):
         model = inputs
         for dim in hidden_layer_dims:
             model = keras.layers.Dense(dim, activation=activation, bias_initializer="glorot_uniform")(model)
-        outputs = keras.layers.Dense(cod, bias_initializer="glorot_uniform")(model)
+        outputs = keras.layers.Dense(cod, activation=activation, bias_initializer="glorot_uniform")(model)
         model = keras.Model(inputs=inputs, outputs=outputs, name=name)
         return Network(PRO(dom), PRO(cod), model)

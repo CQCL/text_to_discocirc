@@ -18,7 +18,7 @@ class DisCoCircTrainerBase(ABC, keras.Model):
         self.loss_tracker = keras.metrics.Mean(name="loss")    
 
     @classmethod
-    def from_lexicon(cls, lexicon, wire_dimension, **kwargs):
+    def from_lexicon(cls, lexicon, wire_dimension, hidden_layers=[10, 10], **kwargs):
         """
         Factory method to create a DisCoCircTrainer from a lexicon.
 
@@ -29,7 +29,7 @@ class DisCoCircTrainerBase(ABC, keras.Model):
         wire_dimension : int
             dimension of the noun wires.
         """
-        nn_boxes, trainable_models = initialize_boxes(lexicon, wire_dimension)
+        nn_boxes, trainable_models = initialize_boxes(lexicon, wire_dimension, hidden_layers)
         return cls(nn_boxes, wire_dimension, compiled_dataset=None, lexicon=lexicon, **kwargs)
 
     def save_models(self, path):

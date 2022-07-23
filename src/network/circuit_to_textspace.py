@@ -2,12 +2,15 @@ import tensorflow as tf
 from tensorflow import keras
 
 class TextSpace(keras.Model):
-    def __init__(self, wire_dim, max_wire_num, textspace_dim, space_expansion=None, space_contraction=None):
+    def __init__(self, wire_dim, max_wire_num, textspace_dim, latent_dim=None, space_expansion=None, space_contraction=None):
         super(TextSpace, self).__init__()
         self.wire_dim = wire_dim
         self.max_wire_num = max_wire_num
         self.textspace_dim = textspace_dim
+        if latent_dim is None:
         self.latent_dim = max_wire_num * wire_dim
+        else:
+            self.latent_dim = latent_dim
         if space_expansion is None:
             self.space_expansion = self.define_model(self.wire_dim, self.latent_dim)
         else:
@@ -28,9 +31,12 @@ class TextSpace(keras.Model):
         return textspace_vector
 
     def define_model(self, in_dim, out_dim):
+        """
+        Generates the space_contraction and space_expansion models
+        """
         factor = round((out_dim/in_dim)**(1./3))
         input = keras.Input(shape=(in_dim))
         output = keras.layers.Dense(in_dim * factor, activation=tf.nn.relu)(input)
-        output = keras.layers.Dense(in_dim * factor * factor, activation=tf.nn.relu)(output)
+        # output = keras.layers.Dense(in_dim * factor * factor, activation=tf.nn.relu)(output)
         output = keras.layers.Dense(out_dim)(output)
         return keras.Model(inputs=input, outputs=output)
