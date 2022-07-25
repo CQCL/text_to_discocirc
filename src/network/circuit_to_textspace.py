@@ -2,6 +2,10 @@ import tensorflow as tf
 from tensorflow import keras
 
 class TextSpace(keras.Model):
+    """
+    The model that maps the output vector of a circuit to a 'textspace' vector.
+    This 'textspace' vector has dimension 'self.textspace_dim'
+    """
     def __init__(self, wire_dim, max_wire_num, textspace_dim, latent_dim=None, space_expansion=None, space_contraction=None):
         super(TextSpace, self).__init__()
         self.wire_dim = wire_dim
