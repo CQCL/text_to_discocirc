@@ -29,7 +29,7 @@ class NeuralDisCoCirc(keras.Model):
         return output
 
     def batch_diagrams(self, diagrams):
-        diagrams = [deepcopy(self.diagram_parameters[d]) for d in diagrams]
+        diagrams = [deepcopy(self.diagram_parameters[repr(d)]) for d in diagrams]
         max_len = max([len(d["weights"]) for d in diagrams])
 
         max_layer_size = [(0, 0) for _ in range(max_len)]
@@ -133,7 +133,7 @@ class NeuralDisCoCirc(keras.Model):
         self.diagram_parameters = {}
 
         for d in diagrams:
-            self.diagram_parameters[d] = self._get_parameters_from_diagram(d)
+            self.diagram_parameters[repr(d)] = self._get_parameters_from_diagram(d)
 
 
     def _get_parameters_from_diagram(self, diagram):
