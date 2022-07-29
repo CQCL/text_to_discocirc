@@ -15,7 +15,7 @@ class DisCoCircTrainerBase(ABC, keras.Model):
         self.nn_functor = get_fast_nn_functor(self.nn_boxes, wire_dimension)
         self.dataset = compiled_dataset
         self.lexicon = lexicon
-        self.loss_tracker = keras.metrics.Mean(name="loss")    
+        self.loss_tracker = keras.metrics.Mean(name="loss")
 
     @classmethod
     def from_lexicon(cls, lexicon, wire_dimension, **kwargs):

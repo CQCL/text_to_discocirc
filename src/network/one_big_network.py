@@ -1,4 +1,6 @@
-from tkinter import HIDDEN
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
+
 import tensorflow as tf
 from tensorflow import keras
 from discopy.monoidal import Swap
@@ -19,8 +21,9 @@ class NeuralDisCoCirc(keras.Model):
         self.hidden_layers = hidden_layers
         self.dense_layer = MyDenseLayer()
         self.initialize_lexicon_weights(lexicon)
+        self.loss_tracker = keras.metrics.Mean(name="loss")
 
-    @tf.function(jit_compile=True)
+    # @tf.function
     def call(self, diagrams):
         inputs, weights, biases, masks = self.batch_diagrams(diagrams)
         output = inputs
@@ -31,7 +34,6 @@ class NeuralDisCoCirc(keras.Model):
     def batch_diagrams(self, diagrams):
         diagrams = [deepcopy(self.diagram_parameters[repr(d)]) for d in diagrams]
         max_len = max([len(d["weights"]) for d in diagrams])
-
         max_layer_size = [(0, 0) for _ in range(max_len)]
         for d in diagrams:
             weights = d["weights"]
@@ -132,9 +134,9 @@ class NeuralDisCoCirc(keras.Model):
     def get_parameters_from_diagrams(self, diagrams):
         self.diagram_parameters = {}
 
-        for d in diagrams:
+        for i, d in enumerate(diagrams):
+            print("\rGetting parameters for diagram: {} of {}".format(i+1, len(diagrams)), end="")
             self.diagram_parameters[repr(d)] = self._get_parameters_from_diagram(d)
-
 
     def _get_parameters_from_diagram(self, diagram):
         model_weights = []
@@ -223,25 +225,47 @@ class NeuralDisCoCirc(keras.Model):
         self.lexicon_biases[swap] = ([tf.zeros((2 * self.wire_dimension,))]
                                      * (1 + len(self.hidden_layers)))
 
+    def fit(self, dataset, epochs=100, batch_size=32, **kwargs):
+        self.diagrams = [data[0] for data in dataset]
+        self.tests = [data[1] for data in dataset]
+        self.get_parameters_from_diagrams(self.diagrams)
+        input_index_dataset = tf.data.Dataset.range(len(dataset))
+        input_index_dataset = input_index_dataset.shuffle(len(dataset))
+        input_index_dataset = input_index_dataset.batch(batch_size)
+        return super().fit(input_index_dataset, epochs=epochs, **kwargs)
+    
+    def train_step(self, batch_index):
+        diagrams = [self.diagrams[int(i)] for i in batch_index]
+        tests = [self.tests[int(i)] for i in batch_index]
+        with tf.GradientTape() as tape:
+            outputs = self.call(diagrams)
+            loss = self.compute_loss(outputs, tests)
+            grads = tape.gradient(loss, self.trainable_weights)
+        self.optimizer.apply_gradients(
+            (grad, weights)
+            for (grad, weights) in zip(grads, self.trainable_weights)
+            if grad is not None)
+        self.loss_tracker.update_state(loss)
+        return {
+            "loss": self.loss_tracker.result(),
+        }
+    
+    #TODO: Write the loss function
+    @tf.function(jit_compile=True)
+    def compute_loss(self, outputs, tests):
+        return tf.reduce_mean(outputs)
 
-# import pickle
-# with open('data/task_vocab_dicts/en_qa1_train.p', 'rb') as f:
-#     vocab = pickle.load(f)
 
-# neural_discocirc = NeuralDisCoCirc(20, vocab)
+import pickle
+with open('data/task_vocab_dicts/en_qa1_train.p', 'rb') as f:
+    vocab = pickle.load(f)
 
-# total_dim = 500
-# depth = 100
-# batch = 32
-# x = tf.random.normal(shape=(batch, total_dim))
-# weights = tf.random.normal(shape=(batch, depth, total_dim, total_dim))
-# biases = tf.random.normal(shape=(batch, depth, total_dim))
+neural_discocirc = NeuralDisCoCirc(vocab)
 
-# neural_discocirc(x, weights, biases)
+print('loading pickled dataset...')
+with open("data/pickled_dataset/dataset_task1_train.pkl", "rb") as f:
+    dataset = pickle.load(f)
 
-# from time import time
-# start_time = time()
-# for i in range(1000):
-#     neural_discocirc(x, weights, biases)
-# end_time = time()
-# print('total time', end_time - start_time, 'seconds')
+neural_discocirc.compile(optimizer=keras.optimizers.Adam(), run_eagerly=True)
+
+neural_discocirc.fit(dataset, epochs=100, batch_size=4)
