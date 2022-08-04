@@ -9,23 +9,45 @@ from copy import deepcopy
 
 
 class MyDenseLayer(keras.layers.Layer):
+    @tf.function(jit_compile=True)
     def call(self, input, weights, bias, mask):
         out = tf.einsum("bi,bij->bj", input, weights) + bias
         return tf.where(tf.cast(mask, dtype=tf.bool), tf.nn.relu(out), out)
 
 
 class NeuralDisCoCirc(keras.Model):
-    def __init__(self, lexicon, wire_dimension=20, hidden_layers=[50]):
+    def __init__(self, 
+        lexicon=None, 
+        wire_dimension=20, 
+        hidden_layers=[50], 
+        lexicon_weights=None, 
+        lexicon_biases=None, 
+        states=None,
+        is_in_question=None
+    ):
         super().__init__()
         self.wire_dimension = wire_dimension
         self.hidden_layers = hidden_layers
         self.dense_layer = MyDenseLayer()
-        self.initialize_lexicon_weights(lexicon)
+        if lexicon_weights and lexicon_biases and states:
+            self.lexicon_weights = lexicon_weights
+            self.lexicon_biases = lexicon_biases
+            self.states = states
+        else:
+            self.initialize_lexicon_weights(lexicon)
+        self.is_in_question = is_in_question
+        if is_in_question is None:
+            self.is_in_question = self.question_model()
         self.loss_tracker = keras.metrics.Mean(name="loss")
 
-    # @tf.function
-    def call(self, diagrams):
-        inputs, weights, biases, masks = self.batch_diagrams(diagrams)
+
+    def question_model(self):
+        input = keras.Input(shape=(2 * self.wire_dimension))
+        output = keras.layers.Dense(self.wire_dimension, activation=tf.nn.relu)(input)
+        output = keras.layers.Dense(self.wire_dimension / 2, activation=tf.nn.relu)(output)
+        output = keras.layers.Dense(1)(output)
+        return keras.Model(inputs=input, outputs=output)
+
         output = inputs
         for i in range(len(weights)):
             output = self.dense_layer(output, weights[i], biases[i], masks[i])
@@ -137,6 +159,7 @@ class NeuralDisCoCirc(keras.Model):
         for i, d in enumerate(diagrams):
             print("\rGetting parameters for diagram: {} of {}".format(i+1, len(diagrams)), end="")
             self.diagram_parameters[repr(d)] = self._get_parameters_from_diagram(d)
+        print("\n")
 
     def _get_parameters_from_diagram(self, diagram):
         model_weights = []
@@ -250,17 +273,51 @@ class NeuralDisCoCirc(keras.Model):
             "loss": self.loss_tracker.result(),
         }
     
-    #TODO: Write the loss function
     @tf.function(jit_compile=True)
     def compute_loss(self, outputs, tests):
-        return tf.reduce_mean(outputs)
+        num_wires = self.max_i_size // self.wire_dimension
+        output_wires = tf.split(outputs, num_wires, axis=1)
+        person, location = np.array(tests).T[0], np.array(tests).T[1]
+        person = [(person, i) for i, person in enumerate(person)]
+        person_vectors = tf.gather_nd(output_wires, person)
+        answer_prob = []
+        for i in range(num_wires):
+            location_vectors = output_wires[i]
+            answer_prob.append(tf.squeeze(
+                self.is_in_question(
+                    tf.concat([person_vectors, location_vectors], axis=1)
+                )
+            ))
+        answer_prob = tf.transpose(answer_prob)
+        answer_prob = tf.nn.softmax(answer_prob)
+        labels = tf.one_hot(location, answer_prob.shape[1])
+        loss = tf.nn.softmax_cross_entropy_with_logits(logits=answer_prob, labels=labels)
+        return loss
+
+    def save_models(self, path):
+        kwargs = {
+            "wire_dimension": self.wire_dimension,
+            "lexicon_weights": self.lexicon_weights,
+            "lexicon_biases": self.lexicon_biases,
+            "states": self.states,
+            "is_in_question": self.is_in_question,
+            "hidden_layers": self.hidden_layers,
+        }
+        with open(path, "wb") as f:
+            pickle.dump(kwargs, f)
+        
+    @classmethod
+    def load_models(cls, path):
+        with open(path, "rb") as f:
+            kwargs = pickle.load(f)
+        return cls(**kwargs)
 
 
 import pickle
 with open('data/task_vocab_dicts/en_qa1_train.p', 'rb') as f:
     vocab = pickle.load(f)
 
-neural_discocirc = NeuralDisCoCirc(vocab)
+neural_discocirc = NeuralDisCoCirc(vocab, wire_dimension=20, hidden_layers=[10])
 
 print('loading pickled dataset...')
 with open("data/pickled_dataset/dataset_task1_train.pkl", "rb") as f:
@@ -268,4 +325,6 @@ with open("data/pickled_dataset/dataset_task1_train.pkl", "rb") as f:
 
 neural_discocirc.compile(optimizer=keras.optimizers.Adam(), run_eagerly=True)
 
-neural_discocirc.fit(dataset, epochs=100, batch_size=4)
+neural_discocirc.fit(dataset, epochs=100, batch_size=32)
+
+neural_discocirc.save_models('saved_models/batched_model.pkl')
