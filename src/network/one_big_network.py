@@ -1,6 +1,8 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
+import numpy as np
+import pickle
 import tensorflow as tf
 from tensorflow import keras
 from discopy.monoidal import Swap
@@ -48,78 +50,76 @@ class NeuralDisCoCirc(keras.Model):
         output = keras.layers.Dense(1)(output)
         return keras.Model(inputs=input, outputs=output)
 
+    @tf.function(jit_compile=True)
+    def call(self, inputs_params):
+        inputs, params = inputs_params
         output = inputs
-        for i in range(len(weights)):
-            output = self.dense_layer(output, weights[i], biases[i], masks[i])
+        for i in range(len(params)):
+            output = self.dense_layer(output, *params[i])
         return output
 
-    def batch_diagrams(self, diagrams):
-        diagrams = [deepcopy(self.diagram_parameters[repr(d)]) for d in diagrams]
+    def get_max_width_and_depth(self, diagrams):
+        diagrams = [self.diagram_parameters[repr(d)] for d in diagrams]
         max_len = max([len(d["weights"]) for d in diagrams])
         max_layer_size = [(0, 0) for _ in range(max_len)]
         for d in diagrams:
             weights = d["weights"]
             diff = max_len - len(weights)
-
             if diff > 0:
                 final_shape = sum(w.shape[1] for w in weights[-1])
                 d["weights"] += ([[tf.eye(final_shape)]] * diff)
                 d["biases"] += ([[tf.zeros((final_shape,))]] * diff)
                 d["masks"] += ([[tf.zeros((final_shape,))]] * diff)
-
             for i in range(max_len):
                 max_layer_size[i] =  (max(max_layer_size[i][0],
                                           sum(w.shape[0] for w in weights[i])),
                                       max(max_layer_size[i][1],
                                            sum(w.shape[1] for w in weights[i])))
-
-        # FINE UP TO HERE!
-
-        batched_weights = []
-        batched_biases = []
-        batched_masks = []
-        for i in range(max_len):
-            layers = [(d["weights"][i], d["biases"][i], d["masks"][i])
-                      for d in diagrams]
-
-            layer_weights = []
-            layer_biases = []
-            layer_masks = []
-            for w, b, m in layers:
-                block_diag = self._make_block_diag(w)
-                diff = (max(max_layer_size[i][0] - block_diag.shape[0], 0),
-                        max(max_layer_size[i][1] - block_diag.shape[1], 0))
-
-                w_paddings = tf.constant([[0, diff[0]], [0, diff[1]]])
-                block_diag = tf.pad(block_diag, w_paddings, "CONSTANT")
-                layer_weights.append(block_diag)
-
-                bias = tf.concat(b + [tf.zeros((diff[1],))], axis=0)
-                layer_biases.append(bias)
-
-                mask = tf.concat(m + [tf.zeros((diff[1],))], axis=0)
-                layer_masks.append(mask)
-
-            batched_weights.append(tf.stack(layer_weights, axis=0))
-            batched_biases.append(tf.stack(layer_biases, axis=0))
-            batched_masks.append(tf.stack(layer_masks, axis=0))
-
         inputs = [d["input"] for d in diagrams]
         i_sizes = [sum(x.shape[0] for x in i) for i in inputs]
-        max_len = max(i_sizes)
+        max_i_sizes = max(i_sizes)
+        return max_len, max_layer_size, max_i_sizes
 
+    def batch_diagrams(self, diagrams):
+        diagrams = [self.diagram_parameters[repr(d)] for d in diagrams]
+        batched_params_for_i = lambda i: self.get_batched_params(diagrams, i)
+        layer_params = list(map(batched_params_for_i, range(self.max_depth)))
+        inputs = [d["input"] for d in diagrams]
+        i_sizes = [sum(x.shape[0] for x in i) for i in inputs]
         tensor_inputs = []
         for i in range(len(inputs)):
-            diff = max_len - i_sizes[i]
+            diff = self.max_input_length - i_sizes[i]
             if diff > 0:
-                tensor_inputs.append(tf.concat(inputs[i] + [tf.zeros((diff,))],
-                                            axis=0))
+                tensor_inputs.append(
+                    tf.concat(inputs[i] + [tf.zeros((diff,))],axis=0)
+                )
             else:
                 tensor_inputs.append(tf.concat(inputs[i], axis=0))
-
         batched_inputs = tf.stack(tensor_inputs, axis=0)
+        return batched_inputs, layer_params
 
-        return batched_inputs, batched_weights, batched_biases, batched_masks
+    def get_batched_params(self, diagrams, i):
+        layers = [(d["weights"][i], d["biases"][i], d["masks"][i])
+                      for d in diagrams]
+        current_max_layer_width = self.max_layer_width[i]
+        pad_and_make_block_diag_current = lambda layer: self.pad_and_make_block_diag(current_max_layer_width, layer)
+        new_layer_params = map(pad_and_make_block_diag_current, layers)
+        new_layer_params = list(new_layer_params)
+        batched_weights = tf.stack([w[0] for w in new_layer_params], axis=0)
+        batched_biases = tf.stack([w[1] for w in new_layer_params], axis=0)
+        batched_masks = tf.stack([w[2] for w in new_layer_params], axis=0)
+        return batched_weights, batched_biases, batched_masks
+
+    def pad_and_make_block_diag(self, max_layer_width, layer):
+        w, b, m = layer[0], layer[1], layer[2]
+        block_diag = self._make_block_diag(w)
+        diff = (max(max_layer_width[0] - block_diag.shape[0], 0),
+                        max(max_layer_width[1] - block_diag.shape[1], 0))
+        w_paddings = tf.constant([[0, diff[0]], [0, diff[1]]])
+        block_diag = tf.pad(block_diag, w_paddings, "CONSTANT")
+        bias = tf.concat(b + [tf.zeros((diff[1],))], axis=0)
+        mask = tf.concat(m + [tf.zeros((diff[1],))], axis=0)
+        return [block_diag, bias, mask]
 
     def get_box_layers(self, layers):
         weights = [
@@ -130,7 +130,6 @@ class NeuralDisCoCirc(keras.Model):
             )
             for i in range(len(layers)-1)
         ]
-
         biases = [
             self.add_weight(
                 shape = (layers[i+1],),
@@ -139,7 +138,6 @@ class NeuralDisCoCirc(keras.Model):
             )
             for i in range(len(layers)-1)
         ]
-
         return weights, biases
 
     @staticmethod
@@ -150,16 +148,15 @@ class NeuralDisCoCirc(keras.Model):
             a_temp = tf.concat((a, tf.zeros((a.shape[0], b.shape[1]))), axis=1)
             b_temp = tf.concat((tf.zeros((b.shape[0], a.shape[1])), b), axis=1)
             a = tf.concat((a_temp, b_temp), axis=0)
-
         return a
 
     def get_parameters_from_diagrams(self, diagrams):
         self.diagram_parameters = {}
-
         for i, d in enumerate(diagrams):
             print("\rGetting parameters for diagram: {} of {}".format(i+1, len(diagrams)), end="")
             self.diagram_parameters[repr(d)] = self._get_parameters_from_diagram(d)
         print("\n")
+        self.max_depth, self.max_layer_width, self.max_input_length = self.get_max_width_and_depth(self.diagrams)
 
     def _get_parameters_from_diagram(self, diagram):
         model_weights = []
@@ -235,14 +232,12 @@ class NeuralDisCoCirc(keras.Model):
                 w, b = self.get_box_layers([input_dim] + self.hidden_layers + [output_dim])
                 self.lexicon_weights[word] = w
                 self.lexicon_biases[word] = b
-
         swap = Swap(Ty('n'), Ty('n'))
         e = tf.eye(self.wire_dimension)
         z = tf.zeros([self.wire_dimension, self.wire_dimension])
         a = tf.concat((z, e), axis=1)
         b = tf.concat((e, z), axis=1)
         swap_mat = tf.concat((a, b), axis=0)
-
         self.lexicon_weights[swap] = ([swap_mat] + [tf.eye(2 * self.wire_dimension)]
                                       * len(self.hidden_layers))
         self.lexicon_biases[swap] = ([tf.zeros((2 * self.wire_dimension,))]
@@ -261,7 +256,8 @@ class NeuralDisCoCirc(keras.Model):
         diagrams = [self.diagrams[int(i)] for i in batch_index]
         tests = [self.tests[int(i)] for i in batch_index]
         with tf.GradientTape() as tape:
-            outputs = self.call(diagrams)
+            inputs, params = self.batch_diagrams(diagrams)
+            outputs = self.call((inputs, params))
             loss = self.compute_loss(outputs, tests)
             grads = tape.gradient(loss, self.trainable_weights)
         self.optimizer.apply_gradients(
@@ -275,9 +271,10 @@ class NeuralDisCoCirc(keras.Model):
     
     @tf.function(jit_compile=True)
     def compute_loss(self, outputs, tests):
-        num_wires = self.max_i_size // self.wire_dimension
+        num_wires = self.max_input_length // self.wire_dimension
         output_wires = tf.split(outputs, num_wires, axis=1)
-        person, location = np.array(tests).T[0], np.array(tests).T[1]
+        tests = np.array(tests).T
+        person, location = tests[0], tests[1]
         person = [(person, i) for i, person in enumerate(person)]
         person_vectors = tf.gather_nd(output_wires, person)
         answer_prob = []
