@@ -5,7 +5,7 @@ import sys
 p = os.path.abspath('..') # this should be the path to \src
 sys.path.insert(1, p)
 
-from discocirc.discocirc import convert_sentence  # Richie's CCG to Circ
+from discocirc.sentence_to_circuit import convert_sentence  # Richie's CCG to Circ
 from lambeq import BobcatParser
 from discocirc.discocirc_utils import get_star_removal_functor
 import pickle   # for saving vocab file
