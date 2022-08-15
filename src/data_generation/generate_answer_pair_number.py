@@ -15,8 +15,25 @@ def find_wire(diagram, name):
 
 
 def get_qa_numbers(context_circuits, questions, answers):
+    """
+    Parameters:
+    -----------
+    context_circuits : list
+        List of context circuits.
+    questions : list
+        List of strings
+    answers : list
+        List of strings
+    
+    Returns:
+    --------
+    q_a_number_pairs : list
+        List of tuples (question word index, answer word index)
+    """
     q_a_pairs = []
+    # the following is quite hard-coded
     for question, answer_word in zip(questions, answers):
+        # the 'question word' for tasks 1, 2 is always the last word in the question
         question_word = question.split()[-1][:-1]
         q_a_pairs.append((question_word, answer_word))
 
