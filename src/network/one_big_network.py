@@ -18,12 +18,12 @@ class MyDenseLayer(keras.layers.Layer):
 
 
 class NeuralDisCoCirc(keras.Model):
-    def __init__(self,
-        lexicon=None,
-        wire_dimension=20,
-        hidden_layers=[50],
-        lexicon_weights=None,
-        lexicon_biases=None,
+    def __init__(self, 
+        lexicon=None, 
+        wire_dimension=20, 
+        hidden_layers=[50], 
+        lexicon_weights=None, 
+        lexicon_biases=None, 
         states=None,
         is_in_question=None
     ):
@@ -101,29 +101,25 @@ class NeuralDisCoCirc(keras.Model):
     def get_batched_params(self, diagrams, i):
         layers = [(d["weights"][i], d["biases"][i], d["masks"][i])
                       for d in diagrams]
-        new_layer_params = map(self.concat_weights_and_biases, layers)
+        current_max_layer_width = self.max_layer_width[i]
+        pad_and_make_block_diag_current = lambda layer: self.pad_and_make_block_diag(current_max_layer_width, layer)
+        new_layer_params = map(pad_and_make_block_diag_current, layers)
         new_layer_params = list(new_layer_params)
         batched_weights = tf.stack([w[0] for w in new_layer_params], axis=0)
         batched_biases = tf.stack([w[1] for w in new_layer_params], axis=0)
         batched_masks = tf.stack([w[2] for w in new_layer_params], axis=0)
         return batched_weights, batched_biases, batched_masks
 
-    def concat_weights_and_biases(self, layer):
-        w, b, m = layer
-        b_weights = self._make_block_diag(w)
-        b_biases = tf.concat(b, axis=0)
-        b_masks = tf.concat(m, axis=0)
-
-        return b_weights, b_biases, b_masks
-
-    def add_pad(self, max_layer_width, layer):
+    def pad_and_make_block_diag(self, max_layer_width, layer):
         w, b, m = layer[0], layer[1], layer[2]
-        diff = (max(max_layer_width[0] - sum([x.shape[0] for x in w]), 0),
-                        max(max_layer_width[1] - sum(x.shape[1] for x in w), 0))
-        w_paddings = tf.zeros((diff[0], diff[1]))
-        w.append(w_paddings)
-        b.append(tf.zeros((diff[1],)))
-        m.append(tf.zeros((diff[1],)))
+        block_diag = self._make_block_diag(w)
+        diff = (max(max_layer_width[0] - block_diag.shape[0], 0),
+                        max(max_layer_width[1] - block_diag.shape[1], 0))
+        w_paddings = tf.constant([[0, diff[0]], [0, diff[1]]])
+        block_diag = tf.pad(block_diag, w_paddings, "CONSTANT")
+        bias = tf.concat(b + [tf.zeros((diff[1],))], axis=0)
+        mask = tf.concat(m + [tf.zeros((diff[1],))], axis=0)
+        return [block_diag, bias, mask]
 
     def get_box_layers(self, layers):
         weights = [
@@ -161,14 +157,6 @@ class NeuralDisCoCirc(keras.Model):
             self.diagram_parameters[repr(d)] = self._get_parameters_from_diagram(d)
         print("\n")
         self.max_depth, self.max_layer_width, self.max_input_length = self.get_max_width_and_depth(self.diagrams)
-
-        for i in range(self.max_depth):
-            layers = [(d["weights"][i], d["biases"][i], d["masks"][i])
-                      for d in self.diagram_parameters.values()]
-
-            for l in layers:
-                self.add_pad(self.max_layer_width[i], l)
-
 
     def _get_parameters_from_diagram(self, diagram):
         model_weights = []
@@ -263,7 +251,7 @@ class NeuralDisCoCirc(keras.Model):
         input_index_dataset = input_index_dataset.shuffle(len(dataset))
         input_index_dataset = input_index_dataset.batch(batch_size)
         return super().fit(input_index_dataset, epochs=epochs, **kwargs)
-
+    
     def train_step(self, batch_index):
         diagrams = [self.diagrams[int(i)] for i in batch_index]
         tests = [self.tests[int(i)] for i in batch_index]
@@ -280,7 +268,7 @@ class NeuralDisCoCirc(keras.Model):
         return {
             "loss": self.loss_tracker.result(),
         }
-
+    
     @tf.function(jit_compile=True)
     def compute_loss(self, outputs, tests):
         num_wires = self.max_input_length // self.wire_dimension
@@ -303,6 +291,29 @@ class NeuralDisCoCirc(keras.Model):
         loss = tf.nn.softmax_cross_entropy_with_logits(logits=answer_prob, labels=labels)
         return loss
 
+    @tf.function(jit_compile=True)
+    def get_probabilities(self, diagrams, tests):
+        inputs, params = self.batch_diagrams([diagrams])
+        outputs = self.call((inputs, params))
+        num_wires = self.max_input_length // self.wire_dimension
+        output_wires = tf.split(outputs, num_wires, axis=1)
+        tests = np.array(tests).T
+        person, location = tests[0], tests[1]
+        person = [person]
+        person = [(person, i) for i, person in enumerate(person)]
+        person_vectors = tf.gather_nd(output_wires, person)
+        answer_prob = []
+        for i in range(num_wires):
+            location_vectors = output_wires[i]
+            answer_prob.append(tf.squeeze(
+                self.is_in_question(
+                    tf.concat([person_vectors, location_vectors], axis=1)
+                )
+            ))
+        answer_prob = tf.transpose(answer_prob)
+        answer_prob = tf.nn.softmax(answer_prob)
+        return answer_prob
+
     def save_models(self, path):
         kwargs = {
             "wire_dimension": self.wire_dimension,
@@ -314,28 +325,9 @@ class NeuralDisCoCirc(keras.Model):
         }
         with open(path, "wb") as f:
             pickle.dump(kwargs, f)
-
+        
     @classmethod
     def load_models(cls, path):
         with open(path, "rb") as f:
             kwargs = pickle.load(f)
         return cls(**kwargs)
-
-
-import pickle
-with open('data/task_vocab_dicts/en_qa1_train.p', 'rb') as f:
-    vocab = pickle.load(f)
-
-neural_discocirc = NeuralDisCoCirc(vocab, wire_dimension=20, hidden_layers=[10])
-
-print('loading pickled dataset...')
-with open("data/pickled_dataset/dataset_task1_train.pkl", "rb") as f:
-    dataset = pickle.load(f)
-
-dataset = dataset[:32]
-
-neural_discocirc.compile(optimizer=keras.optimizers.Adam(), run_eagerly=True)
-
-neural_discocirc.fit(dataset, epochs=100, batch_size=32)
-
-neural_discocirc.save_models('saved_models/batched_model.pkl')
