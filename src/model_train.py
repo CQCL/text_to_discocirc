@@ -1,7 +1,9 @@
+#%%
+
 import os
-# path nonsense
-p = os.path.abspath('.')
-# p = os.path.abspath('..') # this should the the path to \Neural-DisCoCirc
+# this should the the path to \Neural-DisCoCirc
+# p = os.path.abspath('.')
+p = os.path.abspath('..') 
 
 from network.utils import get_accuracy_isin
 
@@ -17,7 +19,9 @@ from network.model import DisCoCircTrainerIsIn
 from sklearn.model_selection import train_test_split
 
 
-WIRE_DIMENSION = 20
+WIRE_DIMENSION = 10
+
+#%%
 
 print('loading vocabulary...')
 with open(p+'/data/task_vocab_dicts/en_qa1.p', 'rb') as f:
