@@ -137,3 +137,5 @@ babi_dataset/
 .vscode
 
 logs/
+checkpoints/
+saved_models/

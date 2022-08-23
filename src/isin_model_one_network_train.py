@@ -1,4 +1,5 @@
 import os
+from network.callbacks import ModelCheckpointWithoutSaveTraces
 from network.one_big_network import NeuralDisCoCirc
 
 from network.utils import get_accuracy_one_network
@@ -33,15 +34,20 @@ with open("data/pickled_dataset/dataset_task1_train.pkl", "rb") as f:
 print('compiling model...')
 neural_discocirc.compile(optimizer=keras.optimizers.Adam(), run_eagerly=True)
 
-tb_callback = keras.callbacks.TensorBoard(log_dir='logs/{}'.format(datetime.now().strftime("%B_%d_%H_%M")), 
+datetime_string = datetime.now().strftime("%B_%d_%H_%M")
+
+tb_callback = keras.callbacks.TensorBoard(log_dir='logs/{}'.format(datetime_string), 
                                          histogram_freq=0,
                                          write_graph=True,
                                          write_images=True,
                                          update_freq='batch',
                                          )
+checkpoint_callback = ModelCheckpointWithoutSaveTraces(
+    filepath='checkpoints/{}'.format(datetime_string),
+)
 
 print('training...')
-neural_discocirc.fit(dataset, epochs=1, batch_size=32, callbacks=[tb_callback])
+neural_discocirc.fit(dataset, epochs=100, batch_size=32, callbacks=[tb_callback, checkpoint_callback])
 
 print('getting accuracy...')
 accuracy = get_accuracy_one_network(neural_discocirc, dataset)
