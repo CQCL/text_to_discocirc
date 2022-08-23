@@ -98,6 +98,9 @@ def get_accuracy(discocirc_trainer, dataset):
     return accuracy
 
 def get_accuracy_one_network(discocirc_trainer, dataset):
+    diagrams = [data[0] for data in dataset]
+    discocirc_trainer.diagrams = diagrams
+    discocirc_trainer.get_parameters_from_diagrams(diagrams)
     location_predicted = []
     location_true = []
     for i in range(len(dataset)):

@@ -20,7 +20,7 @@ with open('data/task_vocab_dicts/en_qa1_train.p', 'rb') as f:
     vocab = pickle.load(f)
 
 print('initializing model...')
-neural_discocirc = NeuralDisCoCirc(vocab, wire_dimension=10, hidden_layers=[10])
+neural_discocirc = NeuralDisCoCirc(vocab, WIRE_DIMENSION, hidden_layers=[10])
 
 print('loading pickled dataset...')
 with open("data/pickled_dataset/dataset_task1_train.pkl", "rb") as f:
@@ -30,7 +30,7 @@ with open("data/pickled_dataset/dataset_task1_train.pkl", "rb") as f:
 
 # train_dataset, validation_dataset = train_test_split(dataset, test_size=0.1, random_state=1)
 
-print('compiling train dataset')
+print('compiling model...')
 neural_discocirc.compile(optimizer=keras.optimizers.Adam(), run_eagerly=True)
 
 tb_callback = keras.callbacks.TensorBoard(log_dir='logs/{}'.format(datetime.now().strftime("%B_%d_%H_%M")), 
@@ -43,6 +43,7 @@ tb_callback = keras.callbacks.TensorBoard(log_dir='logs/{}'.format(datetime.now(
 print('training...')
 neural_discocirc.fit(dataset, epochs=1, batch_size=32, callbacks=[tb_callback])
 
+print('getting accuracy...')
 accuracy = get_accuracy_one_network(neural_discocirc, dataset)
 print("The accuracy on the train set is", accuracy)
 
