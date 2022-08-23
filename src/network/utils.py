@@ -121,4 +121,26 @@ def get_classification_vocab(lexicon):
         if name not in vocab:
             vocab.append(name)
     return vocab
-    
+
+def get_params_dict_from_tf_variables(params, split_string, is_state=False):
+    params_dict = {}
+    for p in params:
+        name = p.name[:-2].split(split_string)[0]
+        if is_state:
+            params_dict[name] = p
+        else:
+            if name in params_dict:
+                params_dict[name].append(p)
+            else:
+                params_dict[name] = [p]
+    return params_dict
+
+def get_box_name(box):
+    name = box.name
+    if '\\' in name:
+        name = name.replace('\\', '')
+        name = name[1:-1] + '_end'
+    elif '[' in name:
+        name = name[1:-1] + '_begin'
+    name = name + '_' + str(len(box.dom)) + '_' + str(len(box.cod))
+    return name

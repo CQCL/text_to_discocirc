@@ -1,4 +1,6 @@
 import os
+
+from network.utils import get_box_name, get_params_dict_from_tf_variables
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import numpy as np
@@ -18,24 +20,18 @@ class MyDenseLayer(keras.layers.Layer):
 
 
 class NeuralDisCoCirc(keras.Model):
-    def __init__(self, 
-        lexicon=None, 
-        wire_dimension=20, 
-        hidden_layers=[50], 
-        lexicon_weights=None, 
-        lexicon_biases=None, 
-        states=None,
+    def __init__(self,
+        lexicon=None,
+        wire_dimension=20,
+        hidden_layers=[50],
         is_in_question=None
     ):
         super().__init__()
         self.wire_dimension = wire_dimension
         self.hidden_layers = hidden_layers
         self.dense_layer = MyDenseLayer()
-        if lexicon_weights and lexicon_biases and states:
-            self.lexicon_weights = lexicon_weights
-            self.lexicon_biases = lexicon_biases
-            self.states = states
-        else:
+        self.lexicon = lexicon
+        if lexicon:
             self.initialize_lexicon_weights(lexicon)
         self.is_in_question = is_in_question
         if is_in_question is None:
@@ -121,12 +117,13 @@ class NeuralDisCoCirc(keras.Model):
         mask = tf.concat(m + [tf.zeros((diff[1],))], axis=0)
         return [block_diag, bias, mask]
 
-    def get_box_layers(self, layers):
+    def get_box_layers(self, layers, name):
         weights = [
             self.add_weight(
                 shape = (layers[i], layers[i+1]),
                 initializer = "glorot_uniform",
-                trainable = True
+                trainable = True,
+                name = name + '_weights_' + str(i)
             )
             for i in range(len(layers)-1)
         ]
@@ -134,7 +131,8 @@ class NeuralDisCoCirc(keras.Model):
             self.add_weight(
                 shape = (layers[i+1],),
                 initializer = "glorot_uniform",
-                trainable = True
+                trainable = True,
+                name = name + '_biases_' + str(i)
             )
             for i in range(len(layers)-1)
         ]
@@ -162,7 +160,7 @@ class NeuralDisCoCirc(keras.Model):
         model_weights = []
         model_biases = []
         model_activation_masks = []
-        model_input = [self.states[box] for box in diagram.foliation()[0].boxes]
+        model_input = [self.states[get_box_name(box)] for box in diagram.foliation()[0].boxes]
 
         for fol in diagram.foliation()[1:]:
             layer_weights = [[]]
@@ -192,9 +190,9 @@ class NeuralDisCoCirc(keras.Model):
                         layer_activation_masks[i] += ([tf.zeros((self.wire_dimension,))] * (n_wires - in_idx))
 
                 for i in range(len(layer_weights)):
-                    layer_weights[i].append(self.lexicon_weights[box][i])
-                    layer_biases[i].append(self.lexicon_biases[box][i])
-                    layer_activation_masks[i].append(tf.ones((self.lexicon_weights[box][i].shape[1],)))
+                    layer_weights[i].append(self.lexicon_weights[get_box_name(box)][i])
+                    layer_biases[i].append(self.lexicon_biases[get_box_name(box)][i])
+                    layer_activation_masks[i].append(tf.ones((self.lexicon_weights[get_box_name(box)][i].shape[1],)))
 
                 in_idx = len(left) - out_idx + len(box.dom)
                 out_idx = len(left @ box.cod)
@@ -222,26 +220,40 @@ class NeuralDisCoCirc(keras.Model):
         for word in lexicon:
             input_dim = len(word.dom) * self.wire_dimension
             output_dim = len(word.cod) * self.wire_dimension
+            name = get_box_name(word)
             if input_dim == 0:
-                self.states[word] = self.add_weight(
+                self.states[get_box_name(word)] = self.add_weight(
                     shape = (output_dim,),
                     initializer = "glorot_uniform",
-                    trainable = True
+                    trainable = True,
+                    name = name + '_states'
                 )
             else:
-                w, b = self.get_box_layers([input_dim] + self.hidden_layers + [output_dim])
-                self.lexicon_weights[word] = w
-                self.lexicon_biases[word] = b
+                w, b = self.get_box_layers([input_dim] + self.hidden_layers + [output_dim], name)
+                self.lexicon_weights[get_box_name(word)] = w
+                self.lexicon_biases[get_box_name(word)] = b
+        self.add_swap_weights_and_biases()
+    
+    def get_lexicon_params_from_saved_variables(self):
+        weights = [v for v in self.variables if 'weights' in v.name]
+        biases = [v for v in self.variables if 'biases' in v.name]
+        states = [v for v in self.variables if 'states' in v.name]
+        self.lexicon_weights = get_params_dict_from_tf_variables(weights, '_weights_')
+        self.lexicon_biases = get_params_dict_from_tf_variables(biases, '_biases_')
+        self.states = get_params_dict_from_tf_variables(states, '_states', is_state=True)
+        self.add_swap_weights_and_biases()
+
+    def add_swap_weights_and_biases(self):
         swap = Swap(Ty('n'), Ty('n'))
         e = tf.eye(self.wire_dimension)
         z = tf.zeros([self.wire_dimension, self.wire_dimension])
         a = tf.concat((z, e), axis=1)
         b = tf.concat((e, z), axis=1)
         swap_mat = tf.concat((a, b), axis=0)
-        self.lexicon_weights[swap] = ([swap_mat] + [tf.eye(2 * self.wire_dimension)]
-                                      * len(self.hidden_layers))
-        self.lexicon_biases[swap] = ([tf.zeros((2 * self.wire_dimension,))]
-                                     * (1 + len(self.hidden_layers)))
+        self.lexicon_weights[get_box_name(swap)] = ([swap_mat] + [tf.eye(2 * self.wire_dimension)]
+                                                     * len(self.hidden_layers))
+        self.lexicon_biases[get_box_name(swap)] = ([tf.zeros((2 * self.wire_dimension,))]
+                                                     * (1 + len(self.hidden_layers)))
 
     def fit(self, dataset, epochs=100, batch_size=32, **kwargs):
         self.diagrams = [data[0] for data in dataset]
@@ -291,7 +303,6 @@ class NeuralDisCoCirc(keras.Model):
         loss = tf.nn.softmax_cross_entropy_with_logits(logits=answer_prob, labels=labels)
         return loss
 
-    @tf.function(jit_compile=True)
     def get_probabilities(self, diagrams, tests):
         inputs, params = self.batch_diagrams([diagrams])
         outputs = self.call((inputs, params))
@@ -314,20 +325,23 @@ class NeuralDisCoCirc(keras.Model):
         answer_prob = tf.nn.softmax(answer_prob)
         return answer_prob
 
-    def save_models(self, path):
-        kwargs = {
+    def get_config(self):
+        return {
             "wire_dimension": self.wire_dimension,
-            "lexicon_weights": self.lexicon_weights,
-            "lexicon_biases": self.lexicon_biases,
-            "states": self.states,
             "is_in_question": self.is_in_question,
             "hidden_layers": self.hidden_layers,
         }
-        with open(path, "wb") as f:
-            pickle.dump(kwargs, f)
-        
+
     @classmethod
-    def load_models(cls, path):
-        with open(path, "rb") as f:
-            kwargs = pickle.load(f)
-        return cls(**kwargs)
+    def from_config(cls, config):
+        return cls(**config)
+    
+    @classmethod
+    def load_model(cls, path):
+        model = keras.models.load_model(
+            path,
+            custom_objects = {cls.__name__: cls},
+        )
+        model.run_eagerly = True
+        model.get_lexicon_params_from_saved_variables()
+        return model

@@ -47,5 +47,5 @@ print('getting accuracy...')
 accuracy = get_accuracy_one_network(neural_discocirc, dataset)
 print("The accuracy on the train set is", accuracy)
 
-
-neural_discocirc.save_models('./saved_models/trained_model_boxes_' + datetime.utcnow().strftime("%B_%d_%H_%M") +'.pkl')
+save_location = './saved_models/isin_trained_model_' + datetime.utcnow().strftime("%B_%d_%H_%M")
+neural_discocirc.save(save_location, save_traces=False)
