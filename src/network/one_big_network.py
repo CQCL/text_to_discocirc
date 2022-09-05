@@ -1,15 +1,16 @@
 import os
 
-from network.utils import get_box_name, get_params_dict_from_tf_variables
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
+from abc import ABC, abstractmethod
 import numpy as np
-import pickle
 import tensorflow as tf
 from tensorflow import keras
 from discopy.monoidal import Swap
 from discopy import Box, Ty
 from copy import deepcopy
+
+from network.utils import get_box_name, get_params_dict_from_tf_variables
 
 
 class MyDenseLayer(keras.layers.Layer):
@@ -19,12 +20,11 @@ class MyDenseLayer(keras.layers.Layer):
         return tf.where(tf.cast(mask, dtype=tf.bool), tf.nn.relu(out), out)
 
 
-class NeuralDisCoCirc(keras.Model):
+class NeuralDisCoCirc(keras.Model, ABC):
     def __init__(self,
         lexicon=None,
         wire_dimension=20,
         hidden_layers=[50],
-        is_in_question=None
     ):
         super().__init__()
         self.wire_dimension = wire_dimension
@@ -33,18 +33,8 @@ class NeuralDisCoCirc(keras.Model):
         self.lexicon = lexicon
         if lexicon:
             self.initialize_lexicon_weights(lexicon)
-        self.is_in_question = is_in_question
-        if is_in_question is None:
-            self.is_in_question = self.question_model()
         self.loss_tracker = keras.metrics.Mean(name="loss")
 
-
-    def question_model(self):
-        input = keras.Input(shape=(2 * self.wire_dimension))
-        output = keras.layers.Dense(self.wire_dimension, activation=tf.nn.relu)(input)
-        output = keras.layers.Dense(self.wire_dimension / 2, activation=tf.nn.relu)(output)
-        output = keras.layers.Dense(1)(output)
-        return keras.Model(inputs=input, outputs=output)
 
     @tf.function(jit_compile=True)
     def call(self, inputs_params):
@@ -281,49 +271,9 @@ class NeuralDisCoCirc(keras.Model):
             "loss": self.loss_tracker.result(),
         }
     
-    @tf.function(jit_compile=True)
+    @abstractmethod
     def compute_loss(self, outputs, tests):
-        num_wires = self.max_input_length // self.wire_dimension
-        output_wires = tf.split(outputs, num_wires, axis=1)
-        tests = np.array(tests).T
-        person, location = tests[0], tests[1]
-        person = [(person, i) for i, person in enumerate(person)]
-        person_vectors = tf.gather_nd(output_wires, person)
-        answer_prob = []
-        for i in range(num_wires):
-            location_vectors = output_wires[i]
-            answer_prob.append(tf.squeeze(
-                self.is_in_question(
-                    tf.concat([person_vectors, location_vectors], axis=1)
-                )
-            ))
-        answer_prob = tf.transpose(answer_prob)
-        answer_prob = tf.nn.softmax(answer_prob)
-        labels = tf.one_hot(location, answer_prob.shape[1])
-        loss = tf.nn.softmax_cross_entropy_with_logits(logits=answer_prob, labels=labels)
-        return loss
-
-    def get_probabilities(self, diagrams, tests):
-        inputs, params = self.batch_diagrams([diagrams])
-        outputs = self.call((inputs, params))
-        num_wires = self.max_input_length // self.wire_dimension
-        output_wires = tf.split(outputs, num_wires, axis=1)
-        tests = np.array(tests).T
-        person, location = tests[0], tests[1]
-        person = [person]
-        person = [(person, i) for i, person in enumerate(person)]
-        person_vectors = tf.gather_nd(output_wires, person)
-        answer_prob = []
-        for i in range(num_wires):
-            location_vectors = output_wires[i]
-            answer_prob.append(tf.squeeze(
-                self.is_in_question(
-                    tf.concat([person_vectors, location_vectors], axis=1)
-                )
-            ))
-        answer_prob = tf.transpose(answer_prob)
-        answer_prob = tf.nn.softmax(answer_prob)
-        return answer_prob
+        pass
 
     def get_config(self):
         return {

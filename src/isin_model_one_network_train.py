@@ -1,6 +1,6 @@
 import os
 from network.callbacks import ModelCheckpointWithoutSaveTraces
-from network.one_big_network import NeuralDisCoCirc
+from network.is_in_one_big_network import TrainerIsIn
 
 from network.utils import get_accuracy_one_network
 
@@ -11,9 +11,6 @@ from datetime import datetime
 from tensorflow import keras
 
 
-WIRE_DIMENSION = 10
-
-
 ###########################################################
 
 print('loading vocabulary...')
@@ -21,7 +18,7 @@ with open('data/task_vocab_dicts/en_qa1_train.p', 'rb') as f:
     vocab = pickle.load(f)
 
 print('initializing model...')
-neural_discocirc = NeuralDisCoCirc(vocab, WIRE_DIMENSION, hidden_layers=[10])
+neural_discocirc = TrainerIsIn(lexicon=vocab, wire_dimension=10, hidden_layers=[10])
 
 print('loading pickled dataset...')
 with open("data/pickled_dataset/dataset_task1_train.pkl", "rb") as f:
