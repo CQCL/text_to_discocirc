@@ -54,7 +54,7 @@ def noun_sort(circ):
     return circ
 
 
-def text_to_circuit(context, simplify_swaps=True, wire_order='update_order'):
+def text_to_circuit(context, simplify_swaps=True, wire_order='intro_order'):
     """
     Parameters:
     -----------
@@ -103,7 +103,7 @@ def collect_normal_nouns(circuit):
     """
     return circuit.boxes[:init_nouns(circuit) + 1]
 
-def compose_circuits(circ1, circ2, wire_order='update_order'):
+def compose_circuits(circ1, circ2, wire_order='intro_order'):
     """
     Return the sequential composite roughly corresponding 
     to circ2 << circ 1, where common noun 
