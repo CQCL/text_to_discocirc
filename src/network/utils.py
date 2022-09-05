@@ -118,6 +118,17 @@ def get_accuracy_isin(discocirc_trainer, dataset):
     accuracy = accuracy_score(location_true, location_predicted)
     return accuracy
 
+def get_accuracy_add_logits(discocirc_trainer, dataset, vocab_dict):
+    location_predicted = []
+    location_true = []
+    print(vocab_dict)
+    for i in range(len(dataset)):
+        probs = discocirc_trainer((dataset[i][0], dataset[i][1][0]))
+        location_predicted.append(np.argmax(probs))
+        location_true.append(vocab_dict[dataset[i][1][1]])
+    accuracy = accuracy_score(location_true, location_predicted)
+    return accuracy
+
 def get_classification_vocab(lexicon):
     """
     Parameters:
