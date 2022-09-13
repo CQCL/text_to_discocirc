@@ -31,9 +31,9 @@ class DisCoCircTrainerIsIn(DisCoCircTrainerBase):
     @tf.function
     def compute_loss(self, context_circuit_model, test):
         person, location = test
-        answer_prob = self.call((context_circuit_model, person))
-        labels = tf.one_hot(location, answer_prob.shape[0])
-        return tf.nn.softmax_cross_entropy_with_logits(logits=answer_prob, labels=labels)
+        logits = self.call((context_circuit_model, person))
+        labels = tf.one_hot(location, logits.shape[0])
+        return tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=labels)
 
     @tf.function
     def call(self, circ_person):
@@ -41,14 +41,14 @@ class DisCoCircTrainerIsIn(DisCoCircTrainerBase):
         output_vector = circ(tf.convert_to_tensor([[]]))[0]
         total_wires = output_vector.shape[0] // self.wire_dimension
         person_vector = output_vector[person * self.wire_dimension : (person + 1) * self.wire_dimension]
-        answer_prob = []
+        logits = []
         for i in range(total_wires):
             location_vector = output_vector[i * self.wire_dimension : (i + 1) * self.wire_dimension]
-            answer_prob.append(
+            logits.append(
                 self.is_in_question(
                     tf.expand_dims(tf.concat([person_vector, location_vector], axis=0), axis=0)
                 )[0][0]
             )
-        answer_prob = tf.convert_to_tensor(answer_prob)
-        answer_prob = tf.nn.softmax(answer_prob)
-        return answer_prob
+        logits = tf.convert_to_tensor(logits)
+        # answer_prob = tf.nn.softmax(answer_prob)
+        return logits

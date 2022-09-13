@@ -137,3 +137,5 @@ babi_dataset/
 .vscode
 
 logs/
+wandb/
+checkpoints/
