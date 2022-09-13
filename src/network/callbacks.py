@@ -1,4 +1,5 @@
 import tensorflow as tf
+import wandb
 
 class ValidationAccuracy(tf.keras.callbacks.Callback):
     def __init__(self, get_accuracy_fn, interval=1):
@@ -12,3 +13,4 @@ class ValidationAccuracy(tf.keras.callbacks.Callback):
             score = self.get_accuracy_fn(self.model, self.model.validation_dataset)
             tf.print("interval evaluation - epoch: {:d} - score: {:.6f}".format(epoch, score))
             tf.summary.scalar('validation accuracy', data=score, step=epoch)
+            wandb.log({'validation accuracy': score})
