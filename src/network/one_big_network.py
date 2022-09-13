@@ -153,46 +153,7 @@ class NeuralDisCoCirc(keras.Model, ABC):
         model_input = [self.states[get_box_name(box)] for box in diagram.foliation()[0].boxes]
 
         for fol in diagram.foliation()[1:]:
-            layer_weights = [[]]
-            layer_biases = [[]]
-            layer_activation_masks = [[]]
-
-            in_idx = 0
-            out_idx = 0
-            disco_layers = fol.layers
-            inps = fol.dom
-
-            if any(type(e) == Box for e in fol.boxes):
-                layer_weights = [[] for _ in range(1 + len(self.hidden_layers))]
-                layer_biases = [[] for _ in range(1 + len(self.hidden_layers))]
-                layer_activation_masks = [[] for _ in range(1 + len(self.hidden_layers))]
-
-            for d_layer in disco_layers:
-                left, box, right = d_layer
-
-                n_wires = len(inps[:in_idx+len(left)-out_idx])
-                idx = len(inps[:in_idx])
-
-                if idx < n_wires:
-                    for i in range(len(layer_weights)):
-                        layer_weights[i] += ([tf.eye(self.wire_dimension)] * (n_wires - in_idx))
-                        layer_biases[i] += ([tf.zeros((self.wire_dimension,))] * (n_wires - in_idx))
-                        layer_activation_masks[i] += ([tf.zeros((self.wire_dimension,))] * (n_wires - in_idx))
-
-                for i in range(len(layer_weights)):
-                    layer_weights[i].append(self.lexicon_weights[get_box_name(box)][i])
-                    layer_biases[i].append(self.lexicon_biases[get_box_name(box)][i])
-                    layer_activation_masks[i].append(tf.ones((self.lexicon_weights[get_box_name(box)][i].shape[1],)))
-
-                in_idx = len(left) - out_idx + len(box.dom)
-                out_idx = len(left @ box.cod)
-
-            if right:
-                for i in range(len(layer_weights)):
-                    layer_weights[i] += ([tf.eye(self.wire_dimension)] * len(right))
-                    layer_biases[i] += ([tf.zeros((self.wire_dimension,))] * len(right))
-                    layer_activation_masks[i] += ([tf.zeros((self.wire_dimension,))] * len(right))
-
+            layer_weights, layer_biases, layer_activation_masks = self.get_parameters_from_foliation(fol)
             model_weights += layer_weights
             model_biases += layer_biases
             model_activation_masks += layer_activation_masks
@@ -202,6 +163,37 @@ class NeuralDisCoCirc(keras.Model, ABC):
                 "biases": model_biases,
                 "masks": model_activation_masks,
                 }
+
+    def get_parameters_from_foliation(self, foliation):
+        weights = [[]]
+        biases = [[]]
+        activation_masks = [[]]
+        if any(type(e) == Box for e in foliation.boxes):
+            weights = [[] for _ in range(1 + len(self.hidden_layers))]
+            biases = [[] for _ in range(1 + len(self.hidden_layers))]
+            activation_masks = [[] for _ in range(1 + len(self.hidden_layers))]
+
+        wires_traversed = 0
+        for left, box, right in foliation.layers:
+            if len(left) > wires_traversed: # new identity wires are introduced
+                weights, biases, activation_masks = self.add_id_params_to_layer(
+                    len(left) - wires_traversed, weights, biases, activation_masks)
+            for i in range(len(weights)):
+                weights[i].append(self.lexicon_weights[get_box_name(box)][i])
+                biases[i].append(self.lexicon_biases[get_box_name(box)][i])
+                activation_masks[i].append(tf.ones((self.lexicon_weights[get_box_name(box)][i].shape[1],)))
+            wires_traversed = len(left) + len(box.cod)
+        if right: # identity wires on the right that were not traversered
+            weights, biases, activation_masks = self.add_id_params_to_layer(
+                len(right), weights, biases, activation_masks)
+        return weights, biases, activation_masks
+    
+    def add_id_params_to_layer(self, num_id_wires, weights, biases, activation_masks):
+        for i in range(len(weights)):
+            weights[i] += ([tf.eye(self.wire_dimension)] * num_id_wires)
+            biases[i] += ([tf.zeros((self.wire_dimension,))] * num_id_wires)
+            activation_masks[i] += ([tf.zeros((self.wire_dimension,))] * num_id_wires)
+        return weights, biases, activation_masks
 
     def initialize_lexicon_weights(self, lexicon):
         self.lexicon_weights = {}
