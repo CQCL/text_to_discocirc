@@ -12,10 +12,12 @@ from network.callbacks import ValidationAccuracy
 
 from sklearn.model_selection import train_test_split
 
-from network.models.add_logits_model import DisCoCircTrainerAddLogits
-from network.models.is_in_model import DisCoCircTrainerIsIn
-from network.models.lstm_model import DisCoCircTrainerLSTM
-from network.models.textspace_model import DisCoCircTrainerTextspace
+from network.models.add_logits_trainer import DisCoCircTrainerAddLogits
+from network.models.add_scaled_logits_trainer import \
+    DisCoCircTrainerAddScaledLogits
+from network.models.is_in_trainer import DisCoCircTrainerIsIn
+from network.models.lstm_trainer import DisCoCircTrainerLSTM
+from network.models.textspace_trainer import DisCoCircTrainerTextspace
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
@@ -93,7 +95,7 @@ config = {
     "epochs": 100,
     "batch_size": 32,
     "wire_dimension": 10,
-    "trainer": DisCoCircTrainerAddLogits,
+    "trainer": DisCoCircTrainerAddScaledLogits,
     "dataset": "add_logits_dataset_task1_train.pkl",
     "vocab": "en_qa1.p"
 }

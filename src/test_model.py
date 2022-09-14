@@ -6,10 +6,12 @@ from pandas import DataFrame
 import pickle
 from tensorflow import keras
 
-from network.models.add_logits_model import DisCoCircTrainerAddLogits
-from network.models.is_in_model import DisCoCircTrainerIsIn
-from network.models.lstm_model import DisCoCircTrainerLSTM
-from network.models.textspace_model import DisCoCircTrainerTextspace
+from network.models.add_logits_trainer import DisCoCircTrainerAddLogits
+from network.models.add_scaled_logits_trainer import \
+    DisCoCircTrainerAddScaledLogits
+from network.models.is_in_trainer import DisCoCircTrainerIsIn
+from network.models.lstm_trainer import DisCoCircTrainerLSTM
+from network.models.textspace_trainer import DisCoCircTrainerTextspace
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
@@ -75,10 +77,10 @@ base_path = os.path.abspath('..')
 # base_path = os.path.abspath('.')
 
 config = {
-    "trainer": DisCoCircTrainerAddLogits,
+    "trainer": DisCoCircTrainerAddScaledLogits,
     "dataset": "add_logits_dataset_task1_test.pkl",
     "vocab": "en_qa1.p",
-    "model": "DisCoCircTrainerAddLogits/DisCoCircTrainerAddLogits_Sep_14_15_44.pkl"
+    "model": "DisCoCircTrainerAddScaledLogits/DisCoCircTrainerAddScaledLogits_Sep_14_16_34.pkl"
 }
 
 if __name__ == "__main__":
