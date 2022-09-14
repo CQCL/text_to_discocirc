@@ -11,14 +11,17 @@ class TextSpace(keras.Model):
         self.wire_dim = wire_dim
         self.max_wire_num = max_wire_num
         self.textspace_dim = textspace_dim
+
         if latent_dim is None:
             self.latent_dim = max_wire_num * wire_dim
         else:
             self.latent_dim = latent_dim
+
         if space_expansion is None:
             self.space_expansion = self.define_model(self.wire_dim, self.latent_dim)
         else:
             self.space_expansion = space_expansion
+
         if space_contraction is None:
             self.space_contraction = self.define_model(self.latent_dim, self.textspace_dim)
         else:

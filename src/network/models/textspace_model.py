@@ -1,10 +1,13 @@
 import pickle
+
+import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
-from network.circuit_to_textspace import TextSpace
-from network.trainer_base_class import DisCoCircTrainerBase
-from network.utils import get_classification_vocab
+from network.models.trainer_base_class import DisCoCircTrainerBase
+from network.utils.circuit_to_textspace import TextSpace
+from network.utils.utils import get_classification_vocab
+
 
 class DisCoCircTrainerTextspace(DisCoCircTrainerBase):
     def __init__(self, 
@@ -80,7 +83,13 @@ class DisCoCircTrainerTextspace(DisCoCircTrainerBase):
         # output = keras.layers.Dense(self.textspace_dimension / 4, activation=tf.nn.relu)(input)
         output = keras.layers.Dense(len(self.classification_vocab), activation=tf.nn.softmax)(output)
         return keras.Model(inputs=input, outputs=output)
-    
+
+    def get_prediction_result(self, model_output):
+        return self.classification_vocab[np.argmax(model_output)]
+
+    def get_expected_result(self, given_value):
+        return given_value
+
     @tf.function
     def compute_loss(self, context_circuit_model, test):
         # test is a tuple containing (question_circuit_model, answer_word)

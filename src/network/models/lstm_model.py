@@ -1,9 +1,12 @@
 import pickle
+
+import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
-from network.trainer_base_class import DisCoCircTrainerBase
-from network.utils import get_classification_vocab
+from network.models.trainer_base_class import DisCoCircTrainerBase
+from network.utils.utils import get_classification_vocab
+
 
 class DisCoCircTrainerLSTM(DisCoCircTrainerBase):
     def __init__(self, 
@@ -61,6 +64,12 @@ class DisCoCircTrainerLSTM(DisCoCircTrainerBase):
         }
         with open(path, "wb") as f:
             pickle.dump(kwargs, f)
+
+    def get_prediction_result(self, model_output):
+        return self.classification_vocab[np.argmax(model_output)]
+
+    def get_expected_result(self, given_value):
+        return given_value
     
     @tf.function
     def compute_loss(self, context_circuit_model, test):
