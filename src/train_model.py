@@ -19,7 +19,7 @@ from network.models.is_in_trainer import DisCoCircTrainerIsIn
 from network.models.lstm_trainer import DisCoCircTrainerLSTM
 from network.models.textspace_trainer import DisCoCircTrainerTextspace
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 
 def train(base_path, save_path, vocab_path,
@@ -65,15 +65,17 @@ def train(base_path, save_path, vocab_path,
     )
 
     validation_callback = ValidationAccuracy(discocirc_trainer.get_accuracy,
-                                             interval=1)
+                                             interval=1, log_wandb=config["log_wandb"])
 
     print('training...')
+
+    callbacks = [tb_callback, validation_callback]
+    if config["log_wandb"]:
+        callbacks.append(WandbCallback)
     discocirc_trainer.fit(
         epochs=config['epochs'],
         batch_size=config['batch_size'],
-        callbacks=[tb_callback, validation_callback,
-                   # WandbCallback()
-                   ]
+        callbacks=callbacks
     )
 
     accuracy = discocirc_trainer.get_accuracy(discocirc_trainer.dataset)
@@ -97,10 +99,12 @@ config = {
     "wire_dimension": 10,
     "trainer": DisCoCircTrainerAddScaledLogits,
     "dataset": "add_logits_dataset_task1_train.pkl",
-    "vocab": "en_qa1.p"
+    "vocab": "en_qa1.p",
+    "log_wandb": False
 }
 
-# wandb.init(project="discocirc", entity="domlee", config=config)
+if config["log_wandb"]:
+    wandb.init(project="discocirc", entity="domlee", config=config)
 
 if __name__ == "__main__":
     train(base_path,
