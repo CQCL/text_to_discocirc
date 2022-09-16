@@ -6,10 +6,9 @@ from pathlib import Path
 
 from tensorflow import keras
 import wandb
-from wandb.keras import WandbCallback
+from wandb.integration.keras import WandbCallback
 
 from network.callbacks import ValidationAccuracy
-
 from sklearn.model_selection import train_test_split
 
 from network.models.add_logits_trainer import DisCoCircTrainerAddLogits
@@ -71,7 +70,7 @@ def train(base_path, save_path, vocab_path,
 
     callbacks = [tb_callback, validation_callback]
     if config["log_wandb"]:
-        callbacks.append(WandbCallback)
+        callbacks.append(WandbCallback())
     discocirc_trainer.fit(
         epochs=config['epochs'],
         batch_size=config['batch_size'],
