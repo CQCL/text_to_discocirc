@@ -14,6 +14,8 @@ from sklearn.model_selection import train_test_split
 from network.models.add_logits_trainer import DisCoCircTrainerAddLogits
 from network.models.add_scaled_logits_trainer import \
     DisCoCircTrainerAddScaledLogits
+from network.models.added_wires_to_logits_trainer import \
+    DisCoCircTrainerAddedWiresToLogits
 from network.models.is_in_trainer import DisCoCircTrainerIsIn
 from network.models.lstm_trainer import DisCoCircTrainerLSTM
 from network.models.textspace_trainer import DisCoCircTrainerTextspace
@@ -71,6 +73,7 @@ def train(base_path, save_path, vocab_path,
     callbacks = [tb_callback, validation_callback]
     if config["log_wandb"]:
         callbacks.append(WandbCallback())
+
     discocirc_trainer.fit(
         epochs=config['epochs'],
         batch_size=config['batch_size'],
@@ -96,7 +99,7 @@ config = {
     "epochs": 100,
     "batch_size": 32,
     "wire_dimension": 10,
-    "trainer": DisCoCircTrainerAddScaledLogits,
+    "trainer": DisCoCircTrainerAddedWiresToLogits,
     "dataset": "add_logits_dataset_task1_train.pkl",
     "vocab": "en_qa1.p",
     "log_wandb": False
