@@ -60,10 +60,24 @@ class Network(monoidal.Box):
 
     @staticmethod
     def dense_model(dom, cod, name=None, hidden_layer_dims=[], activation=tf.nn.relu):
+        """
+        Parameters
+        ----------
+        dom : int
+            dimension of the domain
+        cod : int
+            dimension of the codomain
+        name : str
+            name of the box
+        hidden_layer_dims : list of int
+            list of dimensions of the hidden layers
+        activation : function
+            activation function
+        """
         inputs = keras.Input(shape=(dom,))
         model = inputs
         for dim in hidden_layer_dims:
             model = keras.layers.Dense(dim, activation=activation, bias_initializer="glorot_uniform")(model)
-        outputs = keras.layers.Dense(cod, bias_initializer="glorot_uniform")(model)
+        outputs = keras.layers.Dense(cod, activation=activation, bias_initializer="glorot_uniform")(model)
         model = keras.Model(inputs=inputs, outputs=outputs, name=name)
         return Network(PRO(dom), PRO(cod), model)

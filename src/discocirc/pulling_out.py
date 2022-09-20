@@ -1,135 +1,113 @@
-from discopy import Diagram, Ty, Box, rigid
+from discopy import rigid
+from discopy.biclosed import Over, Under
 
-from discocirc.frame import Frame
-from discocirc.drag_up import drag_all, drag_out
-from discocirc.discocirc_utils import init_nouns
-
-
-def pull_out_of_frame_old(diagram, opening_box_index):
-    # ---------- 1. find closing box -----------
-    opening_box = diagram.boxes[opening_box_index]
-    closing_box_index = -1
-    closing_name = "[\\" + diagram.boxes[opening_box_index].name[1:]
-    # TODO: current assumption that names are unique
-    for i, box in enumerate(diagram.boxes[opening_box_index + 1:], opening_box_index + 1):
-        if box.name == closing_name:
-            closing_box_index = i
-            closing_box = box
-            break
-
-    # closing_box_index = [index for (index, box) in enumerate(diagram.boxes[opening_box_index + 1:]) if box.name == closing_name]
-    # --------- 2. create sub_diagram and recurse ---------
-    sub_diagram = Diagram(diagram.layers[opening_box_index].cod,
-                          diagram.layers[closing_box_index].dom,
-                          diagram.boxes[opening_box_index + 1:closing_box_index],
-                          diagram.offsets[opening_box_index + 1:closing_box_index])
-
-    sub_diagram = pulling_out_diagram_old(sub_diagram)
-    # TODO: check is this assignment necessary? (just out of interest)
-    # sub_diagram.draw()
-
-    # -------- 3. merge diagrams ---------
-    merged_boxes = diagram.boxes[:opening_box_index + 1] \
-                   + sub_diagram.boxes \
-                   + diagram.boxes[closing_box_index:]
-
-    merged_offsets = diagram.offsets[:opening_box_index + 1] \
-                        + sub_diagram.offsets \
-                        + diagram.offsets[closing_box_index:]
-
-    diagram = Diagram(diagram.dom, diagram.cod, merged_boxes, merged_offsets)
+from discocirc.discocirc_utils import get_ccg_input, get_ccg_output
 
 
+def get_holes(term):
+    """
+    Finds the position of all the holes a given term has,
+    i.e. all the inputs that are processes
 
-    # -------- 4. pull out for current frame ---------
+    :param term: Term - for which the holes should be found.
+    :return: List - position in argument list of all holes.
+    """
+    holes = []
+    ccg = term.ccg
+    for i in range(len(term.args)):
+        if isinstance(get_ccg_input(ccg), (Over, Under)):
+                # or get_ccg_input(ccg) == rigid.Ty('p')\
+                # or get_ccg_input(ccg) == rigid.Ty('s'):
+            holes.append(i)
+        ccg = get_ccg_output(ccg)
 
-    # 4.1 find nouns in frame
-    for i, box in enumerate(diagram.boxes[opening_box_index + 1:closing_box_index], opening_box_index + 1):
-        if box.dom == Ty():
-            # swap till at the top of frame
-            for swap_index in range(i, opening_box_index + 1, -1):
-                diagram = diagram.interchange(swap_index, swap_index - 1)
-                # diagram.draw()
-
-            noun_index = opening_box_index + 1
-            # diagram.draw()
-
-            # pull outside of top of frame
-            # TODO: we are currently hardcoding a -1 here as we assume that the box has more wires inside than outside
-            dom = opening_box.dom[:diagram.offsets[noun_index] - diagram.offsets[opening_box_index] - 1] @ box.cod @ opening_box.dom[diagram.offsets[noun_index] - diagram.offsets[opening_box_index] - 1:]
-            cod = opening_box.cod[:diagram.offsets[noun_index] - diagram.offsets[opening_box_index]] @ box.cod @ opening_box.cod[diagram.offsets[noun_index] - diagram.offsets[opening_box_index]:]
-
-            new_top = Box(opening_box.name, dom, cod)
-
-            new_boxes = diagram.boxes[:opening_box_index] + [box, new_top] + diagram.boxes[opening_box_index + 2:]
-            new_offsets = diagram.offsets[:opening_box_index] + [diagram.offsets[noun_index] - 1, diagram.offsets[opening_box_index]] + diagram.offsets[opening_box_index + 2:]
-
-            diagram = Diagram(diagram.dom, diagram.cod, new_boxes, new_offsets)
-
-            opening_box_index += 1
-            opening_box = new_top
-
-            # diagram.draw()
-        # 4.2 for each state: pull it out
-
-    # diagram.draw()
-
-    return diagram
+    return holes
 
 
-def pulling_out_diagram_old(diagram):
-    # find all frames
-    # TODO: check: do we have to restart once we find a frame?
-    for i, box in enumerate(diagram.boxes):
-        # identify start of a frame
-        if "[" in box.name and not '\\' in box.name:
-            diagram = pull_out_of_frame_old(diagram, i)
+def pull_single_hole(term, hole_position):
+    """
+    Given a hyperbox pull out the arguments of the specified hole.
+    For hyperboxes with multiple holes, this has to be called multiple times.
 
-    return diagram
+    :param term: Term - hyperbox who's arguments will be pulled out.
+                 We assume that all internal hyperboxes are fully pulled out.
+    :param hole_position: int - the argument position of the hole which should
+                be pulled out.
+    """
+    inner_term = term.args[hole_position]
 
-def pulling_out_diagram(diagram):
-    new_diag = rigid.Id(diagram.dom)
-    for left, box, right in diagram.layers:
-        if not isinstance(box, Frame):
-            new_diag = new_diag >> rigid.Id(left) @ box @ rigid.Id(right)
+    ccg = inner_term.ccg
+    pulled_out_args = []
+    hole_filling_args = []
+
+    inner_term_holes = get_holes(inner_term)
+
+    for i, arg in enumerate(inner_term.args.copy()):
+        # If current argument should go into a hole: skip
+        # (by recursive property of pulling out, we assume all internal
+        # hyperboxes to already be pulled out correctly).
+        # Thus, they should take exactly one input, which we don't pull out.
+        if i in inner_term_holes:
+            arg_ccg = arg.ccg
+            for _ in arg.args:
+                arg_ccg = get_ccg_output(arg_ccg)
+
+            hole_filling_args.append((type(ccg), arg_ccg))
+            ccg = get_ccg_output(ccg)
             continue
-        insides_with_nouns_removed = []
-        inside_nouns = []
-        num_pulled_out = 0
-        for inside in box._insides:
-            x, y, num_nouns = pull_out_of_frame(inside)
-            num_pulled_out += num_nouns
-            insides_with_nouns_removed.append(x)
-            inside_nouns.append(y)
-        if num_pulled_out > 0:
-            pulled_out_nouns = rigid.Id()
-            for nouns in inside_nouns:
-                pulled_out_nouns = pulled_out_nouns @ nouns
-            new_diag = new_diag >> rigid.Id(left) @ pulled_out_nouns @ rigid.Id(right)
-        frame_domain = box.dom @ Ty('n') ** num_pulled_out
-        new_frame = Frame(box.name, frame_domain, box.cod, insides_with_nouns_removed, box._slots)
-        new_diag = new_diag >> rigid.Id(left) @ new_frame @ rigid.Id(right)
-    return new_diag
 
-def pull_out_of_frame(diagram):
-    diagram = pulling_out_diagram(diagram)
-    diagram = drag_all(diagram)
-    num_nouns = init_nouns(diagram)+1
-    if num_nouns == 0:
-        return diagram, diagram[:0], 0
-    inside_nouns = diagram[:num_nouns]
-    nouns_offset_begin = inside_nouns.offsets[0]
-    nouns_offset_end = inside_nouns.offsets[-1]
-    pull_out_index = num_nouns
-    i = 0
-    for box, offset in zip(diagram[num_nouns:].boxes, diagram[num_nouns:].offsets):
-        if len(box.dom) <= num_nouns \
-            and offset >= nouns_offset_begin \
-            and offset + len(box.dom) - 1 <= nouns_offset_end:
-            diagram = drag_out(diagram, num_nouns+i, pull_out_index)
-            pull_out_index += 1
-        i += 1
+        # Pull out the argument
+        term.args.insert(hole_position + len(pulled_out_args) + 1, arg)
+        pulled_out_args.append((type(ccg), arg.output_ccg))
+        inner_term.args.remove(arg)
 
-    new_insides = diagram[pull_out_index:]
-    pulled_out_stuff = diagram[:pull_out_index]
-    return new_insides, pulled_out_stuff, num_nouns
+        ccg = get_ccg_output(ccg)
+
+    # Update the ccg_type in reverse order such that the first argument pulled
+    # out is the last added to the ccg and thus the next input
+    new_inner_ccg = inner_term.ccg
+    for _ in range(len(pulled_out_args) + len(hole_filling_args)):
+        new_inner_ccg = get_ccg_output(new_inner_ccg)
+
+    term_ccg = term.ccg
+    for _ in range(hole_position):
+        term_ccg = get_ccg_output(term_ccg)
+
+    for ccg_type, ccg in reversed(pulled_out_args):
+        if ccg_type == Over:
+            term_ccg.left = Over(term_ccg.left, ccg)
+            term_ccg.right = Over(term_ccg.right, ccg)
+            new_inner_ccg = Over(new_inner_ccg, ccg)
+        elif ccg_type == Under:
+            term_ccg.left = Under(ccg, term_ccg.left)
+            term_ccg.right = Under(ccg, term_ccg.right)
+            new_inner_ccg = Under(ccg, new_inner_ccg)
+
+    for ccg_type, ccg in reversed(hole_filling_args):
+        if ccg_type == Over:
+            new_inner_ccg = Over(new_inner_ccg, ccg)
+        elif ccg_type == Under:
+            new_inner_ccg = Under(ccg, new_inner_ccg)
+
+    inner_term.ccg = new_inner_ccg
+
+
+def recurse_pull(term):
+    """
+    Given a term, recursively pull out all the hyperboxes to get a fully
+    pulled out term.
+
+    :param term: Term - The term which should be pulled out.
+    """
+    for i in range(len(term.args)):
+        recurse_pull(term.args[i])
+
+    holes = get_holes(term)
+    num_holes = len(holes)
+    for i in range(len(holes)):
+        pull_single_hole(term, holes[i])
+
+        # As we pull out arguments, the position of the holes changes.
+        # The number of holes should not. Hence the assertion.
+        holes = get_holes(term)
+        assert(len(holes) == num_holes)
