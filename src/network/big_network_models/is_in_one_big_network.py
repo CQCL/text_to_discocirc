@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+from sklearn.metrics import accuracy_score
 from tensorflow import keras
 
 from network.big_network_models.one_big_network import NeuralDisCoCirc
@@ -61,3 +62,18 @@ class TrainerIsIn(NeuralDisCoCirc):
             "is_in_question": self.is_in_question
         })
         return config
+
+    def get_accuracy(discocirc_trainer, dataset):
+        diagrams = [data[0] for data in dataset]
+        discocirc_trainer.diagrams = diagrams
+        discocirc_trainer.get_parameters_from_diagrams(diagrams)
+        location_predicted = []
+        location_true = []
+        for i in range(len(dataset)):
+            print('predicting {} / {}'.format(i, len(dataset)), end='\r')
+            probs = discocirc_trainer.get_probabilities(dataset[i][0],
+                                                        dataset[i][1])
+            location_predicted.append(np.argmax(probs))
+            location_true.append(dataset[i][1][1])
+        accuracy = accuracy_score(location_true, location_predicted)
+        return accuracy
