@@ -22,14 +22,14 @@ class TrainerIsIn(NeuralDisCoCirc):
         output = keras.layers.Dense(1)(output)
         return keras.Model(inputs=input, outputs=output)
 
-    @tf.function(jit_compile=True)
+    # @tf.function(jit_compile=True)
     def compute_loss(self, outputs, tests):
         location, answer_prob = self._get_answer_prob(outputs, tests)
         labels = tf.one_hot(location, answer_prob.shape[1])
         loss = tf.nn.softmax_cross_entropy_with_logits(logits=answer_prob, labels=labels)
         return loss
 
-    @tf.function(jit_compile=True)
+    # @tf.function(jit_compile=True)
     def _get_answer_prob(self, outputs, tests):
         num_wires = self.max_input_length // self.wire_dimension
         output_wires = tf.split(outputs, num_wires, axis=1)
