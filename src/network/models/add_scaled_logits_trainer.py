@@ -8,7 +8,16 @@ from network.models.trainer_base_class import DisCoCircTrainerBase
 
 
 class DisCoCircTrainerAddScaledLogits(DisCoCircTrainerBase):
-    def __init__(self, nn_boxes, wire_dimension, lexicon=None, relevance_question=None, is_in_question=None, vocab_dict=None, **kwargs):
+    def __init__(self,
+                 nn_boxes,
+                 wire_dimension,
+                 lexicon=None,
+                 relevance_question=None,
+                 is_in_question=None,
+                 vocab_dict=None,
+                 relevance_hidden_layers=[10, 10],
+                 is_in_hidden_layers=[10, 10],
+                 **kwargs):
         super().__init__(nn_boxes, wire_dimension, lexicon=lexicon, **kwargs)
 
         if vocab_dict is None:
@@ -19,12 +28,14 @@ class DisCoCircTrainerAddScaledLogits(DisCoCircTrainerBase):
         self.vocab_dict = vocab_dict
 
         if is_in_question is None:
-            self.is_in_question = self.question_model(len(self.vocab_dict))
+            self.is_in_question = self.question_model(len(self.vocab_dict),
+                                                          is_in_hidden_layers)
         else:
             self.is_in_question = is_in_question
 
         if relevance_question is None:
-            self.relevance_question = self.question_model(1)
+            self.relevance_question = self.question_model(1,
+                                                          relevance_hidden_layers)
         else:
             self.relevance_question = relevance_question
 
@@ -34,15 +45,17 @@ class DisCoCircTrainerAddScaledLogits(DisCoCircTrainerBase):
             "wire_dimension": self.wire_dimension,
             "is_in_question": self.is_in_question,
             "relevance_question": self.relevance_question,
-            "vocab_dict": self.vocab_dict
+            "vocab_dict": self.vocab_dict,
         }
         with open(path, "wb") as f:
             pickle.dump(kwargs, f)
 
-    def question_model(self, output_size):
+    def question_model(self, output_size, hidden_layers):
         input = keras.Input(shape=(2 * self.wire_dimension))
-        output = keras.layers.Dense(self.wire_dimension, activation=tf.nn.relu)(input)
-        output = keras.layers.Dense(self.wire_dimension / 2, activation=tf.nn.relu)(output)
+        output = input
+        for layer in hidden_layers:
+            output = keras.layers.Dense(layer, activation=tf.nn.relu)(output)
+
         output = keras.layers.Dense(output_size)(output)
         return keras.Model(inputs=input, outputs=output)
 
