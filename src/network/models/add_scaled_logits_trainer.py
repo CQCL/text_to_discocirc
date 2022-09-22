@@ -66,17 +66,26 @@ class DisCoCircTrainerAddScaledLogits(DisCoCircTrainerBase):
         total_wires = output_vector.shape[0] // self.wire_dimension
         person_vector = output_vector[person * self.wire_dimension : (person + 1) * self.wire_dimension]
         logit_sum = tf.zeros(len(self.vocab_dict))
+        relevances = []
         for i in range(total_wires):
             location_vector = output_vector[i * self.wire_dimension : (i + 1) * self.wire_dimension]
-            answer = self.is_in_question(
-                    tf.expand_dims(tf.concat([person_vector, location_vector], axis=0), axis=0)
-                )[0]
 
             relevance = self.relevance_question(
                     tf.expand_dims(tf.concat([person_vector, location_vector], axis=0), axis=0)
                 )[0][0]
+            relevances.append(relevance)
+
+        relevances = tf.convert_to_tensor(relevances)
+        relevances = tf.nn.softmax(relevances)
+
+        for i in range(total_wires):
+            location_vector = output_vector[i * self.wire_dimension : (i + 1) * self.wire_dimension]
+
+            answer = self.is_in_question(
+                    tf.expand_dims(tf.concat([person_vector, location_vector], axis=0), axis=0)
+                )[0]
 
             logit = tf.convert_to_tensor(answer)
-            logit_sum = tf.math.add(tf.math.multiply(logit, relevance), logit_sum)
+            logit_sum = tf.math.add(tf.math.multiply(logit, relevances[i]), logit_sum)
 
         return logit_sum
