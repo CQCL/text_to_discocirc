@@ -31,7 +31,7 @@ class TrainerIsIn(NeuralDisCoCirc):
 
     # @tf.function(jit_compile=True)
     def _get_answer_prob(self, outputs, tests):
-        num_wires = self.max_input_length // self.wire_dimension
+        num_wires = outputs.shape[1] // self.wire_dimension
         output_wires = tf.split(outputs, num_wires, axis=1)
         tests = np.array(tests).T
         person, location = tests[0], tests[1]

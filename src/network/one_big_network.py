@@ -35,65 +35,30 @@ class NeuralDisCoCirc(keras.Model, ABC):
             self.initialize_lexicon_weights(lexicon)
         self.loss_tracker = keras.metrics.Mean(name="loss")
 
-    @tf.function(jit_compile=True)
-    def call(self, params):
-        input, weight, bias, mask = params
-        output = input
-        for weight, bias, mask in zip(weight, bias, mask):
-            output = self.dense_layer(output, weight, bias, mask)
-        return output
-    
-    def get_max_input_length(self, diagram_parameters):
-        inputs = [d["input"] for d in diagram_parameters.values()]
-        input_length = [sum(x.shape[0] for x in i) for i in inputs]
-        return max(input_length)
-
-    def get_max_layer_widths(self, diagram_parameters):
-        max_layer_widths = []
-        for d in diagram_parameters.values():
-            for i in range(len(d['weights'])):
-                if len(max_layer_widths) <= i:
-                    max_layer_widths.append((0,0))
-                max_layer_widths[i] = (
-                    max(max_layer_widths[i][0], sum(w.shape[0] for w in d['weights'][i])),
-                    max(max_layer_widths[i][1], sum(w.shape[1] for w in d['weights'][i]))
+    # ----------------------------------------------------------------
+    # INITIALIZE WEIGHTS
+    # ----------------------------------------------------------------
+    def initialize_lexicon_weights(self, lexicon):
+        self.lexicon_weights = {}
+        self.lexicon_biases = {}
+        self.states = {}
+        for word in lexicon:
+            input_dim = len(word.dom) * self.wire_dimension
+            output_dim = len(word.cod) * self.wire_dimension
+            name = get_box_name(word)
+            if input_dim == 0:
+                self.states[get_box_name(word)] = self.add_weight(
+                    shape = (output_dim,),
+                    initializer = "glorot_uniform",
+                    trainable = True,
+                    name = name + '_states'
                 )
-        return max_layer_widths
-    
-    def extend_depth_of_diagram_parameters(self, diagram_parameters):
-        max_depth = max([len(d['weights']) for d in diagram_parameters.values()])
-        for d in diagram_parameters.values():
-            diff = max_depth - len(d['weights'])
-            if diff > 0:
-                last_layer_width = sum(w.shape[1] for w in d['weights'][-1])
-                d['weights'].extend([[tf.eye(last_layer_width)] for _ in range(diff)])
-                d["biases"].extend([[tf.zeros((last_layer_width,))] for _ in range(diff)])
-                d["masks"].extend([[tf.zeros((last_layer_width,))] for _ in range(diff)])
-        return diagram_parameters
+            else:
+                w, b = self.get_box_layers([input_dim] + self.hidden_layers + [output_dim], name)
+                self.lexicon_weights[get_box_name(word)] = w
+                self.lexicon_biases[get_box_name(word)] = b
+        self.add_swap_weights_and_biases()
 
-    def batch_diagrams(self, diagrams):
-        diagrams = [self.diagram_parameters[repr(d)] for d in diagrams]
-        inputs = tf.stack(
-            [tf.concat(d['input'], axis=0) for d in diagrams],
-            axis = 0
-        )
-        weights = []
-        biases = []
-        masks = []
-        for i in range(len(diagrams[0]['weights'])):
-            weights.append(tf.stack(
-                [self._make_block_diag(d['weights'][i]) for d in diagrams],
-                axis = 0
-            ))
-            biases.append(tf.stack(
-                [tf.concat(d['biases'][i], axis=0) for d in diagrams],
-                axis = 0
-            ))
-            masks.append(tf.stack(
-                [tf.concat(d['masks'][i], axis=0) for d in diagrams],
-                axis = 0
-            ))
-        return inputs, weights, biases, masks
     def get_box_layers(self, layers, name):
         weights = [
             self.add_weight(
@@ -115,30 +80,40 @@ class NeuralDisCoCirc(keras.Model, ABC):
         ]
         return weights, biases
 
-    @staticmethod
-    def _make_block_diag(weights):
-        a = weights[0]
-        # Manually keeping track of the shape of a to make the method jit compilable
-        #TODO: remove this if jit_compile doesn't work
-        a_shape = (a.shape[0], a.shape[1])
-        for i in range(1, len(weights)):
-            b = weights[i]
-            a_temp = tf.concat((a, tf.zeros((a_shape[0], b.shape[1]))), axis=1)
-            b_temp = tf.concat((tf.zeros((b.shape[0], a_shape[1])), b), axis=1)
-            a_shape = (a_shape[0] + b.shape[0], a_shape[1] + b.shape[1])
-            a = tf.concat((a_temp, b_temp), axis=0)
-        return a
+    def add_swap_weights_and_biases(self):
+        swap = Swap(Ty('n'), Ty('n'))
+        e = tf.eye(self.wire_dimension)
+        z = tf.zeros([self.wire_dimension, self.wire_dimension])
+        a = tf.concat((z, e), axis=1)
+        b = tf.concat((e, z), axis=1)
+        swap_mat = tf.concat((a, b), axis=0)
+        self.lexicon_weights[get_box_name(swap)] = ([swap_mat] + [tf.eye(2 * self.wire_dimension)]
+                                                     * len(self.hidden_layers))
+        self.lexicon_biases[get_box_name(swap)] = ([tf.zeros((2 * self.wire_dimension,))]
+                                                     * (1 + len(self.hidden_layers)))
 
+    # ----------------------------------------------------------------
+    # FIT
+    # ----------------------------------------------------------------
+    def fit(self, dataset, epochs=100, batch_size=32, **kwargs):
+        self.diagrams = [data[0] for data in dataset]
+        self.tests = [data[1] for data in dataset]
+        self.get_parameters_from_diagrams(self.diagrams)
+        self.pad_parameters(self.diagram_parameters)
+        input_index_dataset = tf.data.Dataset.range(len(dataset))
+        input_index_dataset = input_index_dataset.shuffle(len(dataset))
+        input_index_dataset = input_index_dataset.batch(batch_size)
+        return super().fit(input_index_dataset, epochs=epochs, **kwargs)
+
+    # ----------------------------------------------------------------
+    # PARAMETERS FROM DIAGRAMS
+    # ----------------------------------------------------------------
     def get_parameters_from_diagrams(self, diagrams):
         self.diagram_parameters = {}
         for i, d in enumerate(diagrams):
             print("\rGetting parameters for diagram: {} of {}".format(i+1, len(diagrams)), end="")
             self.diagram_parameters[repr(d)] = self._get_parameters_from_diagram(d)
         print("\n")
-        self.diagram_parameters = self.extend_depth_of_diagram_parameters(self.diagram_parameters)
-        self.max_layer_widths = self.get_max_layer_widths(self.diagram_parameters)
-        self.max_input_length = self.get_max_input_length(self.diagram_parameters) 
-        self.add_padding_to_parameters(self.diagram_parameters, self.max_layer_widths, self.max_input_length)
 
     def _get_parameters_from_diagram(self, diagram):
         model_weights = []
@@ -189,7 +164,43 @@ class NeuralDisCoCirc(keras.Model, ABC):
             activation_masks[i] += ([tf.zeros((self.wire_dimension,))] * num_id_wires)
         return weights, biases, activation_masks
 
-    def add_padding_to_parameters(self, diagram_parameters, max_layer_widths, max_input_length):
+    # ----------------------------------------------------------------
+    # PADDING
+    # ----------------------------------------------------------------
+    def pad_parameters(self, diagram_parameters):
+        self.pad_depth_of_parameters(diagram_parameters)
+        max_input_length = self.get_max_input_length(diagram_parameters) 
+        max_layer_widths = self.get_max_layer_widths(diagram_parameters)
+        self.pad_width_of_parameters(diagram_parameters, max_layer_widths, max_input_length)
+
+    def get_max_input_length(self, diagram_parameters):
+        inputs = [d["input"] for d in diagram_parameters.values()]
+        input_length = [sum(x.shape[0] for x in i) for i in inputs]
+        return max(input_length)
+
+    def get_max_layer_widths(self, diagram_parameters):
+        max_layer_widths = []
+        for d in diagram_parameters.values():
+            for i in range(len(d['weights'])):
+                if len(max_layer_widths) <= i:
+                    max_layer_widths.append((0,0))
+                max_layer_widths[i] = (
+                    max(max_layer_widths[i][0], sum(w.shape[0] for w in d['weights'][i])),
+                    max(max_layer_widths[i][1], sum(w.shape[1] for w in d['weights'][i]))
+                )
+        return max_layer_widths
+
+    def pad_depth_of_parameters(self, diagram_parameters):
+        max_depth = max([len(d['weights']) for d in diagram_parameters.values()])
+        for d in diagram_parameters.values():
+            diff = max_depth - len(d['weights'])
+            if diff > 0:
+                last_layer_width = sum(w.shape[1] for w in d['weights'][-1])
+                d['weights'].extend([[tf.eye(last_layer_width)] for _ in range(diff)])
+                d["biases"].extend([[tf.zeros((last_layer_width,))] for _ in range(diff)])
+                d["masks"].extend([[tf.zeros((last_layer_width,))] for _ in range(diff)])
+   
+    def pad_width_of_parameters(self, diagram_parameters, max_layer_widths, max_input_length):
         for d in diagram_parameters.values():
             input_size = sum(x.shape[0] for x in d['input'])
             if input_size < max_input_length:
@@ -201,59 +212,10 @@ class NeuralDisCoCirc(keras.Model, ABC):
                 d['weights'][i].append(tf.zeros((diff_0, diff_1)))
                 d['biases'][i].append(tf.zeros((diff_1,)))
                 d['masks'][i].append(tf.zeros((diff_1,)))
-        return diagram_parameters
 
-    def initialize_lexicon_weights(self, lexicon):
-        self.lexicon_weights = {}
-        self.lexicon_biases = {}
-        self.states = {}
-        for word in lexicon:
-            input_dim = len(word.dom) * self.wire_dimension
-            output_dim = len(word.cod) * self.wire_dimension
-            name = get_box_name(word)
-            if input_dim == 0:
-                self.states[get_box_name(word)] = self.add_weight(
-                    shape = (output_dim,),
-                    initializer = "glorot_uniform",
-                    trainable = True,
-                    name = name + '_states'
-                )
-            else:
-                w, b = self.get_box_layers([input_dim] + self.hidden_layers + [output_dim], name)
-                self.lexicon_weights[get_box_name(word)] = w
-                self.lexicon_biases[get_box_name(word)] = b
-        self.add_swap_weights_and_biases()
-
-    def get_lexicon_params_from_saved_variables(self):
-        weights = [v for v in self.variables if 'weights' in v.name]
-        biases = [v for v in self.variables if 'biases' in v.name]
-        states = [v for v in self.variables if 'states' in v.name]
-        self.lexicon_weights = get_params_dict_from_tf_variables(weights, '_weights_')
-        self.lexicon_biases = get_params_dict_from_tf_variables(biases, '_biases_')
-        self.states = get_params_dict_from_tf_variables(states, '_states', is_state=True)
-        self.add_swap_weights_and_biases()
-
-    def add_swap_weights_and_biases(self):
-        swap = Swap(Ty('n'), Ty('n'))
-        e = tf.eye(self.wire_dimension)
-        z = tf.zeros([self.wire_dimension, self.wire_dimension])
-        a = tf.concat((z, e), axis=1)
-        b = tf.concat((e, z), axis=1)
-        swap_mat = tf.concat((a, b), axis=0)
-        self.lexicon_weights[get_box_name(swap)] = ([swap_mat] + [tf.eye(2 * self.wire_dimension)]
-                                                     * len(self.hidden_layers))
-        self.lexicon_biases[get_box_name(swap)] = ([tf.zeros((2 * self.wire_dimension,))]
-                                                     * (1 + len(self.hidden_layers)))
-
-    def fit(self, dataset, epochs=100, batch_size=32, **kwargs):
-        self.diagrams = [data[0] for data in dataset]
-        self.tests = [data[1] for data in dataset]
-        self.get_parameters_from_diagrams(self.diagrams)
-        input_index_dataset = tf.data.Dataset.range(len(dataset))
-        input_index_dataset = input_index_dataset.shuffle(len(dataset))
-        input_index_dataset = input_index_dataset.batch(batch_size)
-        return super().fit(input_index_dataset, epochs=epochs, **kwargs)
-    
+    # ----------------------------------------------------------------
+    # TRAIN STEP
+    # ----------------------------------------------------------------
     def train_step(self, batch_index):
         diagrams = [self.diagrams[int(i)] for i in batch_index]
         tests = [self.tests[int(i)] for i in batch_index]
@@ -270,11 +232,66 @@ class NeuralDisCoCirc(keras.Model, ABC):
         return {
             "loss": self.loss_tracker.result(),
         }
+
+    # ----------------------------------------------------------------
+    # BATCHING
+    # ----------------------------------------------------------------
+    def batch_diagrams(self, diagrams):
+        diagrams = [self.diagram_parameters[repr(d)] for d in diagrams]
+        inputs = tf.stack(
+            [tf.concat(d['input'], axis=0) for d in diagrams],
+            axis = 0
+        )
+        weights = []
+        biases = []
+        masks = []
+        for i in range(len(diagrams[0]['weights'])):
+            weights.append(tf.stack(
+                [self._make_block_diag(d['weights'][i]) for d in diagrams],
+                axis = 0
+            ))
+            biases.append(tf.stack(
+                [tf.concat(d['biases'][i], axis=0) for d in diagrams],
+                axis = 0
+            ))
+            masks.append(tf.stack(
+                [tf.concat(d['masks'][i], axis=0) for d in diagrams],
+                axis = 0
+            ))
+        return inputs, weights, biases, masks
+
+    @staticmethod
+    def _make_block_diag(weights):
+        a = weights[0]
+        # Manually keeping track of the shape of a to make the method jit compilable
+        #TODO: remove this if jit_compile doesn't work
+        a_shape = (a.shape[0], a.shape[1])
+        for i in range(1, len(weights)):
+            b = weights[i]
+            a_temp = tf.concat((a, tf.zeros((a_shape[0], b.shape[1]))), axis=1)
+            b_temp = tf.concat((tf.zeros((b.shape[0], a_shape[1])), b), axis=1)
+            a_shape = (a_shape[0] + b.shape[0], a_shape[1] + b.shape[1])
+            a = tf.concat((a_temp, b_temp), axis=0)
+        return a
+
+    # ----------------------------------------------------------------
+    # CALL
+    # ----------------------------------------------------------------
+    @tf.function(jit_compile=True)
+    def call(self, params):
+        input, weight, bias, mask = params
+        output = input
+        for weight, bias, mask in zip(weight, bias, mask):
+            output = self.dense_layer(output, weight, bias, mask)
+        return output
     
     @abstractmethod
     def compute_loss(self, outputs, tests):
         pass
 
+    # ----------------------------------------------------------------
+    # SAVING AND LOADING
+    # ----------------------------------------------------------------
     def get_config(self):
         return {
             "wire_dimension": self.wire_dimension,
@@ -294,3 +311,12 @@ class NeuralDisCoCirc(keras.Model, ABC):
         model.run_eagerly = True
         model.get_lexicon_params_from_saved_variables()
         return model
+
+    def get_lexicon_params_from_saved_variables(self):
+        weights = [v for v in self.variables if 'weights' in v.name]
+        biases = [v for v in self.variables if 'biases' in v.name]
+        states = [v for v in self.variables if 'states' in v.name]
+        self.lexicon_weights = get_params_dict_from_tf_variables(weights, '_weights_')
+        self.lexicon_biases = get_params_dict_from_tf_variables(biases, '_biases_')
+        self.states = get_params_dict_from_tf_variables(states, '_states', is_state=True)
+        self.add_swap_weights_and_biases()
