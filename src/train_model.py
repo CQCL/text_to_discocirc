@@ -36,13 +36,16 @@ def train(base_path, save_path, vocab_path,
 
     print('initializing model...')
     discocirc_trainer = trainer_class.from_lexicon(lexicon,
-                                                   config['wire_dimension'])
+                                                   config['wire_dimension'],
+                                                   hidden_layers=config['hidden_layers'],
+                                                   is_in_hidden_layers=config['is_in_hidden_layers'],
+                                                   relevance_hidden_layers=config['relevance_hidden_layers'])
 
     print('loading pickled dataset...')
     with open(base_path + data_path + config['dataset'],
               "rb") as f:
         # dataset is a tuple (context_circuit,(question_word_index, answer_word_index))
-        dataset = pickle.load(f)[:5]
+        dataset = pickle.load(f)
 
     train_dataset, validation_dataset = train_test_split(dataset,
                                                          test_size=0.1,
@@ -86,24 +89,29 @@ def train(base_path, save_path, vocab_path,
 
     save_base_path = base_path + save_path + trainer_class.__name__
     Path(save_base_path).mkdir(parents=True, exist_ok=True)
-    discocirc_trainer.save_models(
-        save_base_path + "/"
-        + trainer_class.__name__ + "_"
-        + datetime.utcnow().strftime("%h_%d_%H_%M") + '.pkl')
+    name = save_base_path + "/" + trainer_class.__name__ + "_" \
+           + datetime.utcnow().strftime("%h_%d_%H_%M") + '.pkl'
+    discocirc_trainer.save_models(name)
+
+    if config["log_wandb"]:
+        wandb.save(name)
 
 # this should the the path to \Neural-DisCoCirc
 base_path = os.path.abspath('..')
 # base_path = os.path.abspath('.')
-
 config = {
     "epochs": 100,
-    "batch_size": 32,
-    "wire_dimension": 10,
-    "trainer": DisCoCircTrainerAddedWiresToLogits,
+    "batch_size": 8,
+    "wire_dimension": 2,
+    "hidden_layers": [5],
+    "is_in_hidden_layers": [10],
+    "relevance_hidden_layers": [3],
+    "trainer": DisCoCircTrainerAddScaledLogits,
     "dataset": "add_logits_dataset_task1_train.pkl",
     "vocab": "en_qa1.p",
-    "log_wandb": False
+    "log_wandb": True
 }
+
 
 if config["log_wandb"]:
     wandb.init(project="discocirc", entity="domlee", config=config)
