@@ -1,5 +1,9 @@
 import os
 
+from sklearn.metrics import accuracy_score
+
+from network.utils.utils import get_box_name, get_params_dict_from_tf_variables
+
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 from abc import ABC, abstractmethod
@@ -9,9 +13,6 @@ from tensorflow import keras
 from discopy.monoidal import Swap
 from discopy import Box, Ty
 from copy import deepcopy
-
-from network.utils import get_box_name, get_params_dict_from_tf_variables
-
 
 class MyDenseLayer(keras.layers.Layer):
     @tf.function(jit_compile=True)
@@ -262,7 +263,22 @@ class NeuralDisCoCirc(keras.Model, ABC):
         return {
             "loss": self.loss_tracker.result(),
         }
-    
+
+    def get_accuracy(discocirc_trainer, dataset):
+        diagrams = [data[0] for data in dataset]
+        discocirc_trainer.diagrams = diagrams
+        discocirc_trainer.get_parameters_from_diagrams(diagrams)
+        location_predicted = []
+        location_true = []
+        for i in range(len(dataset)):
+            print('predicting {} / {}'.format(i, len(dataset)), end='\r')
+            probs = discocirc_trainer.get_probabilities(dataset[i][0],
+                                                        dataset[i][1])
+            location_predicted.append(np.argmax(probs))
+            location_true.append(dataset[i][1][1])
+        accuracy = accuracy_score(location_true, location_predicted)
+        return accuracy
+
     @abstractmethod
     def compute_loss(self, outputs, tests):
         pass

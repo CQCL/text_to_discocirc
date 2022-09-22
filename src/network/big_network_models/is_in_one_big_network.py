@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
-from network.one_big_network import NeuralDisCoCirc
+from network.big_network_models.one_big_network import NeuralDisCoCirc
 
 
 class TrainerIsIn(NeuralDisCoCirc):

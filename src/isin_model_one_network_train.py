@@ -1,8 +1,8 @@
 import os
-from network.callbacks import ModelCheckpointWithoutSaveTraces
-from network.is_in_one_big_network import TrainerIsIn
 
-from network.utils import get_accuracy_one_network
+from network.big_network_models.is_in_one_big_network import TrainerIsIn
+from network.callbacks import ModelCheckpointWithoutSaveTraces
+from network.utils.utils import get_accuracy_one_network
 
 os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
@@ -14,17 +14,17 @@ from tensorflow import keras
 ###########################################################
 
 print('loading vocabulary...')
-with open('data/task_vocab_dicts/en_qa1_train.p', 'rb') as f:
+with open('../data/task_vocab_dicts/en_qa1.p', 'rb') as f:
     vocab = pickle.load(f)
 
 print('initializing model...')
 neural_discocirc = TrainerIsIn(lexicon=vocab, wire_dimension=10, hidden_layers=[10])
 
 print('loading pickled dataset...')
-with open("data/pickled_dataset/dataset_task1_train.pkl", "rb") as f:
+with open("../data/pickled_dataset/isin_dataset_task1_train.pkl", "rb") as f:
     dataset = pickle.load(f)
 
-# dataset = dataset[:5]
+dataset = dataset[:5]
 
 # train_dataset, validation_dataset = train_test_split(dataset, test_size=0.1, random_state=1)
 

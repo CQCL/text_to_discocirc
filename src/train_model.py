@@ -8,7 +8,10 @@ from tensorflow import keras
 import wandb
 from wandb.integration.keras import WandbCallback
 
-from network.callbacks import ValidationAccuracy
+from network.big_network_models.is_in_one_big_network import TrainerIsIn
+from network.big_network_models.one_big_network import NeuralDisCoCirc
+from network.callbacks import ValidationAccuracy, \
+    ModelCheckpointWithoutSaveTraces
 from sklearn.model_selection import train_test_split
 
 from network.models.add_logits_trainer import DisCoCircTrainerAddLogits
@@ -19,6 +22,8 @@ from network.models.added_wires_to_logits_trainer import \
 from network.models.is_in_trainer import DisCoCircTrainerIsIn
 from network.models.lstm_trainer import DisCoCircTrainerLSTM
 from network.models.textspace_trainer import DisCoCircTrainerTextspace
+from network.models.trainer_base_class import DisCoCircTrainerBase
+
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
@@ -35,7 +40,11 @@ def train(base_path, save_path, vocab_path,
         lexicon = pickle.load(file)
 
     print('initializing model...')
-    discocirc_trainer = trainer_class.from_lexicon(lexicon,
+    if issubclass(trainer_class, NeuralDisCoCirc):
+        discocirc_trainer = TrainerIsIn(lexicon=lexicon, wire_dimension=10,
+                                       hidden_layers=[10])
+    else:
+        discocirc_trainer = trainer_class.from_lexicon(lexicon,
                                                    config['wire_dimension'])
 
     print('loading pickled dataset...')
@@ -48,21 +57,28 @@ def train(base_path, save_path, vocab_path,
                                                          test_size=0.1,
                                                          random_state=1)
 
-    print('compiling train dataset (size: {})...'.format(len(train_dataset)))
-    discocirc_trainer.compile_dataset(train_dataset)
-    print('compiling validation dataset (size: {})...'
-          .format(len(validation_dataset)))
-    discocirc_trainer.compile_dataset(validation_dataset, validation=True)
+    if issubclass(trainer_class, DisCoCircTrainerBase):
+        print('compiling train dataset (size: {})...'.format(len(train_dataset)))
+        # discocirc_trainer.compile_dataset(train_dataset)
+        print('compiling validation dataset (size: {})...'
+              .format(len(validation_dataset)))
+        # discocirc_trainer.compile_dataset(validation_dataset, validation=True)
 
-    discocirc_trainer.compile(optimizer=keras.optimizers.Adam(),
+        discocirc_trainer.compile(optimizer=keras.optimizers.Adam(),
                               run_eagerly=True)
 
+    datetime_string = datetime.now().strftime("%B_%d_%H_%M")
+
     tb_callback = keras.callbacks.TensorBoard(
-        log_dir='logs/{}'.format(datetime.now().strftime("%B_%d_%H_%M")),
+        log_dir='logs/{}'.format(datetime_string),
         histogram_freq=0,
         write_graph=True,
         write_images=True,
         update_freq='batch',
+    )
+
+    checkpoint_callback = ModelCheckpointWithoutSaveTraces(
+        filepath='checkpoints/{}'.format(datetime_string),
     )
 
     validation_callback = ValidationAccuracy(discocirc_trainer.get_accuracy,
@@ -70,15 +86,28 @@ def train(base_path, save_path, vocab_path,
 
     print('training...')
 
-    callbacks = [tb_callback, validation_callback]
+    callbacks = [tb_callback, validation_callback, checkpoint_callback]
+    callbacks = [tb_callback, checkpoint_callback]
     if config["log_wandb"]:
         callbacks.append(WandbCallback())
 
-    discocirc_trainer.fit(
-        epochs=config['epochs'],
-        batch_size=config['batch_size'],
-        callbacks=callbacks
-    )
+    if issubclass(trainer_class, NeuralDisCoCirc):
+        discocirc_trainer.compile(optimizer=keras.optimizers.Adam(),
+                                 run_eagerly=True)
+
+
+        discocirc_trainer.fit(
+            train_dataset,
+            epochs=config['epochs'],
+            batch_size=config['batch_size'],
+            callbacks=callbacks
+        )
+    else:
+        discocirc_trainer.fit(
+            epochs=config['epochs'],
+            batch_size=config['batch_size'],
+            callbacks=callbacks
+        )
 
     accuracy = discocirc_trainer.get_accuracy(discocirc_trainer.dataset)
 
@@ -99,8 +128,8 @@ config = {
     "epochs": 100,
     "batch_size": 32,
     "wire_dimension": 10,
-    "trainer": DisCoCircTrainerAddedWiresToLogits,
-    "dataset": "add_logits_dataset_task1_train.pkl",
+    "trainer": TrainerIsIn,
+    "dataset": "isin_dataset_task1_train.pkl",
     "vocab": "en_qa1.p",
     "log_wandb": False
 }
