@@ -99,12 +99,17 @@ class NeuralDisCoCirc(keras.Model, ABC):
     def fit(self, dataset, epochs=100, batch_size=32, **kwargs):
         self.diagrams = [data[0] for data in dataset]
         self.tests = [data[1] for data in dataset]
-        self.get_parameters_from_diagrams(self.diagrams)
-        self.pad_parameters(self.diagram_parameters)
+        self.compile_diagrams(self.diagrams)
         input_index_dataset = tf.data.Dataset.range(len(dataset))
         input_index_dataset = input_index_dataset.shuffle(len(dataset))
         input_index_dataset = input_index_dataset.batch(batch_size)
+        input_index_dataset = input_index_dataset.prefetch(tf.data.AUTOTUNE)
         return super().fit(input_index_dataset, epochs=epochs, **kwargs)
+
+    def compile_diagrams(self, diagrams):
+        self.get_parameters_from_diagrams(diagrams)
+        self.pad_parameters(self.diagram_parameters)
+        self.get_block_diag_paddings(self.diagram_parameters)
 
     # ----------------------------------------------------------------
     # PARAMETERS FROM DIAGRAMS
@@ -214,6 +219,23 @@ class NeuralDisCoCirc(keras.Model, ABC):
                 d['biases'][i].append(tf.zeros((diff_1,)))
                 d['masks'][i].append(tf.zeros((diff_1,)))
 
+    def get_block_diag_paddings(self, diagram_parameters):
+        for d in diagram_parameters.values():
+            d['weights_top_pads'] = []
+            d['weights_bottom_pads'] = []
+            for weights in d['weights']:
+                shapes = np.array([a.shape for a in weights])
+                weights_top_pads = []
+                weights_bottom_pads = []
+                for j in range(len(weights)):
+                    top = (np.sum(shapes[:j], axis=0)[0], weights[j].shape[1])
+                    bottom = (np.sum(shapes[j+1:], axis=0)[0], weights[j].shape[1])
+                    weights_top_pads.append(tf.zeros(top))
+                    weights_bottom_pads.append(tf.zeros(bottom))
+                d['weights_top_pads'].append(weights_top_pads)
+                d['weights_bottom_pads'].append(weights_bottom_pads)
+
+
     # ----------------------------------------------------------------
     # TRAIN STEP
     # ----------------------------------------------------------------
@@ -248,7 +270,9 @@ class NeuralDisCoCirc(keras.Model, ABC):
         masks = []
         for i in range(len(diagrams[0]['weights'])):
             weights.append(tf.stack(
-                [self._make_block_diag(d['weights'][i]) for d in diagrams],
+                [self._make_block_diag(
+                    d['weights'][i], d['weights_top_pads'][i], d['weights_bottom_pads'][i]
+                ) for d in diagrams],
                 axis = 0
             ))
             biases.append(tf.stack(
@@ -262,18 +286,15 @@ class NeuralDisCoCirc(keras.Model, ABC):
         return inputs, weights, biases, masks
 
     @staticmethod
-    def _make_block_diag(weights):
-        a = weights[0]
-        # Manually keeping track of the shape of a to make the method jit compilable
-        #TODO: remove this if jit_compile doesn't work
-        a_shape = (a.shape[0], a.shape[1])
-        for i in range(1, len(weights)):
-            b = weights[i]
-            a_temp = tf.concat((a, tf.zeros((a_shape[0], b.shape[1]))), axis=1)
-            b_temp = tf.concat((tf.zeros((b.shape[0], a_shape[1])), b), axis=1)
-            a_shape = (a_shape[0] + b.shape[0], a_shape[1] + b.shape[1])
-            a = tf.concat((a_temp, b_temp), axis=0)
-        return a
+    def _make_block_diag(weights, top_pads, bottom_pads):
+        columns = []
+        for i in range(len(weights)):
+            columns.append(
+                tf.concat([top_pads[i], weights[i], bottom_pads[i]], axis=0)
+            )
+        block_diag = tf.concat(columns, axis=1)
+        return block_diag
+
 
     # ----------------------------------------------------------------
     # CALL

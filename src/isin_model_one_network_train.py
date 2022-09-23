@@ -14,17 +14,17 @@ from tensorflow import keras
 ###########################################################
 
 print('loading vocabulary...')
-with open('../data/task_vocab_dicts/en_qa1.p', 'rb') as f:
+with open('./data/task_vocab_dicts/en_qa1.p', 'rb') as f:
     vocab = pickle.load(f)
 
 print('initializing model...')
 neural_discocirc = TrainerIsIn(lexicon=vocab, wire_dimension=10, hidden_layers=[10])
 
 print('loading pickled dataset...')
-with open("../data/pickled_dataset/isin_dataset_task1_train.pkl", "rb") as f:
+with open("./data/pickled_dataset/isin_dataset_task1_train.pkl", "rb") as f:
     dataset = pickle.load(f)
 
-dataset = dataset[:5]
+# dataset = dataset[:5]
 
 # train_dataset, validation_dataset = train_test_split(dataset, test_size=0.1, random_state=1)
 
@@ -35,6 +35,7 @@ datetime_string = datetime.now().strftime("%B_%d_%H_%M")
 
 tb_callback = keras.callbacks.TensorBoard(log_dir='logs/{}'.format(datetime_string), 
                                          histogram_freq=0,
+                                        #  profile_batch='8,30',
                                          write_graph=True,
                                          write_images=True,
                                          update_freq='batch',

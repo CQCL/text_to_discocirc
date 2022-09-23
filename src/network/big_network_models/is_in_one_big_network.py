@@ -47,13 +47,12 @@ class TrainerIsIn(NeuralDisCoCirc):
                 )
             ))
         answer_prob = tf.transpose(answer_prob)
-        answer_prob = tf.nn.softmax(answer_prob)
-        return location,answer_prob
+        return location, answer_prob
 
     def get_probabilities(self, diagrams, tests):
-        inputs, params = self.batch_diagrams([diagrams])
-        outputs = self.call((inputs, params))
-        answer_prob = self._get_answer_prob(outputs, tests)
+        batched_params = self.batch_diagrams(diagrams)
+        outputs = self.call(batched_params)
+        _, answer_prob = self._get_answer_prob(outputs, tests)
         return answer_prob
 
     def get_config(self):
