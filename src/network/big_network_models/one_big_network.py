@@ -1,18 +1,11 @@
-import os
-
-from sklearn.metrics import accuracy_score
-
-from network.utils.utils import get_box_name, get_params_dict_from_tf_variables
-
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
-
 from abc import ABC, abstractmethod
 import numpy as np
+from discopy import Box, Ty
+from discopy.monoidal import Swap
 import tensorflow as tf
 from tensorflow import keras
-from discopy.monoidal import Swap
-from discopy import Box, Ty
-from copy import deepcopy
+from network.utils.utils import get_box_name, get_params_dict_from_tf_variables
+
 
 class MyDenseLayer(keras.layers.Layer):
     @tf.function(jit_compile=True)
