@@ -240,10 +240,13 @@ class NeuralDisCoCirc(keras.Model, ABC):
     # TRAIN STEP
     # ----------------------------------------------------------------
     def train_step(self, batch_index):
-        diagrams = [self.diagrams[int(i)] for i in batch_index]
+        diagrams_params = [
+            self.diagram_parameters[repr(self.diagrams[int(i)])]
+            for i in batch_index
+        ]
         tests = [self.tests[int(i)] for i in batch_index]
         with tf.GradientTape() as tape:
-            batched_params = self.batch_diagrams(diagrams)
+            batched_params = self.batch_diagrams(diagrams_params)
             outputs = self.call(batched_params)
             loss = self.compute_loss(outputs, tests)
             grads = tape.gradient(loss, self.trainable_weights)
@@ -260,7 +263,6 @@ class NeuralDisCoCirc(keras.Model, ABC):
     # BATCHING
     # ----------------------------------------------------------------
     def batch_diagrams(self, diagrams):
-        diagrams = [self.diagram_parameters[repr(d)] for d in diagrams]
         inputs = tf.stack(
             [tf.concat(d['input'], axis=0) for d in diagrams],
             axis = 0

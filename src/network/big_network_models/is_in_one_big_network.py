@@ -50,7 +50,8 @@ class TrainerIsIn(NeuralDisCoCirc):
         return location, answer_prob
 
     def get_probabilities(self, diagrams, tests):
-        batched_params = self.batch_diagrams(diagrams)
+        diagrams_params = [self.diagram_parameters[repr(d)] for d in diagrams]
+        batched_params = self.batch_diagrams(diagrams_params)
         outputs = self.call(batched_params)
         _, answer_prob = self._get_answer_prob(outputs, tests)
         return answer_prob
