@@ -1,23 +1,23 @@
 import pickle
 
-import keras as keras
 import numpy as np
 import tensorflow as tf
+from tensorflow import keras
 
-from network.models.trainer_base_class import DisCoCircTrainerBase
+from network.trainer_base_class import DisCoCircTrainerBase
 from network.utils.utils import create_feedforward_network
 
 
-class DisCoCircTrainerAddedWiresToLogits(DisCoCircTrainerBase):
+class DisCoCircTrainerAddScaledLogits(DisCoCircTrainerBase):
     def __init__(self,
                  nn_boxes,
                  wire_dimension,
                  lexicon=None,
                  relevance_question=None,
                  is_in_question=None,
-                 is_in_hidden_layers=None,
-                 relevance_hidden_layers=None,
                  vocab_dict=None,
+                 relevance_hidden_layers=[10, 10],
+                 is_in_hidden_layers=[10, 10],
                  **kwargs):
         super().__init__(nn_boxes, wire_dimension, lexicon=lexicon, **kwargs)
 
@@ -30,7 +30,7 @@ class DisCoCircTrainerAddedWiresToLogits(DisCoCircTrainerBase):
 
         if is_in_question is None:
             self.is_in_question = create_feedforward_network(
-                input_dim = wire_dimension,
+                input_dim = 2 * wire_dimension,
                 output_dim = len(self.vocab_dict),
                 hidden_layers = is_in_hidden_layers
             )
@@ -43,7 +43,6 @@ class DisCoCircTrainerAddedWiresToLogits(DisCoCircTrainerBase):
                 output_dim = 1,
                 hidden_layers = relevance_hidden_layers
             )
-            self.relevance_question = self.question_model(2 * wire_dimension, 1)
         else:
             self.relevance_question = relevance_question
 
@@ -53,7 +52,7 @@ class DisCoCircTrainerAddedWiresToLogits(DisCoCircTrainerBase):
             "wire_dimension": self.wire_dimension,
             "is_in_question": self.is_in_question,
             "relevance_question": self.relevance_question,
-            "vocab_dict": self.vocab_dict
+            "vocab_dict": self.vocab_dict,
         }
         with open(path, "wb") as f:
             pickle.dump(kwargs, f)
@@ -68,7 +67,7 @@ class DisCoCircTrainerAddedWiresToLogits(DisCoCircTrainerBase):
     def compute_loss(self, context_circuit_model, test):
         person, location = test
         answer_prob = self.call((context_circuit_model, person))
-        labels = tf.one_hot(self.vocab_dict[location], answer_prob.shape[1])
+        labels = tf.one_hot(self.vocab_dict[location], answer_prob.shape[0])
         return tf.nn.softmax_cross_entropy_with_logits(logits=answer_prob, labels=labels)
 
     @tf.function
@@ -77,13 +76,27 @@ class DisCoCircTrainerAddedWiresToLogits(DisCoCircTrainerBase):
         output_vector = circ(tf.convert_to_tensor([[]]))[0]
         total_wires = output_vector.shape[0] // self.wire_dimension
         person_vector = output_vector[person * self.wire_dimension : (person + 1) * self.wire_dimension]
-
-        text_vector = tf.zeros((self.wire_dimension,))
+        logit_sum = tf.zeros(len(self.vocab_dict))
+        relevances = []
         for i in range(total_wires):
             location_vector = output_vector[i * self.wire_dimension : (i + 1) * self.wire_dimension]
+
             relevance = self.relevance_question(
                     tf.expand_dims(tf.concat([person_vector, location_vector], axis=0), axis=0)
                 )[0][0]
-            text_vector = text_vector + relevance * location_vector
-        logits = self.is_in_question(tf.expand_dims(text_vector, axis=0))
-        return logits
+            relevances.append(relevance)
+
+        relevances = tf.convert_to_tensor(relevances)
+        relevances = tf.nn.softmax(relevances)
+
+        for i in range(total_wires):
+            location_vector = output_vector[i * self.wire_dimension : (i + 1) * self.wire_dimension]
+
+            answer = self.is_in_question(
+                    tf.expand_dims(tf.concat([person_vector, location_vector], axis=0), axis=0)
+                )[0]
+
+            logit = tf.convert_to_tensor(answer)
+            logit_sum = tf.math.add(tf.math.multiply(logit, relevances[i]), logit_sum)
+
+        return logit_sum

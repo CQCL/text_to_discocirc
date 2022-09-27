@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
-from network.models.trainer_base_class import DisCoCircTrainerBase
+from network.trainer_base_class import DisCoCircTrainerBase
 from network.utils.utils import create_feedforward_network
 
 

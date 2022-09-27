@@ -2,7 +2,7 @@ from discopy import PRO
 from discopy.monoidal import Functor
 from tensorflow import keras
 
-from network.network import Network
+from network.utils.neural_network_category import Network
 
 
 def create_feedforward_network(input_dim, output_dim, hidden_layers, activation='relu', name=None):

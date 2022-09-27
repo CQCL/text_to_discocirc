@@ -6,12 +6,11 @@ from pandas import DataFrame
 import pickle
 from tensorflow import keras
 
-from network.models.add_logits_trainer import DisCoCircTrainerAddLogits
-from network.models.add_scaled_logits_trainer import \
-    DisCoCircTrainerAddScaledLogits
-from network.models.is_in_trainer import DisCoCircTrainerIsIn
-from network.models.lstm_trainer import DisCoCircTrainerLSTM
-from network.models.textspace_trainer import DisCoCircTrainerTextspace
+from network.add_logits_trainer import DisCoCircTrainerAddLogits
+from network.add_scaled_logits_trainer import DisCoCircTrainerAddScaledLogits
+from network.is_in_trainer import DisCoCircTrainerIsIn
+from network.lstm_trainer import DisCoCircTrainerLSTM
+from network.textspace_trainer import DisCoCircTrainerTextspace
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 

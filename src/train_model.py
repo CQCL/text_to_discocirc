@@ -9,17 +9,15 @@ from tensorflow import keras
 import wandb
 from wandb.integration.keras import WandbCallback
 
-from network.callbacks import ValidationAccuracy
+from network.utils.callbacks import ValidationAccuracy
 from sklearn.model_selection import train_test_split
 
-from network.models.add_logits_trainer import DisCoCircTrainerAddLogits
-from network.models.add_scaled_logits_trainer import \
-    DisCoCircTrainerAddScaledLogits
-from network.models.added_wires_to_logits_trainer import \
-    DisCoCircTrainerAddedWiresToLogits
-from network.models.is_in_trainer import DisCoCircTrainerIsIn
-from network.models.lstm_trainer import DisCoCircTrainerLSTM
-from network.models.textspace_trainer import DisCoCircTrainerTextspace
+from network.add_logits_trainer import DisCoCircTrainerAddLogits
+from network.add_scaled_logits_trainer import DisCoCircTrainerAddScaledLogits
+from network.added_wires_to_logits_trainer import DisCoCircTrainerAddedWiresToLogits
+from network.is_in_trainer import DisCoCircTrainerIsIn
+from network.lstm_trainer import DisCoCircTrainerLSTM
+from network.textspace_trainer import DisCoCircTrainerTextspace
 
 
 # this should the the path to \Neural-DisCoCirc
