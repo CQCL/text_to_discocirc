@@ -22,6 +22,25 @@ from network.models.lstm_trainer import DisCoCircTrainerLSTM
 from network.models.textspace_trainer import DisCoCircTrainerTextspace
 
 
+# this should the the path to \Neural-DisCoCirc
+# base_path = os.path.abspath('..')
+base_path = os.path.abspath('.')
+config = {
+    "epochs": 100,
+    "batch_size": 8,
+    "trainer": DisCoCircTrainerIsIn,
+    "dataset": "isin_dataset_task1_train.pkl",
+    "vocab": "en_qa1.p",
+    "log_wandb": False
+}
+model_config = {
+    "wire_dimension": 2,
+    "hidden_layers": [5],
+    "is_in_hidden_layers": [10],
+    # "relevance_hidden_layers": [3],
+}
+config.update(model_config)
+
 
 def train(base_path, save_path, vocab_path,
           data_path):
@@ -35,17 +54,13 @@ def train(base_path, save_path, vocab_path,
         lexicon = pickle.load(file)
 
     print('initializing model...')
-    discocirc_trainer = trainer_class.from_lexicon(lexicon,
-                                                   config['wire_dimension'],
-                                                   hidden_layers=config['hidden_layers'],
-                                                   is_in_hidden_layers=config['is_in_hidden_layers'],
-                                                   relevance_hidden_layers=config['relevance_hidden_layers'])
+    discocirc_trainer = trainer_class.from_lexicon(lexicon, **model_config)
 
     print('loading pickled dataset...')
     with open(base_path + data_path + config['dataset'],
               "rb") as f:
         # dataset is a tuple (context_circuit,(question_word_index, answer_word_index))
-        dataset = pickle.load(f)
+        dataset = pickle.load(f)[:20]
 
     train_dataset, validation_dataset = train_test_split(dataset,
                                                          test_size=0.1,
@@ -95,23 +110,6 @@ def train(base_path, save_path, vocab_path,
 
     if config["log_wandb"]:
         wandb.save(name)
-
-# this should the the path to \Neural-DisCoCirc
-# base_path = os.path.abspath('..')
-base_path = os.path.abspath('.')
-config = {
-    "epochs": 100,
-    "batch_size": 8,
-    "wire_dimension": 2,
-    "hidden_layers": [5],
-    "is_in_hidden_layers": [10],
-    "relevance_hidden_layers": [3],
-    "trainer": DisCoCircTrainerIsIn,
-    "dataset": "add_logits_dataset_task1_train.pkl",
-    "vocab": "en_qa1.p",
-    "log_wandb": False
-}
-
 
 if config["log_wandb"]:
     wandb.init(project="discocirc", entity="domlee", config=config)

@@ -6,21 +6,13 @@ from sklearn.metrics import accuracy_score
 from tensorflow import keras
 
 from network.utils.utils import get_fast_nn_functor, initialize_boxes
-    def question_model(self, output_size, hidden_layers):
-        input = keras.Input(shape=(2 * self.wire_dimension))
-        output = input
-        for layer in hidden_layers:
-            output = keras.layers.Dense(layer, activation=tf.nn.relu)(output)
 
-        output = keras.layers.Dense(output_size)(output)
-        return keras.Model(inputs=input, outputs=output)
 
 class DisCoCircTrainerBase(ABC, keras.Model):
     def __init__(self, nn_boxes, wire_dimension, compiled_dataset=None,
                  lexicon=None, **kwargs):
         super(DisCoCircTrainerBase, self).__init__(**kwargs)
         self.nn_boxes = nn_boxes
-        self.trainable_models = [box.model for box in nn_boxes.values()]
         self.wire_dimension = wire_dimension
         self.nn_functor = get_fast_nn_functor(self.nn_boxes, wire_dimension)
         self.dataset = compiled_dataset
@@ -40,8 +32,7 @@ class DisCoCircTrainerBase(ABC, keras.Model):
         wire_dimension : int
             dimension of the noun wires.
         """
-        nn_boxes, trainable_models = initialize_boxes(lexicon, wire_dimension,
-                                                      hidden_layers)
+        nn_boxes = initialize_boxes(lexicon, wire_dimension, hidden_layers)
         return cls(nn_boxes, wire_dimension, compiled_dataset=None,
                    lexicon=lexicon, **kwargs)
 
@@ -70,7 +61,7 @@ class DisCoCircTrainerBase(ABC, keras.Model):
             print(count + 1, "/", len(dataset), end="\r")
             count += 1
             context_circuit_model = self.nn_functor(context_circuit)
-            model_dataset.append([context_circuit_model.model, test])
+            model_dataset.append([context_circuit_model, test])
         if validation:
             self.validation_dataset = model_dataset
         else:
