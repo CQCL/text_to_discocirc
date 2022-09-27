@@ -6,7 +6,14 @@ from sklearn.metrics import accuracy_score
 from tensorflow import keras
 
 from network.utils.utils import get_fast_nn_functor, initialize_boxes
+    def question_model(self, output_size, hidden_layers):
+        input = keras.Input(shape=(2 * self.wire_dimension))
+        output = input
+        for layer in hidden_layers:
+            output = keras.layers.Dense(layer, activation=tf.nn.relu)(output)
 
+        output = keras.layers.Dense(output_size)(output)
+        return keras.Model(inputs=input, outputs=output)
 
 class DisCoCircTrainerBase(ABC, keras.Model):
     def __init__(self, nn_boxes, wire_dimension, compiled_dataset=None,

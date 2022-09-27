@@ -1,5 +1,6 @@
 import os
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import pickle
 from datetime import datetime
 from pathlib import Path
@@ -20,7 +21,6 @@ from network.models.is_in_trainer import DisCoCircTrainerIsIn
 from network.models.lstm_trainer import DisCoCircTrainerLSTM
 from network.models.textspace_trainer import DisCoCircTrainerTextspace
 
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 
 def train(base_path, save_path, vocab_path,
@@ -97,8 +97,8 @@ def train(base_path, save_path, vocab_path,
         wandb.save(name)
 
 # this should the the path to \Neural-DisCoCirc
-base_path = os.path.abspath('..')
-# base_path = os.path.abspath('.')
+# base_path = os.path.abspath('..')
+base_path = os.path.abspath('.')
 config = {
     "epochs": 100,
     "batch_size": 8,
@@ -106,10 +106,10 @@ config = {
     "hidden_layers": [5],
     "is_in_hidden_layers": [10],
     "relevance_hidden_layers": [3],
-    "trainer": DisCoCircTrainerAddScaledLogits,
+    "trainer": DisCoCircTrainerIsIn,
     "dataset": "add_logits_dataset_task1_train.pkl",
     "vocab": "en_qa1.p",
-    "log_wandb": True
+    "log_wandb": False
 }
 
 

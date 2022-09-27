@@ -5,10 +5,20 @@ import numpy as np
 import tensorflow as tf
 
 from network.models.trainer_base_class import DisCoCircTrainerBase
+from network.utils.utils import create_feedforward_network
 
 
 class DisCoCircTrainerAddedWiresToLogits(DisCoCircTrainerBase):
-    def __init__(self, nn_boxes, wire_dimension, lexicon=None, relevance_question=None, is_in_question=None, vocab_dict=None, **kwargs):
+    def __init__(self,
+                 nn_boxes,
+                 wire_dimension,
+                 lexicon=None,
+                 relevance_question=None,
+                 is_in_question=None,
+                 is_in_hidden_layers=None,
+                 relevance_hidden_layers=None,
+                 vocab_dict=None,
+                 **kwargs):
         super().__init__(nn_boxes, wire_dimension, lexicon=lexicon, **kwargs)
 
         if vocab_dict is None:
@@ -19,11 +29,20 @@ class DisCoCircTrainerAddedWiresToLogits(DisCoCircTrainerBase):
         self.vocab_dict = vocab_dict
 
         if is_in_question is None:
-            self.is_in_question = self.question_model(wire_dimension, len(self.vocab_dict))
+            self.is_in_question = create_feedforward_network(
+                input_dim = wire_dimension,
+                output_dim = len(self.vocab_dict),
+                hidden_layers = is_in_hidden_layers
+            )
         else:
             self.is_in_question = is_in_question
 
         if relevance_question is None:
+            self.relevance_question = create_feedforward_network(
+                input_dim = 2 * wire_dimension,
+                output_dim = 1,
+                hidden_layers = relevance_hidden_layers
+            )
             self.relevance_question = self.question_model(2 * wire_dimension, 1)
         else:
             self.relevance_question = relevance_question
@@ -38,13 +57,6 @@ class DisCoCircTrainerAddedWiresToLogits(DisCoCircTrainerBase):
         }
         with open(path, "wb") as f:
             pickle.dump(kwargs, f)
-
-    def question_model(self, input_size, output_size):
-        input = keras.Input(shape=(input_size))
-        output = keras.layers.Dense(self.wire_dimension, activation=tf.nn.relu)(input)
-        output = keras.layers.Dense(self.wire_dimension / 2, activation=tf.nn.relu)(output)
-        output = keras.layers.Dense(output_size)(output)
-        return keras.Model(inputs=input, outputs=output)
 
     def get_prediction_result(self, call_result):
         return np.argmax(call_result)

@@ -5,6 +5,14 @@ from tensorflow import keras
 from network.network import Network
 
 
+def create_feedforward_network(input_dim, output_dim, hidden_layers, activation='relu'):
+        input = keras.Input(shape=(input_dim,))
+        output = input
+        for layer in hidden_layers:
+            output = keras.layers.Dense(layer, activation=activation)(output)
+        output = keras.layers.Dense(output_dim)(output)
+        return keras.Model(inputs=input, outputs=output)
+
 def get_nn_functor(nn_boxes, wire_dim):
     def neural_ob(t):
         return PRO(len(t) * wire_dim)
@@ -114,4 +122,3 @@ def get_classification_vocab(lexicon):
         if name not in vocab:
             vocab.append(name)
     return vocab
-    
