@@ -1,7 +1,7 @@
 import os
 
 from network.big_network_models.is_in_one_big_network import TrainerIsIn
-from network.callbacks import ModelCheckpointWithoutSaveTraces
+from network.utils.callbacks import ModelCheckpointWithoutSaveTraces
 from network.utils.utils import get_accuracy_one_network
 
 os.environ["CUDA_VISIBLE_DEVICES"]="1"
