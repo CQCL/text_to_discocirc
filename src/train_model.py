@@ -1,5 +1,6 @@
 import os
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import pickle
 from datetime import datetime
 from pathlib import Path
@@ -8,24 +9,35 @@ from tensorflow import keras
 import wandb
 from wandb.integration.keras import WandbCallback
 
-from network.big_network_models.is_in_one_big_network import TrainerIsIn
-from network.big_network_models.one_big_network import NeuralDisCoCirc
-from network.callbacks import ValidationAccuracy, \
-    ModelCheckpointWithoutSaveTraces
+from network.utils.callbacks import ValidationAccuracy
 from sklearn.model_selection import train_test_split
 
-from network.models.add_logits_trainer import DisCoCircTrainerAddLogits
-from network.models.add_scaled_logits_trainer import \
-    DisCoCircTrainerAddScaledLogits
-from network.models.added_wires_to_logits_trainer import \
-    DisCoCircTrainerAddedWiresToLogits
-from network.models.is_in_trainer import DisCoCircTrainerIsIn
-from network.models.lstm_trainer import DisCoCircTrainerLSTM
-from network.models.textspace_trainer import DisCoCircTrainerTextspace
-from network.models.trainer_base_class import DisCoCircTrainerBase
+from network.add_logits_trainer import DisCoCircTrainerAddLogits
+from network.add_scaled_logits_trainer import DisCoCircTrainerAddScaledLogits
+from network.added_wires_to_logits_trainer import DisCoCircTrainerAddedWiresToLogits
+from network.is_in_trainer import DisCoCircTrainerIsIn
+from network.lstm_trainer import DisCoCircTrainerLSTM
+from network.textspace_trainer import DisCoCircTrainerTextspace
 
 
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+# this should the the path to \Neural-DisCoCirc
+# base_path = os.path.abspath('..')
+base_path = os.path.abspath('.')
+config = {
+    "epochs": 100,
+    "batch_size": 8,
+    "trainer": DisCoCircTrainerIsIn,
+    "dataset": "isin_dataset_task1_train.pkl",
+    "vocab": "en_qa1.p",
+    "log_wandb": False
+}
+model_config = {
+    "wire_dimension": 2,
+    "hidden_layers": [5],
+    "is_in_hidden_layers": [10],
+    # "relevance_hidden_layers": [3],
+}
+config.update(model_config)
 
 
 def train(base_path, save_path, vocab_path,
@@ -41,14 +53,9 @@ def train(base_path, save_path, vocab_path,
 
     print('initializing model...')
     if issubclass(trainer_class, NeuralDisCoCirc):
-        discocirc_trainer = TrainerIsIn(lexicon=lexicon, wire_dimension=10,
-                                       hidden_layers=[10])
+        discocirc_trainer = TrainerIsIn(lexicon=lexicon, **model_config)
     else:
-        discocirc_trainer = trainer_class.from_lexicon(lexicon,
-                                                   config['wire_dimension'],
-                                                   hidden_layers=config['hidden_layers'],
-                                                   is_in_hidden_layers=config['is_in_hidden_layers'],
-                                                   relevance_hidden_layers=config['relevance_hidden_layers'])
+        discocirc_trainer = trainer_class.from_lexicon(lexicon, **model_config)
 
     print('loading pickled dataset...')
     with open(base_path + data_path + config['dataset'],
@@ -60,14 +67,13 @@ def train(base_path, save_path, vocab_path,
                                                          test_size=0.1,
                                                          random_state=1)
 
-    if issubclass(trainer_class, DisCoCircTrainerBase):
-        print('compiling train dataset (size: {})...'.format(len(train_dataset)))
-        # discocirc_trainer.compile_dataset(train_dataset)
-        print('compiling validation dataset (size: {})...'
-              .format(len(validation_dataset)))
-        # discocirc_trainer.compile_dataset(validation_dataset, validation=True)
+    print('compiling train dataset (size: {})...'.format(len(train_dataset)))
+    discocirc_trainer.compile_dataset(train_dataset)
+    print('compiling validation dataset (size: {})...'
+          .format(len(validation_dataset)))
+    discocirc_trainer.compile_dataset(validation_dataset, validation=True)
 
-        discocirc_trainer.compile(optimizer=keras.optimizers.Adam(),
+    discocirc_trainer.compile(optimizer=keras.optimizers.Adam(),
                               run_eagerly=True)
 
     datetime_string = datetime.now().strftime("%B_%d_%H_%M")
@@ -124,22 +130,6 @@ def train(base_path, save_path, vocab_path,
 
     if config["log_wandb"]:
         wandb.save(name)
-
-# this should the the path to \Neural-DisCoCirc
-base_path = os.path.abspath('..')
-# base_path = os.path.abspath('.')
-config = {
-    "epochs": 100,
-    "batch_size": 32,
-    "wire_dimension": 10,
-    "hidden_layers": [5],
-    "is_in_hidden_layers": [10],
-    "relevance_hidden_layers": [3],
-    "trainer": TrainerIsIn,
-    "dataset": "isin_dataset_task1_train.pkl",
-    "vocab": "en_qa1.p",
-    "log_wandb": False
-}
 
 if config["log_wandb"]:
     wandb.init(project="discocirc", entity="domlee", config=config)

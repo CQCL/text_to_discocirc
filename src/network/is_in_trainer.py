@@ -5,14 +5,19 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
-from network.models.trainer_base_class import DisCoCircTrainerBase
+from network.trainer_base_class import DisCoCircTrainerBase
+from network.utils.utils import create_feedforward_network
 
 
 class DisCoCircTrainerIsIn(DisCoCircTrainerBase, ABC):
-    def __init__(self, nn_boxes, wire_dimension, is_in_question=None, **kwargs):
+    def __init__(self, nn_boxes, wire_dimension, is_in_question=None, is_in_hidden_layers=[10], **kwargs):
         super().__init__(nn_boxes, wire_dimension, **kwargs)
         if is_in_question is None:
-            self.is_in_question = self.question_model()
+            self.is_in_question = create_feedforward_network(
+                input_dim = 2 * wire_dimension,
+                output_dim = 1,
+                hidden_layers = is_in_hidden_layers
+            )
         else:
             self.is_in_question = is_in_question
 
@@ -24,13 +29,6 @@ class DisCoCircTrainerIsIn(DisCoCircTrainerBase, ABC):
         }
         with open(path, "wb") as f:
             pickle.dump(kwargs, f)
-
-    def question_model(self):
-        input = keras.Input(shape=(2 * self.wire_dimension))
-        output = keras.layers.Dense(self.wire_dimension, activation=tf.nn.relu)(input)
-        output = keras.layers.Dense(self.wire_dimension / 2, activation=tf.nn.relu)(output)
-        output = keras.layers.Dense(1)(output)
-        return keras.Model(inputs=input, outputs=output)
 
     def get_prediction_result(self, model_output):
         return np.argmax(model_output)
@@ -60,5 +58,4 @@ class DisCoCircTrainerIsIn(DisCoCircTrainerBase, ABC):
                 )[0][0]
             )
         logits = tf.convert_to_tensor(logits)
-        # answer_prob = tf.nn.softmax(answer_prob)
         return logits

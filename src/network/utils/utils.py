@@ -4,8 +4,16 @@ from discopy.monoidal import Functor
 from sklearn.metrics import accuracy_score
 from tensorflow import keras
 
-from network.network import Network
+from network.utils.neural_network_category import Network
 
+
+def create_feedforward_network(input_dim, output_dim, hidden_layers, activation='relu', name=None):
+    input = keras.Input(shape=(input_dim,))
+    output = input
+    for layer in hidden_layers:
+        output = keras.layers.Dense(layer, activation=activation)(output)
+    output = keras.layers.Dense(output_dim)(output)
+    return keras.Model(inputs=input, outputs=output, name=name)
 
 def get_nn_functor(nn_boxes, wire_dim):
     def neural_ob(t):
@@ -18,54 +26,46 @@ def get_nn_functor(nn_boxes, wire_dim):
 def make_lambda_layer(a, b):
     return keras.layers.Lambda(lambda x: x[:, a:b])
 
+def make_swap_layer(wire_dim):
+    inputs = keras.Input(shape=(2 * wire_dim,))
+    model1 = keras.layers.Lambda(
+        lambda x: x[:, :wire_dim], )(inputs)
+    model2 = keras.layers.Lambda(
+        lambda x: x[:, wire_dim:], )(inputs)
+    outputs = keras.layers.Concatenate()([model2, model1])
+    return keras.Model(inputs=inputs, outputs=outputs)
+
 def get_fast_nn_functor(nn_boxes, wire_dim):
-    def neural_ob(t):
-        return PRO(len(t) * wire_dim)
-
-    def neural_ar(box):
-        return nn_boxes[box]
-    f = Functor(ob=neural_ob, ar=neural_ar, ar_factory=Network)
-
+    from discopy.monoidal import Swap, Ty
+    nn_boxes[Swap(Ty('n'), Ty('n'))] = make_swap_layer(wire_dim)
     def fast_f(diagram):
-        # diagram.draw()
-        inputs = keras.Input(shape=(len(f(diagram.dom)),))
+        inputs = keras.Input(shape=(len(diagram.dom) * wire_dim))
         outputs = inputs
-        # print(f"{inputs=}")
         for fol in diagram.foliation():
-            # fol.draw()
             in_idx = 0
             out_idx = 0
             models = []
-            layers = fol.layers
-            inps = fol.dom
-            for i in range(len(fol)):
-                left, box, right = layers[i]
-                n_wires = len(f(inps[:in_idx+len(left)-out_idx]))
-                f_idx = len(f(inps[:in_idx]))
-                # f_left = len(f(left))
+            for left, box, right in fol.layers:
+                n_wires = (in_idx + len(left) - out_idx) * wire_dim
+                f_idx = in_idx * wire_dim
                 if f_idx < n_wires:
-                    # print('boo', i, f_idx, f_left, box)
-                    model = make_lambda_layer(f_idx,n_wires)(outputs)
+                    model = make_lambda_layer(f_idx, n_wires)(outputs)
                     models.append(model)
-                f_dom = len(f(box.dom))
-                # print(f"hi {n_wires=} {f_dom=} {box=} {outputs=}")
+                f_dom = len(box.dom) * wire_dim
                 model = make_lambda_layer(n_wires, n_wires+f_dom)(outputs)
-                models.append(f(box).model(model))
+                models.append(nn_boxes[box](model))
                 in_idx = len(left) - out_idx + len(box.dom)
-                out_idx = len(left @ box.cod)
+                out_idx = len(left) + len(box.cod)
             if right:
                 model = make_lambda_layer(n_wires+f_dom, None)(outputs)
                 models.append(model)
             outputs = keras.layers.Concatenate()(models)
-            # print(f"{outputs=}")
-        dom, cod = f(diagram.dom), f(diagram.cod)
         model = keras.Model(inputs=inputs, outputs=outputs)
-        return Network(dom, cod, model)
+        return model
     return fast_f
 
 
-#TODO do not hard-code hidden layers
-def initialize_boxes(lexicon, wire_dimension, hidden_layers=[10, 10]):
+def initialize_boxes(lexicon, wire_dimension, hidden_layers=[10,]):
     """
     Returns a dict of neural networks, and a list of models
 
@@ -77,23 +77,20 @@ def initialize_boxes(lexicon, wire_dimension, hidden_layers=[10, 10]):
         Dimension of the noun wires.
     """
     nn_boxes = {}
-    trainable_models=[]
     for word in lexicon:
-        #TODO add names to the model. It does not like [box] and [\box].
         name = word.name
         if '\\' in name:
             name = name.replace('\\', '')
             name = name[1:-1] + '_end'
         elif '[' in name:
             name = name[1:-1] + '_begin'
-        nn_boxes[word] = Network.dense_model(
-            len(word.dom) * wire_dimension,
-            len(word.cod) * wire_dimension,
-            hidden_layer_dims=hidden_layers,
+        nn_boxes[word] = create_feedforward_network(
+            input_dim = len(word.dom) * wire_dimension,
+            output_dim = len(word.cod) * wire_dimension,
+            hidden_layers = hidden_layers,
             name = name
         )
-        trainable_models.append(nn_boxes[word].model)
-    return nn_boxes, trainable_models
+    return nn_boxes
 
 def get_classification_vocab(lexicon):
     """
@@ -116,6 +113,7 @@ def get_classification_vocab(lexicon):
         if name not in vocab:
             vocab.append(name)
     return vocab
+
 
 def get_params_dict_from_tf_variables(params, split_string, is_state=False):
     params_dict = {}
