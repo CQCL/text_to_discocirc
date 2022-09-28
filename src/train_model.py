@@ -2,6 +2,7 @@ import os
 
 from network.big_network_models.is_in_one_big_network import TrainerIsIn
 from network.big_network_models.one_big_network import NeuralDisCoCirc
+from network.trainer_base_class import DisCoCircTrainerBase
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import pickle
@@ -30,15 +31,15 @@ base_path = os.path.abspath('..')
 config = {
     "epochs": 100,
     "batch_size": 8,
-    "trainer": DisCoCircTrainerAddScaledLogits,
-    "dataset": "add_logits_dataset_task1_train.pkl",
+    "trainer": TrainerIsIn,
+    "dataset": "isin_dataset_task1_train.pkl",
     "vocab": "en_qa1.p",
     "log_wandb": False
 }
 model_config = {
     "wire_dimension": 2,
     "hidden_layers": [5],
-    "is_in_hidden_layers": [10],
+    # "is_in_hidden_layers": [10],
     # "relevance_hidden_layers": [3],
 }
 config.update(model_config)
@@ -71,11 +72,12 @@ def train(base_path, save_path, vocab_path,
                                                          test_size=0.1,
                                                          random_state=1)
 
-    print('compiling train dataset (size: {})...'.format(len(train_dataset)))
-    discocirc_trainer.compile_dataset(train_dataset)
-    print('compiling validation dataset (size: {})...'
-          .format(len(validation_dataset)))
-    discocirc_trainer.compile_dataset(validation_dataset, validation=True)
+    if issubclass(trainer_class, DisCoCircTrainerBase):
+        print('compiling train dataset (size: {})...'.format(len(train_dataset)))
+        discocirc_trainer.compile_dataset(train_dataset)
+        print('compiling validation dataset (size: {})...'
+              .format(len(validation_dataset)))
+        discocirc_trainer.compile_dataset(validation_dataset, validation=True)
 
     discocirc_trainer.compile(optimizer=keras.optimizers.Adam(),
                               run_eagerly=True)
@@ -105,9 +107,6 @@ def train(base_path, save_path, vocab_path,
         callbacks.append(WandbCallback())
 
     if issubclass(trainer_class, NeuralDisCoCirc):
-        discocirc_trainer.compile(optimizer=keras.optimizers.Adam(),
-                                 run_eagerly=True)
-
         discocirc_trainer.fit(
             train_dataset,
             epochs=config['epochs'],
@@ -129,8 +128,8 @@ def train(base_path, save_path, vocab_path,
     Path(save_base_path).mkdir(parents=True, exist_ok=True)
     name = save_base_path + "/" + trainer_class.__name__ + "_" \
            + datetime.utcnow().strftime("%h_%d_%H_%M") + '.pkl'
-    discocirc_trainer.save_models(name)
-
+    discocirc_trainer.save(name, save_traces=False)
+    # for normal: discocirc_trainer.save_models(name)
     if config["log_wandb"]:
         wandb.save(name)
 
