@@ -18,8 +18,13 @@ class DisCoCircTrainerAddScaledLogits(DisCoCircTrainerBase):
                  vocab_dict=None,
                  relevance_hidden_layers=[10, 10],
                  is_in_hidden_layers=[10, 10],
+                 softmax_relevancies=False,
+                 softmax_logits=False,
                  **kwargs):
         super().__init__(nn_boxes, wire_dimension, lexicon=lexicon, **kwargs)
+
+        self.softmax_relevancies = softmax_relevancies
+        self.softmax_logits = softmax_logits
 
         if vocab_dict is None:
             vocab_dict = {}
@@ -87,7 +92,8 @@ class DisCoCircTrainerAddScaledLogits(DisCoCircTrainerBase):
             relevances.append(relevance)
 
         relevances = tf.convert_to_tensor(relevances)
-        relevances = tf.nn.softmax(relevances)
+        if self.softmax_relevancies:
+            relevances = tf.nn.softmax(relevances)
 
         for i in range(total_wires):
             location_vector = output_vector[i * self.wire_dimension : (i + 1) * self.wire_dimension]
@@ -97,6 +103,8 @@ class DisCoCircTrainerAddScaledLogits(DisCoCircTrainerBase):
                 )[0]
 
             logit = tf.convert_to_tensor(answer)
+            if self.softmax_logits:
+                logit = tf.nn.softmax(logit)
             logit_sum = tf.math.add(tf.math.multiply(logit, relevances[i]), logit_sum)
 
         return logit_sum
