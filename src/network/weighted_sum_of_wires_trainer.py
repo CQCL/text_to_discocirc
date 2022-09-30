@@ -8,7 +8,7 @@ from network.trainer_base_class import DisCoCircTrainerBase
 from network.utils.utils import create_feedforward_network
 
 
-class DisCoCircTrainerAddedWiresToLogits(DisCoCircTrainerBase):
+class DisCoCircTrainerWeightedSumOfWires(DisCoCircTrainerBase):
     def __init__(self,
                  nn_boxes,
                  wire_dimension,

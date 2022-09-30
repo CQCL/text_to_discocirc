@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split
 
 from network.add_logits_trainer import DisCoCircTrainerAddLogits
 from network.add_scaled_logits_trainer import DisCoCircTrainerAddScaledLogits
-from network.added_wires_to_logits_trainer import DisCoCircTrainerAddedWiresToLogits
+from network.weighted_sum_of_wires_trainer import DisCoCircTrainerWeightedSumOfWires
 from network.is_in_trainer import DisCoCircTrainerIsIn
 from network.lstm_trainer import DisCoCircTrainerLSTM
 from network.textspace_trainer import DisCoCircTrainerTextspace
