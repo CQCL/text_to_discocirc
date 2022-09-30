@@ -5,7 +5,7 @@ DisCoCirc experiments using neural networks
 Required packages: `discopy`, `lambeq`, `tensorflow`, `sklearn`
 
 To train a model, run `train_model.py`. You can specify the model (i.e. trainer), dataset and hyperparameters.
-The list of model is summarized in the table below.
+The list of models is summarized in the table below.
 
 | Trainer | Description |
 | ---     | ---         |
