@@ -4,17 +4,20 @@ from sklearn.metrics import accuracy_score
 from tensorflow import keras
 
 from network.big_network_models.one_network_trainer_base import OneNetworkTrainerBase
+from network.utils.utils import create_feedforward_network
 
 
 class IsInOneNetworkTrainer(OneNetworkTrainerBase):
-    def __init__(self,
-        is_in_question=None,
-        **kwargs
-    ):
+    def __init__(self, is_in_question=None,
+                 is_in_hidden_layers=[10], **kwargs):
         super(IsInOneNetworkTrainer, self).__init__(**kwargs)
         self.is_in_question = is_in_question
         if is_in_question is None:
-            self.is_in_question = self.question_model()
+            self.is_in_question = create_feedforward_network(
+                input_dim=2 * 10,
+                output_dim=1,
+                hidden_layers=is_in_hidden_layers
+            )
 
     def question_model(self):
         input = keras.Input(shape=(2 * self.wire_dimension))

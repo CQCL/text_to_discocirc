@@ -10,8 +10,8 @@ from network.utils.utils import create_feedforward_network
 
 
 class IsInIndividualNetworksTrainer(IndividualNetworksTrainerBase, ABC):
-    def __init__(self, nn_boxes, wire_dimension, is_in_question=None, is_in_hidden_layers=[10], **kwargs):
-        super().__init__(nn_boxes, wire_dimension, **kwargs)
+    def __init__(self, lexicon, wire_dimension=10, is_in_question=None, is_in_hidden_layers=[10], **kwargs):
+        super().__init__(lexicon, **kwargs)
         if is_in_question is None:
             self.is_in_question = create_feedforward_network(
                 input_dim = 2 * wire_dimension,

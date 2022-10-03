@@ -4,11 +4,12 @@ import keras as keras
 import numpy as np
 import tensorflow as tf
 
-from network.trainer_base_class import DisCoCircTrainerBase
+from network.individual_networks_models.individual_networks_trainer_base_class import \
+    IndividualNetworksTrainerBase
 from network.utils.utils import create_feedforward_network
 
 
-class DisCoCircTrainerWeightedSumOfWires(DisCoCircTrainerBase):
+class WeightedSumOfWiresIndividualNetworksTrainer(IndividualNetworksTrainerBase):
     def __init__(self,
                  nn_boxes,
                  wire_dimension,

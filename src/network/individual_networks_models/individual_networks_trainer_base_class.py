@@ -9,7 +9,7 @@ from network.utils.utils import get_fast_nn_functor, initialize_boxes
 
 
 class IndividualNetworksTrainerBase(ABC, keras.Model):
-    def __init__(self, lexicon, wire_dimension, hidden_layers=[10, 10],
+    def __init__(self, lexicon, wire_dimension=10, hidden_layers=[10, 10],
                      **kwargs):
         super(IndividualNetworksTrainerBase, self).__init__(**kwargs)
         self.nn_boxes = initialize_boxes(lexicon, wire_dimension, hidden_layers)
