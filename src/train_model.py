@@ -1,8 +1,12 @@
 import os
 
-from network.big_network_models.is_in_one_big_network import TrainerIsIn
-from network.big_network_models.one_big_network import NeuralDisCoCirc
-from network.trainer_base_class import DisCoCircTrainerBase
+from network.big_network_models.is_in_one_big_network import IsInOneNetworkTrainer
+from network.big_network_models.one_network_trainer_base import OneNetworkTrainerBase
+
+from network.individual_networks_models.is_in_trainer import \
+    IsInIndividualNetworksTrainer
+from network.individual_networks_models.individual_networks_trainer_base_class import \
+    IndividualNetworksTrainerBase
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import pickle
@@ -17,13 +21,6 @@ from network.utils.callbacks import ValidationAccuracy, \
     ModelCheckpointWithoutSaveTraces
 from sklearn.model_selection import train_test_split
 
-from network.add_logits_trainer import DisCoCircTrainerAddLogits
-from network.add_scaled_logits_trainer import DisCoCircTrainerAddScaledLogits
-from network.added_wires_to_logits_trainer import DisCoCircTrainerAddedWiresToLogits
-from network.is_in_trainer import DisCoCircTrainerIsIn
-from network.lstm_trainer import DisCoCircTrainerLSTM
-from network.textspace_trainer import DisCoCircTrainerTextspace
-
 
 # this should the the path to \Neural-DisCoCirc
 base_path = os.path.abspath('..')
@@ -31,7 +28,7 @@ base_path = os.path.abspath('..')
 config = {
     "epochs": 100,
     "batch_size": 8,
-    "trainer": TrainerIsIn,
+    "trainer": IsInOneNetworkTrainer,
     "dataset": "isin_dataset_task1_train.pkl",
     "vocab": "en_qa1.p",
     "log_wandb": False
@@ -59,10 +56,8 @@ def train(base_path, save_path, vocab_path,
         lexicon = pickle.load(file)
 
     print('initializing model...')
-    if issubclass(trainer_class, NeuralDisCoCirc):
-        discocirc_trainer = trainer_class(lexicon=lexicon, **model_config)
-    else:
-        discocirc_trainer = trainer_class.from_lexicon(lexicon, **model_config)
+
+    discocirc_trainer = trainer_class(lexicon=lexicon, **model_config)
 
     print('loading pickled dataset...')
     with open(base_path + data_path + config['dataset'],
@@ -73,13 +68,6 @@ def train(base_path, save_path, vocab_path,
     train_dataset, validation_dataset = train_test_split(dataset,
                                                          test_size=0.1,
                                                          random_state=1)
-
-    if issubclass(trainer_class, DisCoCircTrainerBase):
-        print('compiling train dataset (size: {})...'.format(len(train_dataset)))
-        discocirc_trainer.compile_dataset(train_dataset)
-        print('compiling validation dataset (size: {})...'
-              .format(len(validation_dataset)))
-        discocirc_trainer.compile_dataset(validation_dataset, validation=True)
 
     discocirc_trainer.compile(optimizer=keras.optimizers.Adam(),
                               run_eagerly=True)
@@ -103,35 +91,46 @@ def train(base_path, save_path, vocab_path,
 
     print('training...')
 
-    callbacks = [tb_callback, validation_callback, checkpoint_callback]
-    callbacks = [tb_callback, checkpoint_callback]
+    # TODO: make checkpoint work normal
+    callbacks = [tb_callback]
+    callbacks.append(validation_callback)
+
+    if issubclass(trainer_class, OneNetworkTrainerBase):
+        callbacks.append(checkpoint_callback)
+
     if config["log_wandb"]:
         callbacks.append(WandbCallback())
 
-    if issubclass(trainer_class, NeuralDisCoCirc):
-        discocirc_trainer.fit(
-            train_dataset,
-            epochs=config['epochs'],
-            batch_size=config['batch_size'],
-            callbacks=callbacks
-        )
-    else:
-        discocirc_trainer.fit(
-            epochs=config['epochs'],
-            batch_size=config['batch_size'],
-            callbacks=callbacks
-        )
+    #
+    # discocirc_trainer.fit(
+    #     train_dataset,
+    #     validation_dataset,
+    #     epochs=config['epochs'],
+    #     batch_size=config['batch_size'],
+    #     callbacks=callbacks
+    # )
+
+    discocirc_trainer.fit(
+        train_dataset,
+        validation_dataset,
+        epochs=10,
+        batch_size=config['batch_size'],
+        callbacks=callbacks
+    )
 
     accuracy = discocirc_trainer.get_accuracy(discocirc_trainer.dataset)
-
     print("The accuracy on the train set is", accuracy)
 
     save_base_path = base_path + save_path + trainer_class.__name__
     Path(save_base_path).mkdir(parents=True, exist_ok=True)
     name = save_base_path + "/" + trainer_class.__name__ + "_" \
            + datetime.utcnow().strftime("%h_%d_%H_%M") + '.pkl'
-    discocirc_trainer.save(name, save_traces=False)
-    # for normal: discocirc_trainer.save_models(name)
+
+    if issubclass(trainer_class, OneNetworkTrainerBase):
+        discocirc_trainer.save(name, save_traces=False)
+    else:
+        discocirc_trainer.save_models(name)
+
     if config["log_wandb"]:
         wandb.save(name)
 

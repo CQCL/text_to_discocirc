@@ -1,6 +1,6 @@
 import os
 
-from network.big_network_models.is_in_one_big_network import TrainerIsIn
+from network.big_network_models.is_in_one_big_network import IsInOneNetworkTrainer
 from network.utils.callbacks import ModelCheckpointWithoutSaveTraces
 from network.utils.utils import get_accuracy_one_network
 
@@ -14,17 +14,17 @@ from tensorflow import keras
 ###########################################################
 
 print('loading vocabulary...')
-with open('./data/task_vocab_dicts/en_qa1.p', 'rb') as f:
+with open('../data/task_vocab_dicts/en_qa1.p', 'rb') as f:
     vocab = pickle.load(f)
 
 print('initializing model...')
-neural_discocirc = TrainerIsIn(lexicon=vocab, wire_dimension=10, hidden_layers=[10])
+neural_discocirc = IsInOneNetworkTrainer(lexicon=vocab, wire_dimension=10, hidden_layers=[10])
 
 print('loading pickled dataset...')
-with open("./data/pickled_dataset/isin_dataset_task1_train.pkl", "rb") as f:
+with open("../data/pickled_dataset/isin_dataset_task1_train.pkl", "rb") as f:
     dataset = pickle.load(f)
 
-# dataset = dataset[:5]
+dataset = dataset[:5]
 
 # train_dataset, validation_dataset = train_test_split(dataset, test_size=0.1, random_state=1)
 
@@ -45,10 +45,10 @@ checkpoint_callback = ModelCheckpointWithoutSaveTraces(
 )
 
 print('training...')
-neural_discocirc.fit(dataset, epochs=100, batch_size=32, callbacks=[tb_callback, checkpoint_callback])
+neural_discocirc.fit(dataset, None, epochs=1, batch_size=32, callbacks=[tb_callback, checkpoint_callback])
 
 print('getting accuracy...')
-accuracy = get_accuracy_one_network(neural_discocirc, dataset)
+accuracy = neural_discocirc.get_accuracy(neural_discocirc.dataset)
 print("The accuracy on the train set is", accuracy)
 
 save_location = './saved_models/isin_trained_model_' + datetime.utcnow().strftime("%B_%d_%H_%M")

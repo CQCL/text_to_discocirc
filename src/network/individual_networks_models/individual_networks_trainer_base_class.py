@@ -8,33 +8,16 @@ from tensorflow import keras
 from network.utils.utils import get_fast_nn_functor, initialize_boxes
 
 
-class DisCoCircTrainerBase(ABC, keras.Model):
-    def __init__(self, nn_boxes, wire_dimension, compiled_dataset=None,
-                 lexicon=None, **kwargs):
-        super(DisCoCircTrainerBase, self).__init__(**kwargs)
-        self.nn_boxes = nn_boxes
+class IndividualNetworksTrainerBase(ABC, keras.Model):
+    def __init__(self, lexicon, wire_dimension, hidden_layers=[10, 10],
+                     **kwargs):
+        super(IndividualNetworksTrainerBase, self).__init__(**kwargs)
+        self.nn_boxes = initialize_boxes(lexicon, wire_dimension, hidden_layers)
         self.wire_dimension = wire_dimension
         self.nn_functor = get_fast_nn_functor(self.nn_boxes, wire_dimension)
-        self.dataset = compiled_dataset
+        self.dataset = None
         self.lexicon = lexicon
         self.loss_tracker = keras.metrics.Mean(name="loss")
-
-    @classmethod
-    def from_lexicon(cls, lexicon, wire_dimension, hidden_layers=[10, 10],
-                     **kwargs):
-        """
-        Factory method to create a DisCoCircTrainer from a lexicon.
-
-        Parameters
-        ----------
-        lexicon : list
-            list of discopy boxes in the lexicon.
-        wire_dimension : int
-            dimension of the noun wires.
-        """
-        nn_boxes = initialize_boxes(lexicon, wire_dimension, hidden_layers)
-        return cls(nn_boxes, wire_dimension, compiled_dataset=None,
-                   lexicon=lexicon, **kwargs)
 
     def save_models(self, path):
         kwargs = {
@@ -62,6 +45,7 @@ class DisCoCircTrainerBase(ABC, keras.Model):
             count += 1
             context_circuit_model = self.nn_functor(context_circuit)
             model_dataset.append([context_circuit_model, test])
+
         if validation:
             self.validation_dataset = model_dataset
         else:
@@ -142,13 +126,19 @@ class DisCoCircTrainerBase(ABC, keras.Model):
     def compute_loss(self, context_circuit_model, test):
         pass
 
-    def fit(self, epochs, batch_size=32, **kwargs):
-        if self.dataset is None:
-            raise ValueError("Dataset not compiled")
+    def fit(self, train_dataset, validation_dataset, epochs, batch_size=32, **kwargs):
+        print('compiling train dataset (size: {})...'.
+              format(len(train_dataset)))
+        self.compile_dataset(train_dataset)
+
+        print('compiling validation dataset (size: {})...'
+              .format(len(validation_dataset)))
+        self.compile_dataset(validation_dataset, validation=True)
+
 
         input_index_dataset = tf.data.Dataset.range(self.dataset_size)
         input_index_dataset = input_index_dataset.shuffle(self.dataset_size)
         input_index_dataset = input_index_dataset.batch(batch_size)
 
-        return super(DisCoCircTrainerBase, self).fit(input_index_dataset,
-                                                     epochs=epochs, **kwargs)
+        return super(IndividualNetworksTrainerBase, self).fit(input_index_dataset,
+                                                              epochs=epochs, **kwargs)

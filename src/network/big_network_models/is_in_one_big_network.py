@@ -3,15 +3,15 @@ import tensorflow as tf
 from sklearn.metrics import accuracy_score
 from tensorflow import keras
 
-from network.big_network_models.one_big_network import NeuralDisCoCirc
+from network.big_network_models.one_network_trainer_base import OneNetworkTrainerBase
 
 
-class TrainerIsIn(NeuralDisCoCirc):
+class IsInOneNetworkTrainer(OneNetworkTrainerBase):
     def __init__(self,
         is_in_question=None,
         **kwargs
     ):
-        super(TrainerIsIn, self).__init__(**kwargs)
+        super(IsInOneNetworkTrainer, self).__init__(**kwargs)
         self.is_in_question = is_in_question
         if is_in_question is None:
             self.is_in_question = self.question_model()
@@ -49,13 +49,6 @@ class TrainerIsIn(NeuralDisCoCirc):
         answer_prob = tf.transpose(answer_prob)
         return location, answer_prob
 
-    def get_probabilities(self, diagrams, tests):
-        diagrams_params = [self.diagram_parameters[repr(d)] for d in diagrams]
-        batched_params = self.batch_diagrams(diagrams_params)
-        outputs = self.call(batched_params)
-        _, answer_prob = self._get_answer_prob(outputs, tests)
-        return answer_prob
-
     def get_config(self):
         config = super().get_config()
         config.update({
@@ -63,17 +56,24 @@ class TrainerIsIn(NeuralDisCoCirc):
         })
         return config
 
-    def get_accuracy(discocirc_trainer, dataset):
-        diagrams = [data[0] for data in dataset]
-        discocirc_trainer.diagrams = diagrams
-        discocirc_trainer.get_parameters_from_diagrams(diagrams)
-        location_predicted = []
-        location_true = []
-        for i in range(len(dataset)):
-            print('predicting {} / {}'.format(i, len(dataset)), end='\r')
-            probs = discocirc_trainer.get_probabilities(dataset[i][0],
-                                                        dataset[i][1])
-            location_predicted.append(np.argmax(probs))
-            location_true.append(dataset[i][1][1])
-        accuracy = accuracy_score(location_true, location_predicted)
-        return accuracy
+    def get_prediction_result(self, call_result):
+        return np.argmax(call_result)
+
+    def get_expected_result(self, given_value):
+        return given_value
+
+    # # TODO: fix
+    # def get_accuracy(discocirc_trainer, dataset):
+    #     diagrams = [data[0] for data in dataset]
+    #     discocirc_trainer.diagrams = diagrams
+    #     discocirc_trainer.compile_diagrams(diagrams)
+    #     location_predicted = []
+    #     location_true = []
+    #     for i in range(len(dataset)):
+    #         print('predicting {} / {}'.format(i, len(dataset)), end='\r')
+    #         probs = discocirc_trainer.get_probabilities([dataset[i][0]],
+    #                                                     [dataset[i][1]])
+    #         location_predicted.append(np.argmax(probs))
+    #         location_true.append(dataset[i][1][1])
+    #     accuracy = accuracy_score(location_true, location_predicted)
+    #     return accuracy
