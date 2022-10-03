@@ -1,7 +1,9 @@
 import os
 
-from network.big_network_models.is_in_one_big_network import IsInOneNetworkTrainer
-from network.big_network_models.one_network_trainer_base import OneNetworkTrainerBase
+from network.big_network_models.is_in_one_big_network import \
+    IsInOneNetworkTrainer
+from network.big_network_models.one_network_trainer_base import \
+    OneNetworkTrainerBase
 
 from network.individual_networks_models.is_in_trainer import \
     IsInIndividualNetworksTrainer
@@ -21,24 +23,23 @@ from network.utils.callbacks import ValidationAccuracy, \
     ModelCheckpointWithoutSaveTraces
 from sklearn.model_selection import train_test_split
 
-
 # this should the the path to \Neural-DisCoCirc
 base_path = os.path.abspath('..')
 # base_path = os.path.abspath('.')
 config = {
     "epochs": 100,
-    "batch_size": 8,
+    "batch_size": 32,
     "trainer": IsInOneNetworkTrainer,
     "dataset": "isin_dataset_task1_train.pkl",
     "vocab": "en_qa1.p",
     "log_wandb": False
 }
 model_config = {
-    "wire_dimension": 2,
-    "hidden_layers": [5],
-    "is_in_hidden_layers": [10],
-    "softmax_relevancies": False,
-    "softmax_logits": False
+    "wire_dimension": 10,
+    "hidden_layers": [10, 10],
+    # "is_in_hidden_layers": [10],
+    # "softmax_relevancies": False,
+    # "softmax_logits": False
     # "relevance_hidden_layers": [3],
 }
 config.update(model_config)
@@ -87,11 +88,12 @@ def train(base_path, save_path, vocab_path,
     )
 
     validation_callback = ValidationAccuracy(discocirc_trainer.get_accuracy,
-                                             interval=1, log_wandb=config["log_wandb"])
+                                             interval=1,
+                                             log_wandb=config["log_wandb"])
 
     print('training...')
 
-    # TODO: make checkpoint work normal
+    # TODO: make checkpoint work for normal
     callbacks = [tb_callback]
     callbacks.append(validation_callback)
 
@@ -101,19 +103,10 @@ def train(base_path, save_path, vocab_path,
     if config["log_wandb"]:
         callbacks.append(WandbCallback())
 
-    #
-    # discocirc_trainer.fit(
-    #     train_dataset,
-    #     validation_dataset,
-    #     epochs=config['epochs'],
-    #     batch_size=config['batch_size'],
-    #     callbacks=callbacks
-    # )
-
     discocirc_trainer.fit(
         train_dataset,
         validation_dataset,
-        epochs=10,
+        epochs=config['epochs'],
         batch_size=config['batch_size'],
         callbacks=callbacks
     )
@@ -133,6 +126,7 @@ def train(base_path, save_path, vocab_path,
 
     if config["log_wandb"]:
         wandb.save(name)
+
 
 if config["log_wandb"]:
     wandb.init(project="discocirc", entity="domlee", config=config)

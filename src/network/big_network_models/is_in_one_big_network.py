@@ -61,19 +61,3 @@ class IsInOneNetworkTrainer(OneNetworkTrainerBase):
 
     def get_expected_result(self, given_value):
         return given_value
-
-    # # TODO: fix
-    # def get_accuracy(discocirc_trainer, dataset):
-    #     diagrams = [data[0] for data in dataset]
-    #     discocirc_trainer.diagrams = diagrams
-    #     discocirc_trainer.compile_diagrams(diagrams)
-    #     location_predicted = []
-    #     location_true = []
-    #     for i in range(len(dataset)):
-    #         print('predicting {} / {}'.format(i, len(dataset)), end='\r')
-    #         probs = discocirc_trainer.get_probabilities([dataset[i][0]],
-    #                                                     [dataset[i][1]])
-    #         location_predicted.append(np.argmax(probs))
-    #         location_true.append(dataset[i][1][1])
-    #     accuracy = accuracy_score(location_true, location_predicted)
-    #     return accuracy
