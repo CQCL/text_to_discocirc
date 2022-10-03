@@ -39,7 +39,9 @@ config = {
 model_config = {
     "wire_dimension": 2,
     "hidden_layers": [5],
-    # "is_in_hidden_layers": [10],
+    "is_in_hidden_layers": [10],
+    "softmax_relevancies": False,
+    "softmax_logits": False
     # "relevance_hidden_layers": [3],
 }
 config.update(model_config)
