@@ -21,8 +21,8 @@ from network.textspace_trainer import DisCoCircTrainerTextspace
 
 
 # this should the the path to \Neural-DisCoCirc
-base_path = os.path.abspath('..')
-# base_path = os.path.abspath('.')
+# base_path = os.path.abspath('..')
+base_path = os.path.abspath('.')
 config = {
     "epochs": 100,
     "batch_size": 8,

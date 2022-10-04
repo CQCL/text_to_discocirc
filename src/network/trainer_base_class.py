@@ -79,7 +79,8 @@ class DisCoCircTrainerBase(ABC, keras.Model):
                 grads = grd
             else:
                 grads = [g1 + g2 for g1, g2 in zip(grads, grd)]
-
+        grads = [g / len(batch) for g in grads]
+        losses = losses / len(batch)
         self.optimizer.apply_gradients((grad, weights)
                                        for (grad, weights) in
                                        zip(grads, self.trainable_weights)
