@@ -137,5 +137,6 @@ babi_dataset/
 .vscode
 
 logs/
-wandb/
 checkpoints/
+saved_models/
+wandb/

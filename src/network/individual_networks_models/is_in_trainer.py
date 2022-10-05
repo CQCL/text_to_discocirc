@@ -3,15 +3,15 @@ from abc import ABC
 
 import numpy as np
 import tensorflow as tf
-from tensorflow import keras
 
-from network.trainer_base_class import DisCoCircTrainerBase
+from network.individual_networks_models.individual_networks_trainer_base_class import \
+    IndividualNetworksTrainerBase
 from network.utils.utils import create_feedforward_network
 
 
-class DisCoCircTrainerIsIn(DisCoCircTrainerBase, ABC):
-    def __init__(self, nn_boxes, wire_dimension, is_in_question=None, is_in_hidden_layers=[10], **kwargs):
-        super().__init__(nn_boxes, wire_dimension, **kwargs)
+class IsInIndividualNetworksTrainer(IndividualNetworksTrainerBase, ABC):
+    def __init__(self, lexicon=None, wire_dimension=10, is_in_question=None, is_in_hidden_layers=[10], **kwargs):
+        super().__init__(lexicon, **kwargs)
         if is_in_question is None:
             self.is_in_question = create_feedforward_network(
                 input_dim = 2 * wire_dimension,

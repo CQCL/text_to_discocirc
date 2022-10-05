@@ -1,5 +1,15 @@
 import os
 
+from network.big_network_models.is_in_one_big_network import \
+    IsInOneNetworkTrainer
+from network.big_network_models.one_network_trainer_base import \
+    OneNetworkTrainerBase
+
+from network.individual_networks_models.is_in_trainer import \
+    IsInIndividualNetworksTrainer
+from network.individual_networks_models.individual_networks_trainer_base_class import \
+    IndividualNetworksTrainerBase
+
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import pickle
 from datetime import datetime
@@ -9,34 +19,27 @@ from tensorflow import keras
 import wandb
 from wandb.integration.keras import WandbCallback
 
-from network.utils.callbacks import ValidationAccuracy
+from network.utils.callbacks import ValidationAccuracy, \
+    ModelCheckpointWithoutSaveTraces
 from sklearn.model_selection import train_test_split
 
-from network.add_logits_trainer import DisCoCircTrainerAddLogits
-from network.add_scaled_logits_trainer import DisCoCircTrainerAddScaledLogits
-from network.weighted_sum_of_wires_trainer import DisCoCircTrainerWeightedSumOfWires
-from network.is_in_trainer import DisCoCircTrainerIsIn
-from network.lstm_trainer import DisCoCircTrainerLSTM
-from network.textspace_trainer import DisCoCircTrainerTextspace
-
-
 # this should the the path to \Neural-DisCoCirc
-# base_path = os.path.abspath('..')
-base_path = os.path.abspath('.')
+base_path = os.path.abspath('..')
+# base_path = os.path.abspath('.')
 config = {
-    "epochs": 100,
-    "batch_size": 8,
-    "trainer": DisCoCircTrainerAddScaledLogits,
-    "dataset": "add_logits_dataset_task1_train.pkl",
+    "epochs": 10,
+    "batch_size": 32,
+    "trainer": IsInIndividualNetworksTrainer,
+    "dataset": "isin_dataset_task1_train.pkl",
     "vocab": "en_qa1.p",
     "log_wandb": False
 }
 model_config = {
-    "wire_dimension": 2,
-    "hidden_layers": [5],
+    "wire_dimension": 10,
+    "hidden_layers": [10, 10],
     "is_in_hidden_layers": [10],
-    "softmax_relevancies": False,
-    "softmax_logits": False
+    # "softmax_relevancies": False,
+    # "softmax_logits": False
     # "relevance_hidden_layers": [3],
 }
 config.update(model_config)
@@ -47,69 +50,75 @@ def train(base_path, save_path, vocab_path,
     trainer_class = config['trainer']
 
     print('Training: {} with data {}'
-          .format(trainer_class.__name__, data_path))
+          .format(trainer_class.__name__, config["dataset"]))
 
     print('loading vocabulary...')
     with open(base_path + vocab_path + config["vocab"], 'rb') as file:
         lexicon = pickle.load(file)
 
     print('initializing model...')
-    discocirc_trainer = trainer_class.from_lexicon(lexicon, **model_config)
+
+    discocirc_trainer = trainer_class(lexicon=lexicon, **model_config)
 
     print('loading pickled dataset...')
     with open(base_path + data_path + config['dataset'],
               "rb") as f:
         # dataset is a tuple (context_circuit,(question_word_index, answer_word_index))
-        dataset = pickle.load(f)[:5]
+        dataset = pickle.load(f)
 
     train_dataset, validation_dataset = train_test_split(dataset,
                                                          test_size=0.1,
                                                          random_state=1)
 
-    print('compiling train dataset (size: {})...'.format(len(train_dataset)))
-    discocirc_trainer.compile_dataset(train_dataset)
-    print('compiling validation dataset (size: {})...'
-          .format(len(validation_dataset)))
-    discocirc_trainer.compile_dataset(validation_dataset, validation=True)
-
     discocirc_trainer.compile(optimizer=keras.optimizers.Adam(),
                               run_eagerly=True)
 
+    datetime_string = datetime.now().strftime("%B_%d_%H_%M")
+
     tb_callback = keras.callbacks.TensorBoard(
-        log_dir='logs/{}'.format(datetime.now().strftime("%B_%d_%H_%M")),
+        log_dir='logs/{}'.format(datetime_string),
         histogram_freq=0,
         write_graph=True,
         write_images=True,
         update_freq='batch',
     )
 
+    checkpoint_callback = ModelCheckpointWithoutSaveTraces(
+        filepath='checkpoints/{}'.format(datetime_string),
+    )
+
     validation_callback = ValidationAccuracy(discocirc_trainer.get_accuracy,
-                                             interval=1, log_wandb=config["log_wandb"])
+                                             interval=1,
+                                             log_wandb=config["log_wandb"])
 
     print('training...')
 
-    callbacks = [tb_callback, validation_callback]
+    callbacks = [tb_callback, validation_callback, checkpoint_callback]
+
     if config["log_wandb"]:
         callbacks.append(WandbCallback())
 
     discocirc_trainer.fit(
+        train_dataset,
+        validation_dataset,
         epochs=config['epochs'],
         batch_size=config['batch_size'],
         callbacks=callbacks
     )
 
     accuracy = discocirc_trainer.get_accuracy(discocirc_trainer.dataset)
-
     print("The accuracy on the train set is", accuracy)
 
     save_base_path = base_path + save_path + trainer_class.__name__
     Path(save_base_path).mkdir(parents=True, exist_ok=True)
     name = save_base_path + "/" + trainer_class.__name__ + "_" \
            + datetime.utcnow().strftime("%h_%d_%H_%M") + '.pkl'
-    discocirc_trainer.save_models(name)
+
+    discocirc_trainer.save(name, save_traces=False)
 
     if config["log_wandb"]:
         wandb.save(name)
+
 
 if config["log_wandb"]:
     wandb.init(project="discocirc", entity="domlee", config=config)
