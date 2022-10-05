@@ -17,17 +17,6 @@ def create_feedforward_network(input_dim, output_dim, hidden_layers,
     return keras.Model(inputs=input, outputs=output, name=name)
 
 
-def get_nn_functor(nn_boxes, wire_dim):
-    def neural_ob(t):
-        return PRO(len(t) * wire_dim)
-
-    def neural_ar(box):
-        return nn_boxes[box]
-
-    f = Functor(ob=neural_ob, ar=neural_ar, ar_factory=Network)
-    return f
-
-
 def make_lambda_layer(a, b):
     return keras.layers.Lambda(lambda x: x[:, a:b])
 
@@ -44,7 +33,7 @@ def make_swap_layer(wire_dim):
 
 def get_fast_nn_functor(nn_boxes, wire_dim):
     from discopy.monoidal import Swap, Ty
-    nn_boxes[Swap(Ty('n'), Ty('n'))] = make_swap_layer(wire_dim)
+    nn_boxes[repr(Swap(Ty('n'), Ty('n')))] = make_swap_layer(wire_dim)
 
     def fast_f(diagram):
         inputs = keras.Input(shape=(len(diagram.dom) * wire_dim))
@@ -61,7 +50,7 @@ def get_fast_nn_functor(nn_boxes, wire_dim):
                     models.append(model)
                 f_dom = len(box.dom) * wire_dim
                 model = make_lambda_layer(n_wires, n_wires + f_dom)(outputs)
-                models.append(nn_boxes[box](model))
+                models.append(nn_boxes[repr(box)](model))
                 in_idx = len(left) - out_idx + len(box.dom)
                 out_idx = len(left) + len(box.cod)
             if right:
@@ -93,7 +82,7 @@ def initialize_boxes(lexicon, wire_dimension, hidden_layers=[10, ]):
             name = name[1:-1] + '_end'
         elif '[' in name:
             name = name[1:-1] + '_begin'
-        nn_boxes[word] = create_feedforward_network(
+        nn_boxes[repr(word)] = create_feedforward_network(
             input_dim=len(word.dom) * wire_dimension,
             output_dim=len(word.cod) * wire_dimension,
             hidden_layers=hidden_layers,

@@ -50,7 +50,7 @@ def train(base_path, save_path, vocab_path,
     trainer_class = config['trainer']
 
     print('Training: {} with data {}'
-          .format(trainer_class.__name__, data_path))
+          .format(trainer_class.__name__, config["dataset"]))
 
     print('loading vocabulary...')
     with open(base_path + vocab_path + config["vocab"], 'rb') as file:
@@ -64,7 +64,7 @@ def train(base_path, save_path, vocab_path,
     with open(base_path + data_path + config['dataset'],
               "rb") as f:
         # dataset is a tuple (context_circuit,(question_word_index, answer_word_index))
-        dataset = pickle.load(f)[:20]
+        dataset = pickle.load(f)
 
     train_dataset, validation_dataset = train_test_split(dataset,
                                                          test_size=0.1,
@@ -93,12 +93,7 @@ def train(base_path, save_path, vocab_path,
 
     print('training...')
 
-    # TODO: make checkpoint work for normal
-    callbacks = [tb_callback]
-    callbacks.append(validation_callback)
-
-    if issubclass(trainer_class, OneNetworkTrainerBase):
-        callbacks.append(checkpoint_callback)
+    callbacks = [tb_callback, validation_callback, checkpoint_callback]
 
     if config["log_wandb"]:
         callbacks.append(WandbCallback())
@@ -119,10 +114,7 @@ def train(base_path, save_path, vocab_path,
     name = save_base_path + "/" + trainer_class.__name__ + "_" \
            + datetime.utcnow().strftime("%h_%d_%H_%M") + '.pkl'
 
-    if issubclass(trainer_class, OneNetworkTrainerBase):
-        discocirc_trainer.save(name, save_traces=False)
-    else:
-        discocirc_trainer.save_models(name)
+    discocirc_trainer.save(name, save_traces=False)
 
     if config["log_wandb"]:
         wandb.save(name)

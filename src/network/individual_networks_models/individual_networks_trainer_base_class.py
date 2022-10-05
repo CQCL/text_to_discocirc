@@ -9,31 +9,40 @@ from network.utils.utils import get_fast_nn_functor, initialize_boxes
 
 
 class IndividualNetworksTrainerBase(ABC, keras.Model):
-    def __init__(self, lexicon, wire_dimension=10, hidden_layers=[10, 10],
+    def __init__(self, lexicon=None, wire_dimension=10, hidden_layers=[10, 10],
                      **kwargs):
         super(IndividualNetworksTrainerBase, self).__init__(**kwargs)
-        self.nn_boxes = initialize_boxes(lexicon, wire_dimension, hidden_layers)
+        if lexicon is not None:
+            self.nn_boxes = initialize_boxes(lexicon, wire_dimension, hidden_layers)
+            self.nn_functor = get_fast_nn_functor(self.nn_boxes, wire_dimension)
+        self.hidden_layers = hidden_layers
         self.wire_dimension = wire_dimension
-        self.nn_functor = get_fast_nn_functor(self.nn_boxes, wire_dimension)
         self.dataset = None
         self.lexicon = lexicon
         self.loss_tracker = keras.metrics.Mean(name="loss")
 
-    def save_models(self, path):
-        kwargs = {
-            "nn_boxes": self.nn_boxes,
+    def get_config(self):
+        return {
             "wire_dimension": self.wire_dimension,
+            "hidden_layers": self.hidden_layers,
         }
-        with open(path, "wb") as f:
-            pickle.dump(kwargs, f)
 
     @classmethod
-    def load_models(cls, path, **kwargs):
-        with open(path, "rb") as f:
-            kwargs = pickle.load(f)
-        return cls(**kwargs)
+    def from_config(cls, config):
+        return cls(**config)
 
-    def compile_dataset(self, dataset, validation=False):
+    @classmethod
+    def load_model(cls, path):
+        model = keras.models.load_model(
+            path,
+            custom_objects={cls.__name__: cls},
+        )
+        model.nn_functor = get_fast_nn_functor(model.nn_boxes, model.wire_dimension)
+        model.run_eagerly = True
+        return model
+
+
+    def compile_dataset(self, dataset):
         """
         applies the nn_functor to the list of context circuit diagrams,
         and saves these

@@ -6,14 +6,25 @@ from pandas import DataFrame
 import pickle
 from tensorflow import keras
 
-from network.add_logits_trainer import DisCoCircTrainerAddLogits
-from network.add_scaled_logits_trainer import DisCoCircTrainerAddScaledLogits
-from network.is_in_trainer import DisCoCircTrainerIsIn
-from network.lstm_trainer import DisCoCircTrainerLSTM
-from network.textspace_trainer import DisCoCircTrainerTextspace
+from network.big_network_models.is_in_one_big_network import \
+    IsInOneNetworkTrainer
+from network.individual_networks_models.individual_networks_trainer_base_class import \
+    IndividualNetworksTrainerBase
+from network.individual_networks_models.is_in_trainer import \
+    IsInIndividualNetworksTrainer
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
+# this should the the path to \Neural-DisCoCirc
+base_path = os.path.abspath('..')
+# base_path = os.path.abspath('.')
+
+config = {
+    "trainer": IsInOneNetworkTrainer,
+    "dataset": "isin_dataset_task1_test.pkl",
+    "vocab": "en_qa1.p",
+    "model": "IsInOneNetworkTrainer/IsInOneNetworkTrainer_Oct_05_22_17.pkl"
+}
 
 def create_answer_dataframe(discocirc_trainer, vocab_dict, dataset):
     df = DataFrame([],
@@ -52,35 +63,26 @@ def test(base_path, model_path, vocab_path, test_path):
         lexicon = pickle.load(file)
 
     print('initializing model...')
-    discocirc_trainer = trainer_class.load_models(model_base_path)
+    discocirc_trainer = trainer_class.load_model(model_base_path)
 
     print('loading pickled dataset...')
     with open(test_base_path, "rb") as f:
         dataset = pickle.load(f)[:5]
 
     print('compiling dataset (size: {})...'.format(len(dataset)))
-    discocirc_trainer.compile_dataset(dataset)
+
+    if issubclass(discocirc_trainer, IndividualNetworksTrainerBase):
+        discocirc_trainer.dataset = discocirc_trainer.compile_dataset(dataset)
+
     discocirc_trainer.compile(optimizer=keras.optimizers.Adam(),
                               run_eagerly=True)
 
-    accuracy = trainer_class.get_accuracy(discocirc_trainer,
-                                          discocirc_trainer.dataset)
+    accuracy = trainer_class.get_accuracy(discocirc_trainer, dataset)
 
     print("The accuracy on the test set is", accuracy)
 
     # create_answer_dataframe(discocirc_trainer, vocab_dict, dataset)
 
-
-# this should the the path to \Neural-DisCoCirc
-base_path = os.path.abspath('..')
-# base_path = os.path.abspath('.')
-
-config = {
-    "trainer": DisCoCircTrainerAddScaledLogits,
-    "dataset": "add_logits_dataset_task1_test.pkl",
-    "vocab": "en_qa1.p",
-    "model": "DisCoCircTrainerAddScaledLogits/DisCoCircTrainerAddScaledLogits_Sep_14_16_34.pkl"
-}
 
 if __name__ == "__main__":
     test(base_path,
