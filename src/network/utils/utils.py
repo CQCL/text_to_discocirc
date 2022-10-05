@@ -9,8 +9,8 @@ def create_feedforward_network(input_dim, output_dim, hidden_layers, activation=
     input = keras.Input(shape=(input_dim,))
     output = input
     for layer in hidden_layers:
-        output = keras.layers.Dense(layer, activation=activation)(output)
-    output = keras.layers.Dense(output_dim)(output)
+        output = keras.layers.Dense(layer, activation=activation, bias_initializer="glorot_uniform")(output)
+    output = keras.layers.Dense(output_dim, bias_initializer="glorot_uniform")(output)
     return keras.Model(inputs=input, outputs=output, name=name)
 
 def get_nn_functor(nn_boxes, wire_dim):
