@@ -24,10 +24,10 @@ from network.utils.callbacks import ValidationAccuracy, \
 from sklearn.model_selection import train_test_split
 
 # this should the the path to \Neural-DisCoCirc
-# base_path = os.path.abspath('..')
-base_path = os.path.abspath('.')
+base_path = os.path.abspath('..')
+# base_path = os.path.abspath('.')
 config = {
-    "epochs": 100,
+    "epochs": 10,
     "batch_size": 32,
     "trainer": IsInIndividualNetworksTrainer,
     "dataset": "isin_dataset_task1_train.pkl",

@@ -55,11 +55,7 @@ class IndividualNetworksTrainerBase(ABC, keras.Model):
             context_circuit_model = self.nn_functor(context_circuit)
             model_dataset.append([context_circuit_model, test])
 
-        if validation:
-            self.validation_dataset = model_dataset
-        else:
-            self.dataset = model_dataset
-            self.dataset_size = len(dataset)
+        return model_dataset
 
     def train_step(self, batch):
         losses = 0
@@ -139,11 +135,13 @@ class IndividualNetworksTrainerBase(ABC, keras.Model):
     def fit(self, train_dataset, validation_dataset, epochs, batch_size=32, **kwargs):
         print('compiling train dataset (size: {})...'.
               format(len(train_dataset)))
-        self.compile_dataset(train_dataset)
+
+        self.dataset = self.compile_dataset(train_dataset)
+        self.dataset_size = len(self.dataset)
 
         print('compiling validation dataset (size: {})...'
               .format(len(validation_dataset)))
-        self.compile_dataset(validation_dataset, validation=True)
+        self.validation_dataset = self.compile_dataset(validation_dataset)
 
 
         input_index_dataset = tf.data.Dataset.range(self.dataset_size)
