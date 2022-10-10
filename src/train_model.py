@@ -27,17 +27,18 @@ from sklearn.model_selection import train_test_split
 base_path = os.path.abspath('..')
 # base_path = os.path.abspath('.')
 config = {
-    "epochs": 10,
     "batch_size": 32,
-    "trainer": IsInIndividualNetworksTrainer,
     "dataset": "isin_dataset_task1_train.pkl",
+    "epochs": 10,
+    "learning_rate": 0.001,
+    "log_wandb": False,
+    "trainer": IsInIndividualNetworksTrainer,
     "vocab": "en_qa1.p",
-    "log_wandb": False
 }
 model_config = {
-    "wire_dimension": 10,
     "hidden_layers": [10, 10],
     "is_in_hidden_layers": [10],
+    "wire_dimension": 10,
     # "softmax_relevancies": False,
     # "softmax_logits": False
     # "relevance_hidden_layers": [3],
@@ -70,8 +71,10 @@ def train(base_path, save_path, vocab_path,
                                                          test_size=0.1,
                                                          random_state=1)
 
-    discocirc_trainer.compile(optimizer=keras.optimizers.Adam(),
-                              run_eagerly=True)
+    discocirc_trainer.compile(
+        optimizer=keras.optimizers.Adam(learning_rate=config["learning_rate"]),
+        run_eagerly=True
+    )
 
     datetime_string = datetime.now().strftime("%B_%d_%H_%M")
 
