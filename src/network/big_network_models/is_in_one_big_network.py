@@ -29,8 +29,7 @@ class IsInOneNetworkTrainer(OneNetworkTrainerBase):
     # @tf.function(jit_compile=True)
     def compute_loss(self, outputs, tests):
         location, answer_prob = self._get_answer_prob(outputs, tests)
-        labels = tf.one_hot(location, answer_prob.shape[1])
-        loss = tf.nn.softmax_cross_entropy_with_logits(logits=answer_prob, labels=labels)
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=answer_prob, labels=location)
         return loss
 
     # @tf.function(jit_compile=True)

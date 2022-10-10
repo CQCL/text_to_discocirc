@@ -97,8 +97,8 @@ class TextspaceIndividualNetworksTrainer(IndividualNetworksTrainerBase):
         question_circuit_model, answer_word = test
         answer_prob = self.call((context_circuit_model, question_circuit_model))
         answer_index = self.classification_vocab.index(answer_word)
-        true_answer = tf.one_hot(answer_index, answer_prob.shape[1])
-        return keras.metrics.mean_squared_error(true_answer, answer_prob)
+        return tf.nn.sparse_softmax_cross_entropy_with_logits(logits=answer_prob,
+                                                          labels=answer_index)
 
     @tf.function
     def call(self, context_question):
