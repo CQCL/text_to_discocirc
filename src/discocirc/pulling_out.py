@@ -15,9 +15,9 @@ def get_holes(term):
     holes = []
     ccg = term.ccg
     for i in range(len(term.args)):
-        if isinstance(get_ccg_input(ccg), (Over, Under)):
-                # or get_ccg_input(ccg) == rigid.Ty('p')\
-                # or get_ccg_input(ccg) == rigid.Ty('s'):
+        if isinstance(get_ccg_input(ccg), (Over, Under)) \
+                or get_ccg_input(ccg) == rigid.Ty('p')\
+                or get_ccg_input(ccg) == rigid.Ty('s'):
             holes.append(i)
         ccg = get_ccg_output(ccg)
 

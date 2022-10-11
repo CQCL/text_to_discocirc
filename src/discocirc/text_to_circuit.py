@@ -1,32 +1,17 @@
-#%%
-# path nonsense
-import os, sys
+import string
 
-# we want p = the absolute path to \src
-p = os.path.abspath('.\src')
-# p = os.path.abspath('..') 
+import numpy as np
+import spacy
+from discopy import Id, Ty, hypergraph
+from lambeq import BobcatParser
 
-print('PATH IS ', p)
-sys.path.insert(1, p)
-
-#%%
-from discocirc.sentence_to_circuit import convert_sentence
 from discocirc.discocirc_utils import init_nouns
 from discocirc.drag_up import drag_all
-from discopy import Ty, Id, hypergraph
-
-# print("basic imports done")
-
-from lambeq import BobcatParser
-import numpy as np
-
-#%%
+from discocirc.sentence_to_circuit import convert_sentence
 
 parser = BobcatParser(verbose='suppress')
-
-# print("parser done")
-
-#%%
+# Loadone of SpaCy English models
+spacy_nlp = spacy.load('en_core_web_md')
 
 # NOTE: this function may become redundant
 def noun_sort(circ):
@@ -54,7 +39,7 @@ def noun_sort(circ):
     return circ
 
 
-def text_to_circuit(context, simplify_swaps=True, wire_order='intro_order'):
+def sentence_list_to_circuit(context, simplify_swaps=False, wire_order='intro_order'):
     """
     Parameters:
     -----------
@@ -87,6 +72,15 @@ def text_to_circuit(context, simplify_swaps=True, wire_order='intro_order'):
 
     return context_circ
 
+def text_to_circuit(text, **kwargs):
+    doc = spacy_nlp(text)
+    sentences = []
+    for sent in doc.sents:
+        s = sent.text
+        s = s.translate(str.maketrans('', '', string.punctuation))
+        sentences.append(s)
+    return sentence_list_to_circuit(sentences, **kwargs)
+    
 def noun_normal_form(circuit):
     """
     Takes in a circuit, and returns it in a normal form, where all the
