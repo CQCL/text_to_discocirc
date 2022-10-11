@@ -6,7 +6,7 @@ from pandas import DataFrame
 import pickle
 from tensorflow import keras
 
-from network.big_network_models.is_in_one_big_network import \
+from network.big_network_models.is_in_one_network import \
     IsInOneNetworkTrainer
 from network.individual_networks_models.individual_networks_trainer_base_class import \
     IndividualNetworksTrainerBase

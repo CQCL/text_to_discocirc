@@ -1,7 +1,9 @@
 import os
 import shutil
 
-from network.big_network_models.is_in_one_big_network import \
+from network.big_network_models.add_scaled_logits_one_networks import \
+    AddScaledLogitsOneNetworkTrainer
+from network.big_network_models.is_in_one_network import \
     IsInOneNetworkTrainer
 from network.big_network_models.one_network_trainer_base import \
     OneNetworkTrainerBase
@@ -29,20 +31,20 @@ base_path = os.path.abspath('..')
 # base_path = os.path.abspath('.')
 config = {
     "batch_size": 32,
-    "dataset": "isin_dataset_task1_train.pkl",
-    "epochs": 1,
+    "dataset": "add_logits_dataset_task1_train.pkl",
+    "epochs": 100,
     "learning_rate": 0.001,
-    "log_wandb": True,
-    "trainer": IsInIndividualNetworksTrainer,
+    "log_wandb": False,
+    "trainer": AddScaledLogitsOneNetworkTrainer,
     "vocab": "en_qa1.p",
 }
 model_config = {
     "hidden_layers": [10, 10],
-    "is_in_hidden_layers": [10],
+    "is_in_hidden_layers": [10, 10],
     "wire_dimension": 10,
-    # "softmax_relevancies": False,
-    # "softmax_logits": False
-    # "relevance_hidden_layers": [3],
+    "softmax_relevancies": False,
+    "softmax_logits": False,
+    "relevance_hidden_layers": [10, 10],
 }
 config.update(model_config)
 

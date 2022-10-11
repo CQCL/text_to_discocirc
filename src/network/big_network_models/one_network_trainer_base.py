@@ -17,9 +17,9 @@ class MyDenseLayer(keras.layers.Layer):
 
 class OneNetworkTrainerBase(keras.Model, ABC):
     def __init__(self,
-        lexicon=None,
-        wire_dimension=20,
-        hidden_layers=[50],
+        lexicon,
+        wire_dimension,
+        hidden_layers,
     ):
         super().__init__()
         self.wire_dimension = wire_dimension

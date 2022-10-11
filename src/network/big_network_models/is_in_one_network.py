@@ -19,13 +19,6 @@ class IsInOneNetworkTrainer(OneNetworkTrainerBase):
                 hidden_layers=is_in_hidden_layers
             )
 
-    def question_model(self):
-        input = keras.Input(shape=(2 * self.wire_dimension))
-        output = keras.layers.Dense(self.wire_dimension, activation=tf.nn.relu)(input)
-        output = keras.layers.Dense(self.wire_dimension / 2, activation=tf.nn.relu)(output)
-        output = keras.layers.Dense(1)(output)
-        return keras.Model(inputs=input, outputs=output)
-
     # @tf.function(jit_compile=True)
     def compute_loss(self, outputs, tests):
         location, answer_prob = self._get_answer_prob(outputs, tests)
