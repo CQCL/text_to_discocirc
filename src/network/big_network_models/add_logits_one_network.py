@@ -76,7 +76,6 @@ class AddLogitsOneNetworkTrainer(OneNetworkTrainerBase):
         config.update({
             "wire_dimension": self.wire_dimension,
             "is_in_question": self.is_in_question,
-            "relevance_question": self.relevance_question,
             "vocab_dict": self.vocab_dict,
         })
         return config
