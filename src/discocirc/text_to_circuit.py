@@ -54,7 +54,7 @@ def noun_sort(circ):
     return circ
 
 
-def text_to_circuit(context, simplify_swaps=True, wire_order='intro_order'):
+def text_to_circuit(context, simplify_swaps=False, wire_order='intro_order'):
     """
     Parameters:
     -----------
