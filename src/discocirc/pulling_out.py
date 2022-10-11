@@ -26,7 +26,7 @@ def get_holes(term):
 
 def pull_single_hole(term, hole_position):
     """
-    Given a hyperbox pull out the arguments of the specified hole.
+    Given a hyperbox, pull out the arguments of the specified hole.
     For hyperboxes with multiple holes, this has to be called multiple times.
 
     :param term: Term - hyperbox who's arguments will be pulled out.
@@ -108,6 +108,6 @@ def recurse_pull(term):
         pull_single_hole(term, holes[i])
 
         # As we pull out arguments, the position of the holes changes.
-        # The number of holes should not. Hence the assertion.
+        # The number of holes should not. Hence, the assertion.
         holes = get_holes(term)
         assert(len(holes) == num_holes)

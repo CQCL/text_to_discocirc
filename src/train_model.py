@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from network.big_network_models.is_in_one_big_network import \
     IsInOneNetworkTrainer
@@ -27,17 +28,18 @@ from sklearn.model_selection import train_test_split
 base_path = os.path.abspath('..')
 # base_path = os.path.abspath('.')
 config = {
-    "epochs": 10,
     "batch_size": 32,
-    "trainer": IsInIndividualNetworksTrainer,
     "dataset": "isin_dataset_task1_train.pkl",
+    "epochs": 1,
+    "learning_rate": 0.001,
+    "log_wandb": True,
+    "trainer": IsInIndividualNetworksTrainer,
     "vocab": "en_qa1.p",
-    "log_wandb": False
 }
 model_config = {
-    "wire_dimension": 10,
     "hidden_layers": [10, 10],
     "is_in_hidden_layers": [10],
+    "wire_dimension": 10,
     # "softmax_relevancies": False,
     # "softmax_logits": False
     # "relevance_hidden_layers": [3],
@@ -64,14 +66,16 @@ def train(base_path, save_path, vocab_path,
     with open(base_path + data_path + config['dataset'],
               "rb") as f:
         # dataset is a tuple (context_circuit,(question_word_index, answer_word_index))
-        dataset = pickle.load(f)
+        dataset = pickle.load(f)[:5]
 
     train_dataset, validation_dataset = train_test_split(dataset,
                                                          test_size=0.1,
                                                          random_state=1)
 
-    discocirc_trainer.compile(optimizer=keras.optimizers.Adam(),
-                              run_eagerly=True)
+    discocirc_trainer.compile(
+        optimizer=keras.optimizers.Adam(learning_rate=config["learning_rate"]),
+        run_eagerly=True
+    )
 
     datetime_string = datetime.now().strftime("%B_%d_%H_%M")
 
@@ -83,8 +87,10 @@ def train(base_path, save_path, vocab_path,
         update_freq='batch',
     )
 
+    save_base_path = base_path + "/checkpoints/"
     checkpoint_callback = ModelCheckpointWithoutSaveTraces(
-        filepath='checkpoints/{}'.format(datetime_string),
+        filepath='{}/{}'.format(save_base_path, datetime_string),
+        save_freq=20 * config["batch_size"]
     )
 
     validation_callback = ValidationAccuracy(discocirc_trainer.get_accuracy,
@@ -112,12 +118,15 @@ def train(base_path, save_path, vocab_path,
     save_base_path = base_path + save_path + trainer_class.__name__
     Path(save_base_path).mkdir(parents=True, exist_ok=True)
     name = save_base_path + "/" + trainer_class.__name__ + "_" \
-           + datetime.utcnow().strftime("%h_%d_%H_%M") + '.pkl'
+           + datetime.utcnow().strftime("%h_%d_%H_%M")
+
 
     discocirc_trainer.save(name, save_traces=False)
 
+    shutil.make_archive(name, 'zip', name)
+
     if config["log_wandb"]:
-        wandb.save(name)
+        wandb.save(name + '.zip')
 
 
 if config["log_wandb"]:

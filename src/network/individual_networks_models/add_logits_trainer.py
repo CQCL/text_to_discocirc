@@ -56,8 +56,7 @@ class AddLogitsIndividualNetworksTrainer(IndividualNetworksTrainerBase):
     def compute_loss(self, context_circuit_model, test):
         person, location = test
         answer_prob = self.call((context_circuit_model, person))
-        labels = tf.one_hot(self.vocab_dict[location], answer_prob.shape[0])
-        return tf.nn.softmax_cross_entropy_with_logits(logits=answer_prob, labels=labels)
+        return tf.nn.sparse_softmax_cross_entropy_with_logits(logits=answer_prob, labels=self.vocab_dict[location])
 
     @tf.function
     def call(self, circ_person):
