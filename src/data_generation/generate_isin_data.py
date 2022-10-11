@@ -20,7 +20,7 @@ import pickle
 from data_generation.generate_answer_pair_number import get_qa_numbers
 from data_generation.prepare_data_utils import task_file_reader
 from discocirc.discocirc_utils import get_star_removal_functor
-from discocirc.text_to_circuit import text_to_circuit
+from discocirc.text_to_circuit import sentence_list_to_circuit
 
 
 TASK_FILE = '/data/tasks_1-20_v1-2/en/qa2_two-supporting-facts_train.txt'
@@ -45,7 +45,7 @@ contexts, questions, answers = task_file_reader(p+TASK_FILE)
 context_circuits = []
 for i, context in enumerate(contexts):
     # generate a circuit using all sentences in this example's context
-    context_circ = text_to_circuit(context, simplify_swaps=False, wire_order = 'intro_order')
+    context_circ = sentence_list_to_circuit(context, simplify_swaps=False, wire_order = 'intro_order')
     context_circuits.append(context_circ)
     print('finished context {}'.format(i), end='\r')
 

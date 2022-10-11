@@ -1,3 +1,4 @@
+#%%
 import sys
 sys.path = sys.path[2:]
 sys.path.append('/home/rshaikh/Neural-DisCoCirc/src/')
@@ -8,11 +9,13 @@ import neuralcoref
 import spacy
 import string
 
-from discocirc.discocirc import sentence2circ
+from discocirc.sentence_to_circuit import sentence2circ, make_term, make_diagram
 from discocirc.discocirc_utils import init_nouns
 from discocirc.drag_up import drag_all
-from discocirc.text_to_circuit import compose_circuits, noun_sort
-
+from discocirc.text_to_circuit import compose_circuits, noun_sort, noun_normal_form, collect_normal_nouns, sentence_list_to_circuit
+from discocirc.expand_s_types import expand_s_types
+from discocirc.frame import Frame
+from discocirc.pulling_out import recurse_pull
 
 # Loadone of SpaCy English models
 nlp = spacy.load('en_core_web_md')
@@ -41,11 +44,11 @@ def get_corefs(doc):
     for cluster in doc._.coref_clusters:
         corefs.append([mention.text for mention in cluster.mentions])
         corefs_sent_ids.append([
-        get_sentence_id(mention, doc_sents) 
-        for mention in cluster.mentions
-    ])
+            get_sentence_id(mention, doc_sents) 
+            for mention in cluster.mentions
+        ])
         
-    return corefs,corefs_sent_ids
+    return corefs, corefs_sent_ids
 
 
 def compose_circuits_using_corefs(circs, corefs, corefs_sent_ids):
@@ -94,8 +97,12 @@ def find_box_using_name(boxes, name):
     print(boxes)
     return None
 
+#%%
 
-
-text = 'Alice went to the kitchen. She cooked pies. She liked them.'
+# text = 'The smart king likes pies. He eats strawberries.'
+# text = 'Alice went to the kitchen. She cooked pies. She liked them.'
+text = 'Alice likes Bob. She is happy'
 composed_circ = text_to_circ(text)
 composed_circ.draw()
+
+# %%
