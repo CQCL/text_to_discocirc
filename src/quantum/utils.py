@@ -7,5 +7,3 @@ def get_train_valid(train_dataset, validation_dataset):
     # not really labels yet!! only question word and answer word
     valid_labels = [d[1] for d in validation_dataset]
     return train_circuits, valid_circuits, train_labels, valid_labels
-
-
