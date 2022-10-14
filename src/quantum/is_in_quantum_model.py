@@ -60,20 +60,15 @@ class qDisCoCircIsIn:
             else:
                 targets.append(0)
 
-            # TODO: discard insted of postselect
-            # post select on text_state so that only question and answer word wires remain open
+            # discard on text_state so that only question and answer word wires remain open
             posel_ids = post_select_indices.copy()
             posel_ids.remove(j)
             posel_ids.remove(j + 1)
             sliced_text_state = text_state.clone()
-            # print('pre post selection', sliced_text_state.shape)
-            # sliced_text_state = cloned_text_state.select(posel_ids[-1], 0) + cloned_text_state.select(posel_ids[-1], 1)
             for i in posel_ids[::-1]:
                 sliced_text_state = sliced_text_state.select(i, 0) + sliced_text_state.select(i, 1)
-            # print('post post selection', sliced_text_state.shape)
             sliced_text_state = sliced_text_state.flatten()
             sliced_text_state = torch.nn.functional.normalize(sliced_text_state, p=2, dim=0)
-            # print(sliced_text_state)
             # multiply text_state with dagger is_in_state or is_in_swapped_state depending on whether answer word occurs before or after question word in text diagram
             # only is_in_state.conj() because transpose has no effect on vector
             if j > ques_ids[-1]:

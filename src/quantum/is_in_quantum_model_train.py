@@ -30,16 +30,16 @@ D = {N: WIRE_DIMENSION}
 ANSATZ = IQPAnsatz(D, n_layers=NB_LAYERS)
 
 # train config
-LEARNING_RATE = 0.01
-EPOCHS = 30
+LEARNING_RATE = 0.001
+EPOCHS = 50
 # BATCH_SIZE = ?
 
 config = {
-    "wire_dimension": WIRE_DIMENSION,
-    "layers": NB_LAYERS,
     "ansatz": "IQP",
-    "learning_rate": LEARNING_RATE,
+    "layers": NB_LAYERS,
+    "wire_dimension": WIRE_DIMENSION,
     "epochs": EPOCHS,
+    "learning_rate": LEARNING_RATE
 }
 
 wandb.init(project="is_in_prob_dist_01", config=config)
