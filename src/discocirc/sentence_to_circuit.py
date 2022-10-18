@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 
-from discopy import biclosed, rigid
+from discopy import rigid
 from discocirc import closed
 
 from discocirc.expand_s_types import expand_s_types
@@ -12,8 +12,8 @@ from discocirc.pulling_out import recurse_pull
 @dataclass
 class Term:
     name: str
-    simple_type: biclosed.Ty
-    final_type: biclosed.Ty
+    simple_type: closed.Ty
+    final_type: closed.Ty
     args: list[Term]
 
     def __call__(self, x: Term) -> Term:
@@ -103,7 +103,7 @@ def decomp(term):
         return None
 
     if isinstance(term, Compose):
-        dummy = Term('?', biclosed.Ty('n'), biclosed.Ty('n'), [])
+        dummy = Term('?', closed.Ty('n'), closed.Ty('n'), [])
         return term.func1(term.func2(dummy))
 
     args = [decomp(arg) for arg in term.args]
