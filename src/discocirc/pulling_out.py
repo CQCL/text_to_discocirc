@@ -1,7 +1,7 @@
 from discopy import rigid
 from discopy.biclosed import Over, Under
 
-from discocirc.discocirc_utils import get_ccg_input, get_ccg_output
+from discocirc.closed import Func, Ty
 
 
 def get_holes(term):
@@ -13,13 +13,13 @@ def get_holes(term):
     :return: List - position in argument list of all holes.
     """
     holes = []
-    ccg = term.ccg
+    simple_type = term.simple_type
     for i in range(len(term.args)):
-        if isinstance(get_ccg_input(ccg), (Over, Under)) \
-                or get_ccg_input(ccg) == rigid.Ty('p')\
-                or get_ccg_input(ccg) == rigid.Ty('s'):
+        if isinstance(simple_type.input, Func) \
+                or simple_type.input == Ty('p')\
+                or simple_type.input == Ty('s'):
             holes.append(i)
-        ccg = get_ccg_output(ccg)
+        simple_type = simple_type.output
 
     return holes
 
@@ -29,14 +29,14 @@ def pull_single_hole(term, hole_position):
     Given a hyperbox, pull out the arguments of the specified hole.
     For hyperboxes with multiple holes, this has to be called multiple times.
 
-    :param term: Term - hyperbox who's arguments will be pulled out.
+    :param term: Term - hyperbox whose arguments will be pulled out.
                  We assume that all internal hyperboxes are fully pulled out.
     :param hole_position: int - the argument position of the hole which should
                 be pulled out.
     """
     inner_term = term.args[hole_position]
 
-    ccg = inner_term.ccg
+    inner_term_type = inner_term.simple_type
     pulled_out_args = []
     hole_filling_args = []
 
@@ -48,48 +48,40 @@ def pull_single_hole(term, hole_position):
         # hyperboxes to already be pulled out correctly).
         # Thus, they should take exactly one input, which we don't pull out.
         if i in inner_term_holes:
-            arg_ccg = arg.ccg
+            arg_type = arg.simple_type
             for _ in arg.args:
-                arg_ccg = get_ccg_output(arg_ccg)
+                arg_type = arg_type.output
 
-            hole_filling_args.append((type(ccg), arg_ccg))
-            ccg = get_ccg_output(ccg)
+            hole_filling_args.append(arg_type)
+            inner_term_type = inner_term_type.output
             continue
 
         # Pull out the argument
         term.args.insert(hole_position + len(pulled_out_args) + 1, arg)
-        pulled_out_args.append((type(ccg), arg.output_ccg))
+        pulled_out_args.append(arg.final_type)
         inner_term.args.remove(arg)
 
-        ccg = get_ccg_output(ccg)
+        inner_term_type = inner_term_type.output
 
-    # Update the ccg_type in reverse order such that the first argument pulled
-    # out is the last added to the ccg and thus the next input
-    new_inner_ccg = inner_term.ccg
+    # Update the type in reverse order such that the first argument pulled
+    # out is the last added to the type and thus the next input
+    new_inner_type = inner_term.simple_type
     for _ in range(len(pulled_out_args) + len(hole_filling_args)):
-        new_inner_ccg = get_ccg_output(new_inner_ccg)
+        new_inner_type = new_inner_type.output
 
-    term_ccg = term.ccg
+    term_type = term.simple_type
     for _ in range(hole_position):
-        term_ccg = get_ccg_output(term_ccg)
+        term_type = term_type.output
 
-    for ccg_type, ccg in reversed(pulled_out_args):
-        if ccg_type == Over:
-            term_ccg.left = Over(term_ccg.left, ccg)
-            term_ccg.right = Over(term_ccg.right, ccg)
-            new_inner_ccg = Over(new_inner_ccg, ccg)
-        elif ccg_type == Under:
-            term_ccg.left = Under(ccg, term_ccg.left)
-            term_ccg.right = Under(ccg, term_ccg.right)
-            new_inner_ccg = Under(ccg, new_inner_ccg)
+    for pulled_out_arg in reversed(pulled_out_args):
+        term_type.input = Func(pulled_out_arg, term_type.input)
+        term_type.output = Func(pulled_out_arg, term_type.output)
+        new_inner_type = Func(pulled_out_arg, new_inner_type)
 
-    for ccg_type, ccg in reversed(hole_filling_args):
-        if ccg_type == Over:
-            new_inner_ccg = Over(new_inner_ccg, ccg)
-        elif ccg_type == Under:
-            new_inner_ccg = Under(ccg, new_inner_ccg)
+    for hole_filling_arg in reversed(hole_filling_args):
+        new_inner_type = Func(hole_filling_arg, new_inner_type)
 
-    inner_term.ccg = new_inner_ccg
+    inner_term.simple_type = new_inner_type
 
 
 def recurse_pull(term):
