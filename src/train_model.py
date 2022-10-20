@@ -1,17 +1,29 @@
 import os
 import shutil
 
-from network.big_network_models.add_scaled_logits_one_networks import \
+from network.big_network_models.add_logits_one_network import \
+    AddLogitsOneNetworkTrainer
+from network.big_network_models.add_scaled_logits_one_network import \
     AddScaledLogitsOneNetworkTrainer
 from network.big_network_models.is_in_one_network import \
     IsInOneNetworkTrainer
 from network.big_network_models.one_network_trainer_base import \
     OneNetworkTrainerBase
+from network.big_network_models.textspace_one_network import \
+    TextspaceOneNetworkTrainer
+from network.big_network_models.weighted_sum_of_wires_one_network import \
+    WeightedSumOfWiresOneNetworkTrainer
+from network.individual_networks_models.add_logits_trainer import \
+    AddLogitsIndividualNetworksTrainer
+from network.individual_networks_models.add_scaled_logits_trainer import \
+    AddScaledLogitsIndividualNetworksTrainer
 
 from network.individual_networks_models.is_in_trainer import \
     IsInIndividualNetworksTrainer
 from network.individual_networks_models.individual_networks_trainer_base_class import \
     IndividualNetworksTrainerBase
+from network.individual_networks_models.textspace_trainer import \
+    TextspaceIndividualNetworksTrainer
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import pickle
@@ -31,20 +43,24 @@ base_path = os.path.abspath('..')
 # base_path = os.path.abspath('.')
 config = {
     "batch_size": 32,
-    "dataset": "add_logits_dataset_task1_train.pkl",
-    "epochs": 100,
-    "learning_rate": 0.001,
+    "dataset": "textspace_dataset_task1_train.pkl",
+    "epochs": 50,
+    "learning_rate": 0.01,
     "log_wandb": False,
-    "trainer": AddScaledLogitsOneNetworkTrainer,
+    "trainer": TextspaceIndividualNetworksTrainer,
     "vocab": "en_qa1.p",
 }
 model_config = {
     "hidden_layers": [10, 10],
-    "is_in_hidden_layers": [10, 10],
+    # "is_in_hidden_layers": [10, 10],
     "wire_dimension": 10,
-    "softmax_relevancies": False,
-    "softmax_logits": False,
-    "relevance_hidden_layers": [10, 10],
+    # "softmax_relevancies": False,
+    # "softmax_logits": False,
+    # "relevance_hidden_layers": [10, 10],
+    "expansion_hidden_layers": [20, 50],
+    "contraction_hidden_layers": [50, 20],
+    "latent_dimension": 100,
+    "textspace_dimension": 20,
 }
 config.update(model_config)
 
@@ -68,7 +84,7 @@ def train(base_path, save_path, vocab_path,
     with open(base_path + data_path + config['dataset'],
               "rb") as f:
         # dataset is a tuple (context_circuit,(question_word_index, answer_word_index))
-        dataset = pickle.load(f)[:5]
+        dataset = pickle.load(f)[:10]
 
     train_dataset, validation_dataset = train_test_split(dataset,
                                                          test_size=0.1,
@@ -116,6 +132,9 @@ def train(base_path, save_path, vocab_path,
 
     accuracy = discocirc_trainer.get_accuracy(discocirc_trainer.dataset)
     print("The accuracy on the train set is", accuracy)
+
+    if config["log_wandb"]:
+        wandb.log({"train_accuracy": accuracy})
 
     save_base_path = base_path + save_path + trainer_class.__name__
     Path(save_base_path).mkdir(parents=True, exist_ok=True)
