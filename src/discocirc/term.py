@@ -12,13 +12,15 @@ class Term:
     args: list[Term]
 
     def __call__(self, x: Term) -> Term:
-        return Term(self.name, self.simple_type, self.final_type, [*self.args, x])
+        if self.final_type.input != x.final_type:
+            raise TypeError(f"Type of {x.name}({x.final_type}) does not match the input type of {self.name}({self.final_type.input})")
+        return Term(self.name, self.simple_type, self.final_type.output, [*self.args, x])
 
     def __repr__(self) -> str:
         args = self.args
         if args:
-            return f"{self.name}({args=})"
-        return self.name
+            return f"{self.name}({self.simple_type}, {args=})"
+        return f"{self.name}({self.simple_type})"
 
 
 @dataclass
@@ -59,7 +61,7 @@ def make_term(diagram):
                     term = Compose(terms[offset + 1], terms[offset])
                 else:
                     raise NotImplementedError
-                term.final_type = closed.biclosed_to_closed(box.cod)
+                # term.final_type = closed.biclosed_to_closed(box.cod)
                 terms[offset:offset + 2] = [term]
             elif box.name == "Curry(BA(n >> s))":
                 terms[offset] = TR(terms[offset])
