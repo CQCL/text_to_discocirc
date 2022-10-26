@@ -38,7 +38,7 @@ class Func(Ty):
         self.input, self.output = input, output
 
     def __repr__(self):
-        return "Func({}, {})".format(repr(self.input), repr(self.output))
+        return "({} → {})".format(repr(self.input), repr(self.output))
 
     def __str__(self):
         return "({} → {})".format(self.input, self.output)

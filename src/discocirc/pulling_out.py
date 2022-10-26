@@ -15,13 +15,18 @@ def get_holes(term):
     holes = []
     simple_type = term.simple_type
     for i in range(len(term.args)):
-        if isinstance(simple_type.input, Func) \
-                or simple_type.input == Ty('p')\
-                or simple_type.input == Ty('s'):
+        if is_higher_order(simple_type):
             holes.append(i)
         simple_type = simple_type.output
 
     return holes
+
+def is_higher_order(simple_type):
+    if not isinstance(simple_type, Func):
+        return False
+    return isinstance(simple_type.input, Func) \
+                or simple_type.input == Ty('p')\
+                or simple_type.input == Ty('s')
 
 
 def pull_single_hole(term, hole_position):
