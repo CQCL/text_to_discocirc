@@ -11,7 +11,8 @@ parser = BobcatParser()
 draw_term = lambda term: (Frame.get_decompose_functor())(make_diagram(term)).draw()
 
 # %%
-sentence = "Alice quickly passionately gives Bob flowers"
+# sentence = "Alice quickly passionately gives Bob flowers"
+sentence = "Alice and Bob quickly passionately give flowers to Claire"
 # sentence = "Alice quickly gives Claire red smelly fish"
 diagram = parser.sentence2tree(sentence).to_biclosed_diagram()
 term = make_term(diagram)
@@ -33,7 +34,7 @@ def thrush(f, g, h):
     typs = []
     t = f.simple_type
     for _ in f.args:
-        typs.append(0, t.input)
+        typs.insert(0, t.input)
         t = t.output
     t = (h.final_type >> t.input) >> (h.final_type >> t.output)
     final_type = t
@@ -95,7 +96,32 @@ def pull_out(term):
     return f
 
 
+def s_expand_t(t):
+    from discocirc.closed import Ty
+    typs = []
+    while isinstance(t, Func):
+        typs.insert(0, t.input)
+        t = t.output
+    if t == Ty("s"):
+        n_nouns = typs.count(Ty('n'))
+        t = Ty().tensor(*([Ty('n')] * n_nouns))
+    for typ in typs:
+        t = s_expand_t(typ) >> t
+    return t
+
+
+def s_expand(term):
+    """ expand the simple type s to match the number of n types """
+    f = just(term)
+    t = s_expand_t(term.simple_type)
+    f = Term(term.name, t, t, [])
+
+    for arg in term.args:
+        f = f(s_expand(arg))
+    return f
+
+
 new_term = pull_out(term)
 
-draw_term(new_term)
+draw_term(s_expand(new_term))
 # %%
