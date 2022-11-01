@@ -60,7 +60,7 @@ def make_term(diagram):
                 elif box.name.startswith("BC") or box.name.startswith("BX"):
                     term = Compose(terms[offset + 1], terms[offset])
                 else:
-                    raise NotImplementedError
+                    raise NotImplementedError(box.name)
                 # term.final_type = closed.biclosed_to_closed(box.cod)
                 terms[offset:offset + 2] = [term]
             elif box.name == "Curry(BA(n >> s))":
