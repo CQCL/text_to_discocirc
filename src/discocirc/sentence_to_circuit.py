@@ -25,7 +25,7 @@ def make_word(name, simple_type, *diags):
         i += 1
 
     dom = above.cod
-    cod = rigid.Ty(simple_type[0].name)
+    cod = rigid.Ty().tensor(*[rigid.Ty(t.name) for t in simple_type])
     if len(insides) == 0:  # not a frame
         return above >> rigid.Box(name, dom, cod)
 
