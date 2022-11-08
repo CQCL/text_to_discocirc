@@ -4,7 +4,7 @@ from discocirc import closed
 from discocirc.expand_s_types import expand_s_types
 from discocirc.frame import Frame
 from discocirc.pulling_out import recurse_pull
-from discocirc.term import Term, Compose, decomp, make_term
+from discocirc.term import make_term
 
 
 def make_word(name, simple_type, *diags):
@@ -14,7 +14,8 @@ def make_word(name, simple_type, *diags):
 
     while isinstance(simple_type, closed.Func):
         if isinstance(simple_type.input, closed.Func):
-            box = diags[i] if i < len(diags) else make_word('?', simple_type.input)
+            box = diags[i] if i < len(diags) \
+                else make_word('?', simple_type.input)
             insides = [box] + insides
         else:
             t = rigid.Ty(simple_type.input[0].name)
@@ -33,7 +34,7 @@ def make_word(name, simple_type, *diags):
 
 
 def make_diagram(term):
-    term = decomp(term)
+    # term = decomp(term)
     diags = map(make_diagram, term.args)
     return make_word(term.name, term.simple_type, *diags)
 

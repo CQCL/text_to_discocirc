@@ -10,12 +10,12 @@ from discocirc.frame import Frame
 parser = BobcatParser()
 draw_term = lambda term: (Frame.get_decompose_functor())(make_diagram(term)).draw()
 
-# %%
-# sentence = "Alice quickly passionately gives Bob flowers"
-sentence = "Alice and Bob quickly passionately give flowers to Claire"
-# sentence = "Alice quickly gives Claire red smelly fish"
-diagram = parser.sentence2tree(sentence).to_biclosed_diagram()
-term = make_term(diagram)
+# # %%
+# # sentence = "Alice quickly passionately gives Bob flowers"
+# sentence = "Alice and Bob quickly passionately give flowers to Claire"
+# # sentence = "Alice quickly gives Claire red smelly fish"
+# diagram = parser.sentence2tree(sentence).to_biclosed_diagram()
+# term = make_term(diagram)
 
 # %%
 def just(term):
@@ -30,17 +30,27 @@ def pop(term):
     return g, h
 
 
-def thrush(f, g, h):
+def b_combinator(f, A):
+    """
+    This function models the operation of the B-combinator on f,
+    which is dependent on the type A.
+    We have B = λ f: (B -> C). λ g: (A -> B). λ h: A. f(g(h))
+
+    :param f: The function through which we pull out
+    :param A: The type of the term that we pull out
+    :return: B f - The new function through which we have pulled out
+    """
     typs = []
-    t = f.simple_type
+    simple_type = f.simple_type
     for _ in f.args:
-        typs.insert(0, t.input)
-        t = t.output
-    t = (h.final_type >> t.input) >> (h.final_type >> t.output)
-    final_type = t
+        typs.insert(0, simple_type.input)
+        simple_type = simple_type.output
+    assert(f.final_type == simple_type)
+    final_type = (A >> f.final_type.input) >> (A >> f.final_type.output)
+    new_type = final_type
     for typ in typs:
-        t = typ >> t
-    return Term(f.name, t, final_type, f.args), g, h
+        new_type = typ >> new_type
+    return Term(f.name, new_type, final_type, f.args)
 
 
 def exch_t(term, i, n):
@@ -86,7 +96,7 @@ def pull_out(term):
             try_arg = exch(new_arg, i)
             g, h = pop(try_arg)
             if check(f, g, h):
-                f, g, h = thrush(f, g, h)
+                f = b_combinator(f, h.final_type)
                 f = pull_out(f(g))(h)
                 put_back = False
                 break
@@ -121,7 +131,7 @@ def s_expand(term):
     return f
 
 
-new_term = pull_out(term)
-
-draw_term(s_expand(new_term))
+# new_term = pull_out(term)
+#
+# draw_term(s_expand(new_term))
 # %%
