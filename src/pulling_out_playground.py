@@ -46,17 +46,19 @@ def b_combinator(f, A):
         typs.insert(0, simple_type.input)
         simple_type = simple_type.output
     assert(f.final_type == simple_type)
+
     final_type = (A >> f.final_type.input) >> (A >> f.final_type.output)
     new_type = final_type
     for typ in typs:
         new_type = typ >> new_type
+
     return Term(f.name, new_type, final_type, f.args)
 
 
-def exch_t(term, i, n):
+def exch_t(term, i):
     typs = []
     t = term.simple_type
-    for _ in range(n):
+    for _ in range(len(term.args)):
         typs.insert(0, t.input)
         t = t.output
     t = typs[i] >> t
@@ -67,7 +69,7 @@ def exch_t(term, i, n):
 
 
 def exch(term, i):
-    g = exch_t(term, i, len(term.args))
+    g = exch_t(term, i)
     args = term.args
     for j, arg in enumerate(term.args):
         if j != len(args) - i - 1:
@@ -91,20 +93,58 @@ def pull_out(term):
     f = just(term)
     for arg in term.args:
         new_arg = pull_out(arg)
-        put_back = True
+
+        # Try pulling out the argument
+        pulled_out = False
         for i in range(len(new_arg.args)):
             try_arg = exch(new_arg, i)
             g, h = pop(try_arg)
-            if check(f, g, h):
+
+            # Only pull out of higher order boxes and
+            # don't pull out higher order diagrams
+            if is_higher_order(f.final_type) and \
+                    not isinstance(h.final_type, Func):
                 f = b_combinator(f, h.final_type)
                 f = pull_out(f(g))(h)
-                put_back = False
+                pulled_out = True
                 break
 
-        if put_back:
+        if not pulled_out:
             f = f(new_arg)
     return f
 
+
+# def pull_out(term):
+#     # Only pull out from a higher order box.
+#     # Otherwise, only apply pull_out to arguments.
+#     if not is_higher_order(term.final_type):
+#         f = just(term)
+#         for arg in term.args:
+#             new_arg = pull_out(arg)
+#             f(new_arg)
+#         return f
+#
+#     f = just(term)
+#     for arg in term.args:
+#         new_arg = pull_out(arg)
+#
+#         # Try pulling out the argument
+#         pulled_out = False
+#         for i in range(len(new_arg.args)):
+#             try_arg = exch(new_arg, i)
+#             g, h = pop(try_arg)
+#
+#             # Don't pull out higher order diagrams
+#             if not isinstance(h.final_type, Func):
+#                 f = b_combinator(f, h.final_type)
+#                 f = pull_out(f(g))(h)
+#                 pulled_out = True
+#                 break
+#
+#         # If argument can't be pulled out, apply it
+#         if not pulled_out:
+#             f = f(new_arg)
+#     return f
 
 def s_expand_t(t):
     from discocirc.closed import Ty

@@ -65,15 +65,9 @@ def make_term(diagram):
                 elif box.name.startswith("BA"):
                     term = terms[offset + 1](terms[offset])
                 elif box.name.startswith("FC"):
-                    if isinstance(terms[offset], TR):
-                        term = terms[offset + 1]
-                        term.final_type = term.final_type.input \
-                                          >> term.final_type.output.output
-                        term.__call__ = lambda g: terms[offset + 1](g)(terms[offset])
-                    else:
-                        term = b_combinator(terms[offset],
-                                            terms[offset + 1].final_type.input)
-                        term = term(terms[offset + 1])
+                    term = b_combinator(terms[offset],
+                                        terms[offset + 1].final_type.input)
+                    term = term(terms[offset + 1])
                 elif box.name.startswith("BC") or box.name.startswith("BX"):
                     term = b_combinator(terms[offset + 1],
                                         terms[offset].final_type.input)
