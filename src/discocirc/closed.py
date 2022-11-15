@@ -67,3 +67,18 @@ def biclosed_to_closed(x):
     else:
         fx = x
     return fx
+
+
+def uncurry_types(typ, uncurry_everything=False):
+    if isinstance(typ, Func) and isinstance(typ.output, Func):
+        if uncurry_everything:
+            inp = uncurry_types(typ.input)
+            out_inp = uncurry_types(typ.output.input)
+            out_out = uncurry_types(typ.output.output)
+        else:
+            inp = typ.input
+            out_inp = typ.output.input
+            out_out = typ.output.output
+        return uncurry_types((inp @ out_inp) >> out_out)
+    else:
+        return typ
