@@ -29,7 +29,7 @@ class Expr:
     @staticmethod
     def lmbda(literal, expr, simple_type=None):
         lambda_expr = Expr()
-        expr.expr_type = "lambda"
+        lambda_expr.expr_type = "lambda"
         lambda_expr.var = literal
         lambda_expr.expr = expr
         lambda_expr.simple_type = simple_type
@@ -40,13 +40,13 @@ class Expr:
     
     @staticmethod
     def application(expr, arg):
-        new_expr = Expr()
-        new_expr.expr_type = "application"
-        new_expr.simple_type = expr.simple_type
-        new_expr.final_type = expr.final_type.output
-        new_expr.expr = expr
-        new_expr.arg = arg
-        return new_expr
+        app_expr = Expr()
+        app_expr.expr_type = "application"
+        app_expr.simple_type = expr.simple_type
+        app_expr.final_type = expr.final_type.output
+        app_expr.expr = expr
+        app_expr.arg = arg
+        return app_expr
     
     @staticmethod
     def lst(expr_list, simple_type=None):
