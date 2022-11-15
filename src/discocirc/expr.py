@@ -16,6 +16,42 @@ class Expr:
 
     def __call__(self, arg: Expr):
         return Expr.apply(self, arg)
+    
+    def __members(self):
+        if self.expr_type == "literal":
+            return (self.expr_type,
+                    self.simple_type,
+                    self.final_type,
+                    self.name)
+        elif self.expr_type == "lambda":
+            return (self.expr_type,
+                    self.simple_type,
+                    self.final_type,
+                    self.var,
+                    self.expr)
+        elif self.expr_type == "application":
+            return (self.expr_type,
+                    self.simple_type,
+                    self.final_type,
+                    self.arg,
+                    self.expr)
+        elif self.expr_type == "list":
+            return (self.expr_type,
+                    self.simple_type,
+                    self.final_type,
+                    self.expr_list)
+        else:
+            raise NotImplementedError(self.expr_type)
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Expr):
+            return False
+        if self.expr_type != other.expr_type:
+            return False
+        return self.__members() == other.__members()
+
+    def __hash__(self) -> int:
+        return hash(self.__members())
 
     @staticmethod
     def literal(name, simple_type):
@@ -61,7 +97,7 @@ class Expr:
                 new_expr_list.extend(e.expr_list)
             else:
                 new_expr_list.append(e)
-        expr.expr_list = new_expr_list
+        expr.expr_list = tuple(new_expr_list)
         expr.final_type = final_type
         return expr
     
