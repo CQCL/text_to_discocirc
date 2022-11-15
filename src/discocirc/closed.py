@@ -30,6 +30,10 @@ class Ty(monoidal.Ty):
     def __rshift__(self, other):
         return Func(self, other)
 
+    @staticmethod
+    def upgrade(old):
+        return Ty(*old.objects)
+
 
 class Func(Ty):
     """ Function types. """
