@@ -10,11 +10,12 @@ from discocirc.frame import Frame
 parser = BobcatParser()
 draw_term = lambda term: (Frame.get_decompose_functor())(make_diagram(term)).draw()
 
-# %%
-sentence = "Alice quickly passionately gives Bob flowers"
-# sentence = "Alice quickly gives Claire red smelly fish"
-diagram = parser.sentence2tree(sentence).to_biclosed_diagram()
-term = make_term(diagram)
+# # %%
+# # sentence = "Alice quickly passionately gives Bob flowers"
+# sentence = "Alice and Bob quickly passionately give flowers to Claire"
+# # sentence = "Alice quickly gives Claire red smelly fish"
+# diagram = parser.sentence2tree(sentence).to_biclosed_diagram()
+# term = make_term(diagram)
 
 # %%
 def just(term):
@@ -29,23 +30,35 @@ def pop(term):
     return g, h
 
 
-def thrush(f, g, h):
+def b_combinator(f, A):
+    """
+    This function models the operation of the B-combinator on f,
+    which is dependent on the type A.
+    We have B = λ f: (B -> C). λ g: (A -> B). λ h: A. f(g(h))
+
+    :param f: The function through which we pull out
+    :param A: The type of the term that we pull out
+    :return: B f - The new function through which we have pulled out
+    """
     typs = []
-    t = f.simple_type
+    simple_type = f.simple_type
     for _ in f.args:
-        typs.append(0, t.input)
-        t = t.output
-    t = (h.final_type >> t.input) >> (h.final_type >> t.output)
-    final_type = t
+        typs.insert(0, simple_type.input)
+        simple_type = simple_type.output
+    assert(f.final_type == simple_type)
+
+    final_type = (A >> f.final_type.input) >> (A >> f.final_type.output)
+    new_type = final_type
     for typ in typs:
-        t = typ >> t
-    return Term(f.name, t, final_type, f.args), g, h
+        new_type = typ >> new_type
+
+    return Term(f.name, new_type, final_type, f.args)
 
 
-def exch_t(term, i, n):
+def exch_t(term, i):
     typs = []
     t = term.simple_type
-    for _ in range(n):
+    for _ in range(len(term.args)):
         typs.insert(0, t.input)
         t = t.output
     t = typs[i] >> t
@@ -56,7 +69,7 @@ def exch_t(term, i, n):
 
 
 def exch(term, i):
-    g = exch_t(term, i, len(term.args))
+    g = exch_t(term, i)
     args = term.args
     for j, arg in enumerate(term.args):
         if j != len(args) - i - 1:
@@ -80,22 +93,85 @@ def pull_out(term):
     f = just(term)
     for arg in term.args:
         new_arg = pull_out(arg)
-        put_back = True
+
+        # Try pulling out the argument
+        pulled_out = False
         for i in range(len(new_arg.args)):
             try_arg = exch(new_arg, i)
             g, h = pop(try_arg)
-            if check(f, g, h):
-                f, g, h = thrush(f, g, h)
+
+            # Only pull out of higher order boxes and
+            # don't pull out higher order diagrams
+            if is_higher_order(f.final_type) and \
+                    not isinstance(h.final_type, Func):
+                f = b_combinator(f, h.final_type)
                 f = pull_out(f(g))(h)
-                put_back = False
+                pulled_out = True
                 break
 
-        if put_back:
+        if not pulled_out:
             f = f(new_arg)
     return f
 
 
-new_term = pull_out(term)
+# def pull_out(term):
+#     # Only pull out from a higher order box.
+#     # Otherwise, only apply pull_out to arguments.
+#     if not is_higher_order(term.final_type):
+#         f = just(term)
+#         for arg in term.args:
+#             new_arg = pull_out(arg)
+#             f(new_arg)
+#         return f
+#
+#     f = just(term)
+#     for arg in term.args:
+#         new_arg = pull_out(arg)
+#
+#         # Try pulling out the argument
+#         pulled_out = False
+#         for i in range(len(new_arg.args)):
+#             try_arg = exch(new_arg, i)
+#             g, h = pop(try_arg)
+#
+#             # Don't pull out higher order diagrams
+#             if not isinstance(h.final_type, Func):
+#                 f = b_combinator(f, h.final_type)
+#                 f = pull_out(f(g))(h)
+#                 pulled_out = True
+#                 break
+#
+#         # If argument can't be pulled out, apply it
+#         if not pulled_out:
+#             f = f(new_arg)
+#     return f
 
-draw_term(new_term)
+def s_expand_t(t):
+    from discocirc.closed import Ty
+    typs = []
+    while isinstance(t, Func):
+        typs.insert(0, t.input)
+        t = t.output
+    if t == Ty("s"):
+        n_nouns = typs.count(Ty('n'))
+        t = Ty().tensor(*([Ty('n')] * n_nouns))
+    for typ in typs:
+        t = s_expand_t(typ) >> t
+    return t
+
+
+def s_expand(term):
+    """ expand the simple type s to match the number of n types """
+    f = just(term)
+    t = s_expand_t(term.simple_type)
+    f = Term(term.name, t, t, [])
+
+    for arg in term.args:
+        f = f(s_expand(arg))
+    return f
+
+
+# new_term = pull_out(term)
+#
+# draw_term(s_expand(new_term))
 # %%
