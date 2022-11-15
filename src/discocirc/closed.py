@@ -23,8 +23,8 @@ class Ty(monoidal.Ty):
     ((y → x) → y) @ x
     """
 
-    def __init__(self, *objects, left=None, right=None):
-        self.left, self.right = left, right
+    def __init__(self, *objects, input=None, output=None):
+        self.input, self.output = input, output
         super().__init__(*objects)
 
     def __rshift__(self, other):
