@@ -125,7 +125,7 @@ def convert_sentence(diagram):
 
     step = make_diagram(term)
     step = expand_s_types(step)
-    step = (Frame.get_decompose_functor())(step)
+    # step = (Frame.get_decompose_functor())(step)
 
     return step
 
