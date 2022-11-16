@@ -2,8 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from lambeq import CCGRule
-from lambeq.bobcat.tree import Variable
-
+from lambeq.bobcat.tree import IndexedWord
 from discocirc import closed
 
 @dataclass
@@ -12,7 +11,7 @@ class Term:
     simple_type: closed.Ty
     final_type: closed.Ty
     args: list[Term]
-    head: Variable = None
+    head: list[IndexedWord] = None
 
     def __call__(self, x: Term) -> Term:
         if self.final_type.input != x.final_type:
@@ -30,7 +29,7 @@ class Term:
 class Compose:
     func1: Term
     func2: Term
-    head: Variable = None
+    head: list[IndexedWord] = None
 
     def __call__(self, x: Term) -> Term:
         return self.func1(self.func2(x))
@@ -42,7 +41,7 @@ class Compose:
 @dataclass
 class TR:
     arg: Term
-    head: Variable = None
+    head: list[IndexedWord] = None
 
     def __call__(self, x: Term) -> Term:
         return x(self.arg)
@@ -69,9 +68,9 @@ def make_term(ccg_parse):
     elif ccg_parse.rule == CCGRule.BACKWARD_APPLICATION:
         result = children[1](children[0])
     elif ccg_parse.rule == CCGRule.FORWARD_COMPOSITION:
-        result = Compose(children[0], children[1], ccg_parse.original.variable)
+        result = Compose(children[0], children[1])
     elif ccg_parse.rule == CCGRule.BACKWARD_COMPOSITION:
-        result = Compose(children[1], children[0], ccg_parse.original.variable)
+        result = Compose(children[1], children[0])
 
     if result is None:
         raise NotImplementedError(ccg_parse.rule)
