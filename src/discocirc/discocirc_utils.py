@@ -1,5 +1,3 @@
-from discopy.biclosed import Under, Over
-from discopy.rigid import Ty
 from discopy.rigid import Ty, Box
 from discopy.monoidal import Functor
 
@@ -29,31 +27,17 @@ def get_star_removal_functor():
 
 def type_check_term(term):
     """
-    Given a term, check if all the arguments match the required ccg.
+    Given a term, check if all the arguments match the required type.
 
     :param term: Term - The term which should be type checked.
     :return: None - If term does not type check.
-        ccg - The output type of the term, if it type checks.
+        type - The output type of the term, if it type checks.
     """
-    ccg = term.ccg
+    simple_type = term.simple_type
     for arg in term.args:
-        if not get_ccg_input(ccg) == type_check_term(arg):
+        if not simple_type.input == type_check_term(arg):
             return None
-        ccg = get_ccg_output(ccg)
+        simple_type = simple_type.output
 
-    return ccg
-
-
-def get_ccg_input(ccg):
-    if isinstance(ccg, Under):
-        return ccg.left
-    elif isinstance(ccg, Over):
-        return ccg.right
-
-
-def get_ccg_output(ccg):
-    if isinstance(ccg, Under):
-        return ccg.right
-    elif isinstance(ccg, Over):
-        return ccg.left
+    return simple_type
 

@@ -12,25 +12,30 @@ from network.utils.utils import get_classification_vocab
 
 class TextspaceIndividualNetworksTrainer(IndividualNetworksTrainerBase):
     def __init__(self, 
-                 nn_boxes,
                  wire_dimension,
                  max_wire_num = 20,
-                 textspace_dimension = 200,
+                 lexicon=None,
+                 textspace_dimension = None,
                  latent_dimension = None,
+                 expansion_hidden_layers=None,
+                 contraction_hidden_layers=None,
                  classification_vocab = None,
                  qna_classifier_model = None,
-                 space_expansion = None,
-                 space_contraction = None,
-                 **kwargs):
-        super().__init__(nn_boxes, wire_dimension, **kwargs)
-        self.circuit_to_textspace = TextSpace(
-            wire_dimension, 
-            max_wire_num, 
-            textspace_dimension, 
-            latent_dimension, 
-            space_expansion,
-            space_contraction
-        )            
+                 circuit_to_textspace = None,
+                 **kwargs
+            ):
+        super().__init__(lexicon=lexicon, **kwargs)
+        if circuit_to_textspace is None:
+            self.circuit_to_textspace = TextSpace(
+                wire_dim=wire_dimension,
+                textspace_dim=textspace_dimension,
+                latent_dim=latent_dimension,
+                expansion_hidden_layers=expansion_hidden_layers,
+                contraction_hidden_layers=contraction_hidden_layers,
+            )
+        else:
+            self.circuit_to_textspace = circuit_to_textspace
+
         self.max_wire_num = max_wire_num
         self.textspace_dimension = textspace_dimension
         self.classification_vocab = classification_vocab
@@ -55,19 +60,15 @@ class TextspaceIndividualNetworksTrainer(IndividualNetworksTrainerBase):
             count += 1
             context_circuit_model = self.nn_functor(context_circuit)
             question_circuit_model = self.nn_functor(test[0])
-            model_dataset.append([context_circuit_model.model, (question_circuit_model.model, test[1])])
-        if validation:
-            self.validation_dataset = model_dataset
-        else:
-            self.dataset = model_dataset
-            self.dataset_size = len(dataset)
+            model_dataset.append([context_circuit_model, (question_circuit_model, test[1])])
+
+        return model_dataset
 
     def save_models(self, path):
         kwargs = {
             "nn_boxes": self.nn_boxes,
             "qna_classifier_model": self.qna_classifier_model,
-            "space_expansion": self.circuit_to_textspace.space_expansion,
-            "space_contraction": self.circuit_to_textspace.space_contraction,
+            "circuit_to_textspace": self.circuit_to_textspace,
             "wire_dimension": self.wire_dimension,
             "max_wire_num": self.max_wire_num,
             "textspace_dimension": self.textspace_dimension,
@@ -91,16 +92,16 @@ class TextspaceIndividualNetworksTrainer(IndividualNetworksTrainerBase):
     def get_expected_result(self, given_value):
         return given_value
 
-    @tf.function
+    # @tf.function
     def compute_loss(self, context_circuit_model, test):
         # test is a tuple containing (question_circuit_model, answer_word)
         question_circuit_model, answer_word = test
         answer_prob = self.call((context_circuit_model, question_circuit_model))
         answer_index = self.classification_vocab.index(answer_word)
         return tf.nn.sparse_softmax_cross_entropy_with_logits(logits=answer_prob,
-                                                          labels=answer_index)
+                                                          labels=[answer_index])
 
-    @tf.function
+    # @tf.function
     def call(self, context_question):
         """
         The model's forward pass
