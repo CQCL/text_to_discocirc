@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from lambeq import CCGRule
+
+from discocirc import closed
 from discocirc.closed import uncurry_types, Ty
 
 
@@ -153,8 +156,8 @@ class Expr:
     @staticmethod
     def apply(expr, arg, context=None):
         if expr.final_type.input != arg.final_type:
-            raise TypeError(f"Type of {arg.name}({arg.final_type}) does not"
-                            + f"match the input type of {expr.name}({expr.final_type.input})")
+            raise TypeError(f"Type of {arg} does not"
+                            + f"match the input type of {expr}")
         if expr.expr_type == "lambda":
             if context == None:
                 context = {}
@@ -167,3 +170,94 @@ class Expr:
         else:
             new_expr = Expr.application(expr, arg)
             return new_expr
+
+
+    @staticmethod
+    def biclosed_to_expr(diagram):
+        terms = []
+        for box, offset in zip(diagram.boxes, diagram.offsets):
+            if not box.dom:  # is word
+                simple_type = closed.biclosed_to_closed(box.cod)
+                terms.append(Expr.literal(box.name, simple_type))
+            else:
+                if len(box.dom) == 2:
+                    if box.name.startswith("FA"):
+                        term = terms[offset](terms[offset + 1])
+                    elif box.name.startswith("BA"):
+                        term = terms[offset + 1](terms[offset])
+                    elif box.name.startswith("FC"):
+                        x = Expr.literal("temp", terms[offset + 1].final_type.input)
+                        term = Expr.lmbda(x, terms[offset](terms[offset + 1](x)))
+                    elif box.name.startswith("BC") or box.name.startswith(
+                            "BX"):
+                        x = Expr.literal("temp",
+                                         terms[offset].final_type.input)
+                        term = Expr.lmbda(x,
+                                          terms[offset + 1](terms[offset](x)))
+                    else:
+                        raise NotImplementedError
+                    # term.final_type = closed.biclosed_to_closed(box.cod)
+                    terms[offset:offset + 2] = [term]
+                elif box.name == "Curry(BA(n >> s))":
+                    x = Expr.literal("temp", Ty('n') >> Ty('s'))
+                    terms[offset] = Expr.lmbda(x, x(terms[offset]))
+                else:
+                    raise NotImplementedError
+        return terms[0]
+
+    @staticmethod
+    def ccg_to_expr(ccg_parse):
+        children = [Expr.ccg_to_expr(child) for child in ccg_parse.children]
+
+        result = None
+        # Rules with 0 children
+        if ccg_parse.rule == CCGRule.LEXICAL:
+            closed_type = closed.biclosed_to_closed(ccg_parse.biclosed_type)
+            result = Expr.literal(ccg_parse.text, closed_type)
+
+        # Rules with 1 child
+        # elif ccg_parse.rule == CCGRule.FORWARD_TYPE_RAISING:
+        #     result = TR(children[0])
+        elif ccg_parse.rule == CCGRule.UNARY:
+            result = children[0]
+
+        # Rules with 2 children
+        elif ccg_parse.rule == CCGRule.FORWARD_APPLICATION:
+            result = children[0](children[1])
+        elif ccg_parse.rule == CCGRule.BACKWARD_APPLICATION:
+            result = children[1](children[0])
+        elif ccg_parse.rule == CCGRule.FORWARD_COMPOSITION:
+            x = Expr.literal("temp", closed.biclosed_to_closed(ccg_parse.children[1].biclosed_type).input)
+            result = Expr.lmbda(x, children[0](children[1](x)))
+        elif ccg_parse.rule == CCGRule.BACKWARD_COMPOSITION\
+                or ccg_parse.rule == CCGRule.BACKWARD_CROSSED_COMPOSITION:
+            x = Expr.literal("temp", closed.biclosed_to_closed(
+                ccg_parse.children[0].biclosed_type).input)
+            result = Expr.lmbda(x, children[1](children[0](x)))
+        elif ccg_parse.rule == CCGRule.CONJUNCTION:
+            assert (len(children) == 2)
+
+            if (ccg_parse.children[0].biclosed_type == Ty('conj')):
+                children[0].final_type = children[1].final_type \
+                                         >> (children[1].final_type \
+                                         >> children[1].final_type)
+                children[0].simple_type = children[0].final_type
+                result = children[0](children[1])
+            elif ccg_parse.children[1].biclosed_type == Ty('conj'):
+                children[1].final_type = children[0].final_type \
+                                         >> (children[0].final_type \
+                                         >> children[0].final_type)
+                children[1].simple_type = children[1].final_type
+                result = children[1](children[0])
+            else:
+                raise RuntimeError("This should not happen. Could someone explain conjunctions to me?!?")
+
+            # TODO: does not seem to have a head
+            return result
+
+
+        if result is None:
+            raise NotImplementedError(ccg_parse.rule)
+
+        result.head = ccg_parse.original.variable.fillers
+        return result
