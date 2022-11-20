@@ -18,7 +18,7 @@ parser = BobcatParser(verbose='suppress')
 path = os.path.abspath('../..') # this should be the path to \Neural-DisCoCirc
 print("THE PATH TO Neural-DisCoCirc: ", path)
 
-with open(path+'/data/tasks_1-20_v1-2/en/qa2_two-supporting-facts_train.txt') as f:
+with open(path+'/data/tasks_1-20_v1-2/en/qa1_single-supporting-fact_train.txt') as f:
     lines = f.readlines()
 
 

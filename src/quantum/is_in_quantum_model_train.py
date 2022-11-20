@@ -10,12 +10,15 @@ from is_in_quantum_model import qDisCoCircIsIn
 from sklearn.model_selection import train_test_split
 
 from lambeq import IQPAnsatz
+from lambeq.ansatz.circuit import Sim14Ansatz
+
 from lambeq.core.types import AtomicType
 import torch
 from tqdm import tqdm
 
 from utils import get_train_valid
 import wandb
+
 
 #%%
 # this should be relative path to \Neural-DisCoCirc
@@ -25,30 +28,40 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 # ansatz config
 WIRE_DIMENSION = 2
 N = AtomicType.NOUN
-NB_LAYERS = 3
+NB_LAYERS = 2
 D = {N: WIRE_DIMENSION}
-ANSATZ = IQPAnsatz(D, n_layers=NB_LAYERS)
+ansatz = "Sim14Ansatz"
+
+if ansatz == "Sim14Ansatz":
+    ANSATZ = Sim14Ansatz(D, n_layers=NB_LAYERS)
+elif ansatz == "IQP":
+    ANSATZ = IQPAnsatz(D, n_layers=NB_LAYERS)
 
 # train config
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.01
 EPOCHS = 50
-# BATCH_SIZE = ?
+BATCH_SIZE = 1
 
 config = {
-    "ansatz": "IQP",
+    "ansatz": ansatz,
     "layers": NB_LAYERS,
     "wire_dimension": WIRE_DIMENSION,
     "epochs": EPOCHS,
-    "learning_rate": LEARNING_RATE
+    "learning_rate": LEARNING_RATE,
+    "batch_size": BATCH_SIZE,
 }
 
 wandb.init(project="is_in_prob_dist_01", config=config)
 
+if WIRE_DIMENSION == 2 and NB_LAYERS == 2:
+    DATAPATH = p + "/data/pickled_dataset/isin_dataset_task1_no_higher_order_quantum_train_no_perm_Ans14_2q_2l.pkl"
+else:
+    raise Exception("No pickled data for your config!")
+
 #%%
 print("Loading pickled dataset...")
 with open(
-    p
-    + "/data/pickled_dataset/isin_dataset_task1_no_higher_order_quantum_train_no_perm.pkl",
+    DATAPATH,
     "rb",
 ) as f:
     # dataset is a tuple (context_circuit,(question_word_index, answer_word_index))
@@ -60,7 +73,8 @@ train_dataset, validation_dataset = train_test_split(
 train_circuits, valid_circuits, train_labels, valid_labels = get_train_valid(
     train_dataset, validation_dataset
 )
-
+batched_train_circuits = [train_circuits[i:i+BATCH_SIZE] for i in range(0, len(train_circuits), BATCH_SIZE)]
+batched_train_labels = [train_labels[i:i+BATCH_SIZE] for i in range(0, len(train_labels), BATCH_SIZE)]
 #%%
 print("Initialise model...")
 model = qDisCoCircIsIn(train_circuits, valid_circuits, ANSATZ, WIRE_DIMENSION)
@@ -74,8 +88,9 @@ loss_list = []
 acc_list = []
 for epoch in range(EPOCHS):
     epoch_loss = 0
-    for text_circuit, quesans in tqdm(zip(train_circuits, train_labels)):
-        results, targets = model.forward(text_circuit, quesans)
+    for text_circuits, quesans_list in tqdm(zip(batched_train_circuits, batched_train_labels)):
+        results, targets = model.forward(text_circuits, quesans_list)
+        
         optimizer.zero_grad()
         loss = loss_func(results, targets)
         epoch_loss += loss.item()
@@ -100,4 +115,4 @@ for epoch in range(EPOCHS):
 
 print("FIT FINISHED")
 
-#%%
+# %%
