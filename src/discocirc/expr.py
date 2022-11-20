@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from lambeq import CCGRule
+import time
+
+from lambeq import CCGRule, CCGAtomicType
 
 from discocirc import closed
 from discocirc.closed import uncurry_types, Ty
@@ -216,9 +218,12 @@ class Expr:
             result = Expr.literal(ccg_parse.text, closed_type)
 
         # Rules with 1 child
-        # elif ccg_parse.rule == CCGRule.FORWARD_TYPE_RAISING:
-        #     result = TR(children[0])
+        elif ccg_parse.rule == CCGRule.FORWARD_TYPE_RAISING:
+            x = Expr.literal(f"temp{time.time()}", closed.biclosed_to_closed(ccg_parse.biclosed_type).input)
+            result = Expr.lmbda(x, x(children[0]))
         elif ccg_parse.rule == CCGRule.UNARY:
+            if children[0].final_type != closed.biclosed_to_closed(ccg_parse.biclosed_type):
+                raise NotImplementedError("Changing types for UNARY rules")
             result = children[0]
 
         # Rules with 2 children
@@ -235,29 +240,24 @@ class Expr:
                 ccg_parse.children[0].biclosed_type).input)
             result = Expr.lmbda(x, children[1](children[0](x)))
         elif ccg_parse.rule == CCGRule.CONJUNCTION:
-            assert (len(children) == 2)
-
-            if (ccg_parse.children[0].biclosed_type == Ty('conj')):
-                children[0].final_type = children[1].final_type \
-                                         >> (children[1].final_type \
-                                         >> children[1].final_type)
-                children[0].simple_type = children[0].final_type
+            left, right = children[0].final_type, children[1].final_type
+            if CCGAtomicType.conjoinable(left):
+                type = right >> closed.biclosed_to_closed(ccg_parse.biclosed_type)
+                children[0].simple_type = type
+                children[0].final_type = type
                 result = children[0](children[1])
-            elif ccg_parse.children[1].biclosed_type == Ty('conj'):
-                children[1].final_type = children[0].final_type \
-                                         >> (children[0].final_type \
-                                         >> children[0].final_type)
-                children[1].simple_type = children[1].final_type
+            elif CCGAtomicType.conjoinable(right):
+                type = left >> closed.biclosed_to_closed(ccg_parse.biclosed_type)
+                children[1].simple_type = type
+                children[1].final_type = type
                 result = children[1](children[0])
-            else:
-                raise RuntimeError("This should not happen. Could someone explain conjunctions to me?!?")
-
-            # TODO: does not seem to have a head
-            return result
-
 
         if result is None:
             raise NotImplementedError(ccg_parse.rule)
 
-        result.head = ccg_parse.original.variable.fillers
+        if ccg_parse.original.cat.var in ccg_parse.original.var_map.keys():
+            result.head = ccg_parse.original.variable.fillers
+        else:
+            result.head = None
+
         return result

@@ -1,4 +1,5 @@
 from discopy import monoidal, Diagram
+from discopy.monoidal import Layer
 
 from discocirc import closed
 from discocirc.closed import Func
@@ -51,7 +52,14 @@ def _lambda_to_diag(expr, context):
     else:
         copy_box_output = monoidal.Ty.tensor(*[expr.var.final_type for _ in range(occurance_counter)])
 
-    copy_box = monoidal.Box(f"copy: {expr.var}", expr.var.final_type, copy_box_output)
+    if occurance_counter == 0:
+        copy_box = monoidal.Box(f"del: {expr.var}", expr.var.final_type, copy_box_output)
+    elif occurance_counter == 1:
+        copy_box = monoidal.Id(expr.var.final_type)
+    else:
+        copy_box = monoidal.Box(f"copy: {expr.var}", expr.var.final_type,
+                                copy_box_output)
+
     body = monoidal.Id(body.dom[:-occurance_counter]) @ copy_box >> body
 
     return body, new_inputs + [expr.var.final_type]
@@ -86,7 +94,25 @@ def _application_to_diag(expr, context):
                     body_inputs[input_index + 1:]
 
         # TODO: find the right frame and don't delete rest of diagram
-        return Frame(body, new_dom, body.cod, [arg]), new_inputs
+        inputs = monoidal.Id(new_dom)
+        wire_delete_idx = input_index
+        for left, box, right in body.layers[:-1]:
+            if len(left) > wire_delete_idx:
+                left = left[:wire_delete_idx] @ left[wire_delete_idx + 1:]
+            elif len(left) == wire_delete_idx:
+                raise RuntimeError('Something wrong')
+            else:
+                idx = wire_delete_idx - len(left) - 1
+                right = right[:idx] @ right[idx + 1:]
+            inputs = inputs >> (monoidal.Id(left) @ box @ monoidal.Id(right))
+
+        if isinstance(body[-1], Frame):
+            body[-1].insides.append(arg)
+            frame = body[-1]
+        else:
+            frame = Frame(body[-1], inputs.cod, body.cod, [arg])
+
+        return inputs >> frame, new_inputs
 
 
 
