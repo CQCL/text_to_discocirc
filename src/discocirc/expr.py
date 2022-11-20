@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from discocirc.closed import uncurry_types, Ty
+from discocirc.closed import Func, uncurry_types, Ty
 
 
 class Expr:
