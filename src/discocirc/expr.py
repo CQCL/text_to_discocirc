@@ -17,8 +17,6 @@ class Expr:
             return f'({self.expr} {self.arg}):{self.final_type}'
         elif self.expr_type == "list":
             return f'{self.expr_list}:{self.final_type}'
-        elif self.expr_type == "projection":
-            return f'[{self.expr}]_{self.projection_index}:{self.final_type}'
         else:
             raise NotImplementedError(self.expr_type)
 
@@ -125,23 +123,6 @@ class Expr:
             for e in expr_list:
                 final_type = final_type @ e.final_type
         return final_type
-
-    @staticmethod
-    def projection(expr, projection_index):
-        proj_expr = Expr()
-        proj_expr.expr_type = "projection"
-        inputs = []
-        output = expr.final_type
-        while isinstance(output, Func):
-            inputs.append(output.input)
-            output = output.output
-        final_type = Ty(output[projection_index])
-        for i in inputs[::-1]:
-            final_type = i >> final_type
-        proj_expr.final_type = final_type
-        proj_expr.expr = expr
-        proj_expr.projection_index = projection_index
-        return proj_expr
     
     @staticmethod
     def uncurry(expr):
@@ -189,8 +170,6 @@ class Expr:
             return Expr.apply(Expr.evl(context, expr.expr), Expr.evl(context, expr.arg), context)
         elif expr.expr_type == "list":
             return Expr.lst([Expr.evl(context, e) for e in expr.expr_list], expr.simple_type)
-        elif expr.expr_type == "projection":
-            return Expr.projection(Expr.evl(context, expr.expr), expr.projection_index)
         else:
             raise TypeError(f'Unknown type {expr.expr_type} of expression')
 
@@ -208,8 +187,6 @@ class Expr:
             else:
                 context[expr.var] = arg
             return Expr.evl(context, expr.expr)
-        if expr.expr_type == "projection":
-            return Expr.projection(Expr.apply(expr.expr, arg, context), expr.projection_index)
         else:
             new_expr = Expr.application(expr, arg)
             return new_expr
@@ -302,3 +279,4 @@ class Expr:
             result.head = None
 
         return result
+    
