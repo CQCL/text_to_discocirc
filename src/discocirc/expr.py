@@ -4,7 +4,6 @@ import time
 
 from lambeq import CCGRule, CCGAtomicType
 
-from discocirc import closed
 from discocirc.closed import Func, biclosed_to_closed, uncurry_types, Ty
 
 
@@ -94,21 +93,38 @@ class Expr:
         return app_expr
     
     @staticmethod
-    def lst(expr_list, simple_type=None):
+    def lst(expr_list, simple_type=None, interchange=True):
         expr = Expr()
         expr.expr_type = "list"
         expr.simple_type = simple_type
         new_expr_list = []
-        final_type = Ty()
         for e in expr_list:
-            final_type = final_type @ e.final_type
             if e.expr_type == "list":
                 new_expr_list.extend(e.expr_list)
             else:
                 new_expr_list.append(e)
         expr.expr_list = tuple(new_expr_list)
-        expr.final_type = final_type
+        expr.final_type = Expr.infer_list_type(expr_list, interchange)
         return expr
+    
+    @staticmethod
+    def infer_list_type(expr_list, interchange):
+        if interchange:
+            final_input = Ty()
+            final_output = Ty()
+            for e in expr_list:
+                f = uncurry_types(e.final_type)
+                if isinstance(e.final_type, Func):
+                    final_input = final_input @ f.input
+                    final_output = final_output @ f.output
+                else:
+                    final_output = final_output @ f
+            final_type = final_input >> final_output
+        else:
+            final_type = Ty()
+            for e in expr_list:
+                final_type = final_type @ e.final_type
+        return final_type
 
     @staticmethod
     def projection(expr, projection_index):
@@ -192,9 +208,7 @@ class Expr:
             else:
                 context[expr.var] = arg
             return Expr.evl(context, expr.expr)
-        if expr.expr_type == "list":
-            raise NotImplemented(f'Implement list application.')
-        elif expr.expr_type == "projection":
+        if expr.expr_type == "projection":
             return Expr.projection(Expr.apply(expr.expr, arg, context), expr.projection_index)
         else:
             new_expr = Expr.application(expr, arg)
