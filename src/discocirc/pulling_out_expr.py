@@ -24,9 +24,9 @@ def if_lambda_pull_out(expr):
 def b_combinator(f, g, h):
     final_type = (h.final_type >> f.final_type.input) >>\
                  (h.final_type >> f.final_type.output)
-    f = deepcopy(f)
-    f.final_type = final_type
-    return (f(g))(h)
+    bf = deepcopy(f)
+    bf.final_type = final_type
+    return (bf(g))(h)
 
 def c_combinator(f_y_x):
     f = deepcopy(f_y_x.expr.expr)
