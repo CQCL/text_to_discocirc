@@ -32,6 +32,8 @@ class Ty(monoidal.Ty):
 
     @staticmethod
     def upgrade(old):
+        if len(old) == 1 and isinstance(old[0], Func):
+            return old[0]
         return Ty(*old.objects)
 
 

@@ -194,7 +194,7 @@ class Expr:
     def partial_apply(expr, arg, context=None):
         num_inputs = 0
         for i in range(len(expr.final_type.input)+1):
-            if expr.final_type.input[:i] == arg.final_type @ Ty():
+            if expr.final_type.input[:i] == arg.final_type:
                 num_inputs = i
                 break
         if num_inputs == 0:
@@ -202,7 +202,7 @@ class Expr:
                             + f"with the input type of {expr}")
         f_type = expr.final_type
         expr.final_type = f_type.input[:num_inputs] >> (f_type.input[num_inputs:] >> f_type.output)
-        arg.final_type = arg.final_type @ Ty()
+        arg.final_type = arg.final_type
         return Expr.apply(expr, arg, context=None)
             
 
