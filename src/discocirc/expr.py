@@ -147,13 +147,13 @@ class Expr:
                 a = Expr.uncurry(expr.arg)
                 b = Expr.uncurry(expr.expr.arg)
                 c = Expr.uncurry(expr.expr.expr)
-                return c(Expr.lst([a, b], interchange=False))
+                return c(Expr.lst([b, a], interchange=False))
             else:
                 arg = Expr.uncurry(expr.arg)
                 expr = Expr.uncurry(expr.expr)
                 return expr(arg)
         elif expr.expr_type == "list":
-            return Expr.lst([Expr.uncurry(e) for e in expr.expr_list], expr.simple_type)
+            return Expr.lst([Expr.uncurry(e) for e in expr.expr_list], expr.simple_type, interchange=False)
         else:
             raise TypeError(f'Unknown type {expr.expr_type} of expression')
 
