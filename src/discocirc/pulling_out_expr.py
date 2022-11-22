@@ -46,4 +46,11 @@ def pull_out(expr):
             f = pull_out(expr.expr) 
             g = pull_out(expr.arg) 
             return f(g)
+    elif expr.expr_type == 'lambda':
+        return Expr.lmbda(expr.var, pull_out(expr.expr), expr.simple_type)
+    elif expr.expr_type == 'list':
+        pulled_out_list = [pull_out(e) for e in expr.expr_list]
+        return Expr.lst(pulled_out_list, expr.simple_type)
+    elif expr.expr_type == 'literal':
+        return expr
     return expr
