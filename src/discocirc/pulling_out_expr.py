@@ -18,8 +18,8 @@ def if_application_pull_out(expr):
 def if_lambda_pull_out(expr):
     return expr.arg.expr_type == 'lambda' and\
         is_higher_order(expr.expr.final_type) and\
-        expr.expr.final_type.input == expr.arg.var.final_type and\
-        expr.expr.final_type.output == expr.arg.var.final_type
+        expr.expr.final_type.input.input == expr.arg.var.final_type and\
+        expr.expr.final_type.output.input == expr.arg.var.final_type
 
 def b_combinator(f, g, h):
     final_type = (h.final_type >> f.final_type.input) >>\
