@@ -176,8 +176,7 @@ class Expr:
     @staticmethod
     def apply(expr, arg, context=None):
         if expr.final_type.input != arg.final_type:
-            raise TypeError(f"Type of {arg} does not"
-                            + f"match the input type of {expr}")
+            return Expr.partial_apply(expr, arg, context)
         if expr.expr_type == "lambda":
             if context == None:
                 context = {}
@@ -190,7 +189,22 @@ class Expr:
         else:
             new_expr = Expr.application(expr, arg)
             return new_expr
-
+        
+    @staticmethod
+    def partial_apply(expr, arg, context=None):
+        num_inputs = 0
+        for i in range(len(expr.final_type.input)+1):
+            if expr.final_type.input[:i] == arg.final_type @ Ty():
+                num_inputs = i
+                break
+        if num_inputs == 0:
+            raise TypeError(f"Type of {arg} is not compatible "
+                            + f"with the input type of {expr}")
+        f_type = expr.final_type
+        expr.final_type = f_type.input[:num_inputs] >> (f_type.input[num_inputs:] >> f_type.output)
+        arg.final_type = arg.final_type @ Ty()
+        return Expr.apply(expr, arg, context=None)
+            
 
     @staticmethod
     def biclosed_to_expr(diagram):
