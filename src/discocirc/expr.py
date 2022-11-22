@@ -127,7 +127,7 @@ class Expr:
     @staticmethod
     def uncurry(expr):
         if expr.expr_type == "literal":
-            return Expr.literal(expr.name, uncurry_types(expr.final_type))
+            return Expr.literal(expr.name, uncurry_types(expr.final_type, uncurry_everything=True))
         elif expr.expr_type == "lambda":
             if expr.expr.expr_type == "lambda":
                 # a -> b -> c = (a @ b) -> c
@@ -147,7 +147,7 @@ class Expr:
                 a = Expr.uncurry(expr.arg)
                 b = Expr.uncurry(expr.expr.arg)
                 c = Expr.uncurry(expr.expr.expr)
-                return c(Expr.lst([a, b]))
+                return c(Expr.lst([a, b], interchange=False))
             else:
                 arg = Expr.uncurry(expr.arg)
                 expr = Expr.uncurry(expr.expr)
