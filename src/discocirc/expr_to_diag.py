@@ -1,5 +1,5 @@
-from discopy import monoidal, Diagram
-from discopy.monoidal import Layer
+from discopy import rigid, Diagram
+from discopy.rigid import Layer
 
 from discocirc import closed
 from discocirc.closed import Func
@@ -8,7 +8,7 @@ from discocirc.frame import Frame
 
 def _literal_to_diag(expr, context):
     if expr in context:
-        return monoidal.Id(expr.final_type), [expr]
+        return rigid.Id(expr.final_type), [expr]
 
     output_type = expr.final_type
     inputs = []
@@ -16,20 +16,22 @@ def _literal_to_diag(expr, context):
         inputs.insert(0, output_type.input)
         output_type = output_type.output
 
-    input_type = monoidal.Ty() if len(inputs) == 0 else monoidal.Ty.tensor(*inputs)
+    input_type = rigid.Ty() if len(inputs) == 0 else rigid.Ty.tensor(*inputs)
 
-    return monoidal.Box(expr.name, input_type, output_type), inputs
+    return rigid.Box(expr.name, input_type, output_type), inputs
 
-def add_swaps(types, no_swaps, final_pos):
-    swaps = monoidal.Id(types)
+
+def _add_swaps(types, no_swaps, final_pos):
+    swaps = rigid.Id(types)
     for i in reversed(range(1, no_swaps + 1)):
-        swap_layer = monoidal.Id(types[:-i - 1 - final_pos]) @ \
-               Diagram.swap(monoidal.Ty(types[-i - final_pos]), monoidal.Ty(types[-i - 1 - final_pos]))
+        swap_layer = rigid.Id(types[:-i - 1 - final_pos]) @ \
+               Diagram.swap(rigid.Ty(types[-i - final_pos]), rigid.Ty(types[-i - 1 - final_pos]))
         if i + final_pos != 1:
-            swap_layer = swap_layer @ monoidal.Id(types[-i + 1 - final_pos:])
+            swap_layer = swap_layer @ rigid.Id(types[-i + 1 - final_pos:])
         swaps = swap_layer >> swaps
         types = swaps.dom
     return swaps
+
 
 def _lambda_to_diag(expr, context):
     context.add(expr.var)
@@ -40,7 +42,7 @@ def _lambda_to_diag(expr, context):
     for i, inp in enumerate(reversed(inputs)):
         if inp == expr.var:
             if (i > 0):
-                swap_layer = add_swaps(body.dom, i - occurance_counter, occurance_counter)
+                swap_layer = _add_swaps(body.dom, i - occurance_counter, occurance_counter)
                 body = swap_layer >> body
 
             occurance_counter += 1
@@ -48,21 +50,22 @@ def _lambda_to_diag(expr, context):
             new_inputs.insert(0, inp)
 
     if occurance_counter == 0:
-        copy_box_output = monoidal.Ty()
+        copy_box_output = rigid.Ty()
     else:
-        copy_box_output = monoidal.Ty.tensor(*[expr.var.final_type for _ in range(occurance_counter)])
+        copy_box_output = rigid.Ty.tensor(*[expr.var.final_type for _ in range(occurance_counter)])
 
     if occurance_counter == 0:
-        copy_box = monoidal.Box(f"del: {expr.var}", expr.var.final_type, copy_box_output)
+        copy_box = rigid.Box(f"del: {expr.var}", expr.var.final_type, copy_box_output)
     elif occurance_counter == 1:
-        copy_box = monoidal.Id(expr.var.final_type)
+        copy_box = rigid.Id(expr.var.final_type)
     else:
-        copy_box = monoidal.Box(f"copy: {expr.var}", expr.var.final_type,
+        copy_box = rigid.Box(f"copy: {expr.var}", expr.var.final_type,
                                 copy_box_output)
 
-    body = monoidal.Id(body.dom[:-occurance_counter]) @ copy_box >> body
+    body = rigid.Id(body.dom[:-occurance_counter]) @ copy_box >> body
 
     return body, new_inputs + [expr.var.final_type]
+
 
 def get_next_input(inputs):
     for i in range(1, len(inputs) + 1):
@@ -80,21 +83,21 @@ def _application_to_diag(expr, context):
     next_input, input_index = get_next_input(body_inputs)
 
     if not isinstance(next_input, Func):
-        new_args = monoidal.Id(body.dom[:input_index - len(arg.cod) + 1]) @ \
+        new_args = rigid.Id(body.dom[:input_index]) @ \
                     arg @ \
-                    monoidal.Id(body.dom[input_index + 1:])
-        new_inputs = body_inputs[:input_index - len(arg.cod) + 1] + arg_inputs + \
+                    rigid.Id(body.dom[input_index + 1:])
+        new_inputs = body_inputs[:input_index] + arg_inputs + \
                     body_inputs[input_index + 1:]
         return new_args >> body, new_inputs
 
     else:
-        new_dom = body.dom[:input_index - len(arg.cod) + 1] @ \
+        new_dom = body.dom[:input_index] @ \
                     body.dom[input_index + 1:]
-        new_inputs = body_inputs[:input_index - len(arg.cod) + 1] + \
+        new_inputs = body_inputs[:input_index] + \
                     body_inputs[input_index + 1:]
 
-        # TODO: find the right frame and don't delete rest of diagram
-        inputs = monoidal.Id(new_dom)
+        # TODO: this assumes that the thing we apply to is on the last layer
+        inputs = rigid.Id(new_dom)
         wire_delete_idx = input_index
         for left, box, right in body.layers[:-1]:
             if len(left) > wire_delete_idx:
@@ -104,7 +107,7 @@ def _application_to_diag(expr, context):
             else:
                 idx = wire_delete_idx - len(left) - 1
                 right = right[:idx] @ right[idx + 1:]
-            inputs = inputs >> (monoidal.Id(left) @ box @ monoidal.Id(right))
+            inputs = inputs >> (rigid.Id(left) @ box @ rigid.Id(right))
 
         if isinstance(body[-1], Frame):
             body[-1].insides.append(arg)

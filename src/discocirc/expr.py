@@ -69,19 +69,22 @@ class Expr:
         return expr
 
     @staticmethod
-    def lmbda(literal, expr, simple_type=None):
+    def lmbda(var, expr, simple_type=None):
         lambda_expr = Expr()
         lambda_expr.expr_type = "lambda"
-        lambda_expr.var = literal
+        lambda_expr.var = var
         lambda_expr.expr = expr
         lambda_expr.simple_type = simple_type
         if simple_type == None:
             lambda_expr.simple_type = expr.simple_type
-        lambda_expr.final_type = literal.final_type >> expr.final_type
+        lambda_expr.final_type = var.final_type >> expr.final_type
         return lambda_expr
     
     @staticmethod
-    def application(expr, arg):
+    def application(expr, arg, type_check=True):
+        if type_check and expr.final_type.input != arg.final_type:
+            raise TypeError(f"Type of {arg} does not"
+                            + f"match the input type of {expr}")
         app_expr = Expr()
         app_expr.expr_type = "application"
         app_expr.simple_type = expr.simple_type
