@@ -1,6 +1,7 @@
 #%%
 from lambeq import BobcatParser
-from discocirc.closed import Func
+from discocirc.closed import Func, Ty
+from discocirc.expr import Expr
 from discocirc.sentence_to_circuit import make_term, make_diagram, sentence2circ
 from discocirc.pulling_out import is_higher_order
 from discocirc.term import Term
@@ -170,7 +171,54 @@ def s_expand(term):
         f = f(s_expand(arg))
     return f
 
+expandable_types = [Ty('s'), Ty('n')]
+def type_expand_literal(expr):
+    output = expr.final_type
+    noun_counter = 0
+    inputs = []
+    while isinstance(output, Func):
+        if output.input == Ty('n'):
+            noun_counter += 1
+        inputs.append(output.input)
+        output = output.output
 
+    noun_counter = max(noun_counter, 1)
+
+    if output in expandable_types:
+        output = Ty().tensor(*([Ty('n')] * noun_counter))
+
+    for inp in reversed(inputs):
+        output = inp >> output
+
+    return Expr.literal(expr.name, output)
+
+def type_expand(expr):
+    print(expr, expr.expr_type)
+    if expr.expr_type == "literal":
+        new_expr = type_expand_literal(expr)
+    elif expr.expr_type == "lst":
+        new_list = [type_expand(e) for e in expr.expr_list]
+        new_expr =  Expr.lst(new_list)
+    elif expr.expr_type == "lambda":
+        new_var = type_expand(expr.var)
+        new_expr = type_expand(expr.expr)
+        new_expr =  Expr.lmbda(new_var, new_expr)
+    elif expr.expr_type == "application":
+        new_expr = type_expand(expr.expr)
+        new_arg = type_expand(expr.arg)
+        if hasattr(expr, 'head'):
+            print(expr.head)
+        else:
+            print(f"no head: {expr}")
+        new_expr.final_type = new_arg.final_type >> new_expr.final_type.output
+        # TODO: we should probably also change the simple type
+        new_expr.simple_type = new_arg.simple_type >> new_expr.simple_type.output
+
+        new_expr = Expr.application(new_expr, new_arg)
+
+    if hasattr(expr, 'head'):
+        new_expr.head = expr.head
+    return new_expr
 # new_term = pull_out(term)
 #
 # draw_term(s_expand(new_term))
