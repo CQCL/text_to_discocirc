@@ -28,19 +28,31 @@ def b_combinator(f, g, h):
     bf.final_type = final_type
     return (bf(g))(h)
 
-def c_combinator(f_y_x):
-    f = deepcopy(f_y_x.expr.expr)
-    y = f_y_x.expr.arg
-    x = f_y_x.arg
-    f.final_type = f.final_type.output.input >>\
-        (f.final_type.input >> f.final_type.output.output)
+def c_combinator(f, y, x, n=1):
+    if f.expr_type == "application":
+        fx = c_combinator(f.expr, f.arg, x, n+1)
+        return fx(y)
+    typ = f.final_type
+    typs = []
+    for _ in range(n):
+        typs.append(typ.input)
+        typ = typ.output
+    x_type = typ.input
+    output = typ.output
+    for t in typs:
+        output = t >> output
+    output = x_type >> output
+    f = deepcopy(f)
+    f.final_type = output
     return (f(x))(y)
 
 def pull_out(expr):
     if expr.expr_type == 'application':
         if if_application_pull_out(expr):
             if expr.expr.expr_type == 'application':
-                return pull_out(c_combinator(expr))
+                return pull_out(c_combinator(expr.expr.expr,
+                                             expr.expr.arg,
+                                             expr.arg))
             else:
                 f = pull_out(expr.expr)
                 arg = pull_out(expr.arg)
