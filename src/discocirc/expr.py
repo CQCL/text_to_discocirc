@@ -81,8 +81,8 @@ class Expr:
         return lambda_expr
     
     @staticmethod
-    def application(expr, arg, type_check=True):
-        if type_check and expr.final_type.input != arg.final_type:
+    def application(expr, arg):
+        if expr.final_type.input != arg.final_type:
             raise TypeError(f"Type of {arg} does not"
                             + f"match the input type of {expr}")
         app_expr = Expr()

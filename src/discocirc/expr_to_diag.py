@@ -1,4 +1,5 @@
-from discopy import rigid, Diagram
+from discopy import rigid, Diagram, monoidal
+from discopy.cat import Ob
 from discopy.rigid import Layer
 
 from discocirc import closed
@@ -13,7 +14,10 @@ def _literal_to_diag(expr, context):
     output_type = expr.final_type
     inputs = []
     while isinstance(output_type, Func):
-        inputs.insert(0, output_type.input)
+        for inp in reversed(output_type.input):
+            if not isinstance(inp, Func):
+                inp = rigid.Ty(inp)
+            inputs.insert(0, inp)
         output_type = output_type.output
 
     input_type = rigid.Ty() if len(inputs) == 0 else rigid.Ty.tensor(*inputs)
@@ -69,7 +73,8 @@ def _lambda_to_diag(expr, context):
 
 def get_next_input(inputs):
     for i in range(1, len(inputs) + 1):
-        if isinstance(inputs[-i], closed.Ty):
+        if isinstance(inputs[-i], rigid.Ty) or \
+                isinstance(inputs[-i], Func):
             next_input = inputs[-i]
             index = len(inputs) - i
             break

@@ -1,6 +1,8 @@
 #%%
+from copy import deepcopy
+
 from lambeq import BobcatParser
-from discocirc.closed import Func, Ty
+from discocirc.closed import Func, Ty, uncurry_types
 from discocirc.expr import Expr
 from discocirc.sentence_to_circuit import make_term, make_diagram, sentence2circ
 from discocirc.pulling_out import is_higher_order
@@ -154,11 +156,12 @@ def s_expand_t(t):
         typs.insert(0, t.input)
         t = t.output
     if t == Ty("s"):
-        n_nouns = typs.count(Ty('n'))
+        n_nouns = sum([1 for i in Ty().tensor(*typs) if Ty(i) == Ty('n')])
         t = Ty().tensor(*([Ty('n')] * n_nouns))
     for typ in typs:
         t = s_expand_t(typ) >> t
     return t
+
 
 
 def s_expand(term):
@@ -171,55 +174,31 @@ def s_expand(term):
         f = f(s_expand(arg))
     return f
 
-expandable_types = [Ty('s'), Ty('n')]
-def type_expand_literal(expr):
-    output = expr.final_type
-    noun_counter = 0
-    inputs = []
-    while isinstance(output, Func):
-        if output.input == Ty('n'):
-            noun_counter += 1
-        inputs.append(output.input)
-        output = output.output
 
-    noun_counter = max(noun_counter, 1)
-
-    if output in expandable_types:
-        output = Ty().tensor(*([Ty('n')] * noun_counter))
-
-    for inp in reversed(inputs):
-        output = inp >> output
-
-    return Expr.literal(expr.name, output)
-
-def type_expand(expr):
-    print(expr, expr.expr_type)
+def do_the_obvious(expr, function):
     if expr.expr_type == "literal":
-        new_expr = type_expand_literal(expr)
-    elif expr.expr_type == "lst":
-        new_list = [type_expand(e) for e in expr.expr_list]
-        new_expr =  Expr.lst(new_list)
+        new_expr = function(expr)
+    elif expr.expr_type == "list":
+        new_list = [function(e) for e in expr.expr_list]
+        new_expr = Expr.lst(new_list)
     elif expr.expr_type == "lambda":
-        new_var = type_expand(expr.var)
-        new_expr = type_expand(expr.expr)
-        new_expr =  Expr.lmbda(new_var, new_expr)
+        new_expr = function(expr.expr)
+        new_var = function(expr.var)
+        new_expr = Expr.lmbda(new_var, new_expr)
     elif expr.expr_type == "application":
-        new_expr = type_expand(expr.expr)
-        new_arg = type_expand(expr.arg)
-        if hasattr(expr, 'head'):
-            print(expr.head)
-        else:
-            print(f"no head: {expr}")
-        new_expr.final_type = new_arg.final_type >> new_expr.final_type.output
-        # TODO: we should probably also change the simple type
-        new_expr.simple_type = new_arg.simple_type >> new_expr.simple_type.output
-
-        new_expr = Expr.application(new_expr, new_arg)
-
+        arg = function(expr.arg)
+        body = function(expr.expr)
+        new_expr = body(arg)
+    else:
+        raise TypeError(f'Unknown type {expr.expr_type} of expression')
     if hasattr(expr, 'head'):
         new_expr.head = expr.head
     return new_expr
-# new_term = pull_out(term)
-#
-# draw_term(s_expand(new_term))
-# %%
+
+def type_expand(expr):
+    if expr.expr_type == "literal":
+        final_type = s_expand_t(expr.final_type)
+        return Expr.literal(expr.name, final_type)
+    return do_the_obvious(expr, type_expand)
+
+
