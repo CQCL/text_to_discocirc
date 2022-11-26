@@ -10,11 +10,29 @@ from discocirc.closed import Func, biclosed_to_closed, uncurry_types, Ty
 class Expr:
     def __repr__(self):
         if self.expr_type == "literal":
-            return f'{self.name}:{self.final_type}'
+            name = str(self.name)
+            final_type = str(self.final_type)
+            length = max(len(name), len(final_type))
+            string = f'{name:^{length}}' + '\n'
+            string += '═' * length + '\n'
+            string += f'{final_type:^{length}}'
+            return string
         elif self.expr_type == "lambda":
             return f'(λ{self.var}.{self.expr}):{self.final_type}'
         elif self.expr_type == "application":
-            return f'({self.expr} {self.arg}):{self.final_type}'
+            expr = str(self.expr)
+            arg = str(self.arg)
+            final_type = str(self.final_type)
+            expr_lines = expr.split('\n')
+            arg_lines = arg.split('\n')
+            empty_arg_lines = [' ' * len(max(arg_lines))] * (len(expr_lines) - len(arg_lines))
+            arg_lines = empty_arg_lines + arg_lines
+            empty_expr_lines = [' ' * len(max(expr_lines))] * (len(arg_lines) - len(expr_lines))
+            expr_lines = empty_expr_lines + expr_lines
+            string = ['  '.join([expr_l, arg_l]) for expr_l, arg_l in zip(expr_lines, arg_lines)]
+            string.append('─' * len(string[0]))
+            string.append(f'{final_type:^{len(string[0])}}')
+            return '\n'.join(string)
         elif self.expr_type == "list":
             return f'{self.expr_list}:{self.final_type}'
         else:
