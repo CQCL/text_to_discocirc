@@ -1,105 +1,104 @@
-from discopy import rigid, Diagram, monoidal
-from discopy.cat import Ob
-from discopy.rigid import Layer
+from discopy import rigid, Diagram
 
-from discocirc import closed
-from discocirc.closed import Func
+from discocirc.closed import Func, Ty, uncurry_types
 from discocirc.frame import Frame
 
+class LambdaType(rigid.Ty):
+    def __init__(self, arg):
+        super().__init__(*arg)
 
-def _literal_to_diag(expr, context):
+def _literal_to_diag(expr, context, expand_state_lambda):
+    name = expr.name
     if expr in context:
-        return rigid.Id(expr.final_type), [expr]
+        if not isinstance(expr.final_type, Func) and expand_state_lambda:
+            return rigid.Id(LambdaType(expr.final_type))
+        name = f"context: {expr.name}: {expr.final_type}"
 
-    output_type = expr.final_type
-    inputs = []
-    while isinstance(output_type, Func):
-        for inp in reversed(output_type.input):
-            if not isinstance(inp, Func):
-                inp = rigid.Ty(inp)
-            inputs.insert(0, inp)
-        output_type = output_type.output
-
-    input_type = rigid.Ty() if len(inputs) == 0 else rigid.Ty.tensor(*inputs)
-
-    return rigid.Box(expr.name, input_type, output_type), inputs
+    uncurried = uncurry_types(expr.final_type)
+    if isinstance(uncurried, Func):
+        return rigid.Box(name, uncurried.input, uncurried.output)
+    else:
+        return rigid.Box(name, Ty(), uncurried)
 
 
-def _add_swaps(types, no_swaps, final_pos):
-    swaps = rigid.Id(types)
+def _add_swaps(domaine, no_swaps, final_pos):
+    swaps = rigid.Id(domaine)
     for i in reversed(range(1, no_swaps + 1)):
-        swap_layer = rigid.Id(types[:-i - 1 - final_pos]) @ \
-               Diagram.swap(rigid.Ty(types[-i - final_pos]), rigid.Ty(types[-i - 1 - final_pos]))
+        swap_layer = rigid.Id(domaine[:-i - 1 - final_pos]) @ \
+                     Diagram.swap(rigid.Ty(domaine[-i - final_pos]),
+                                  rigid.Ty(domaine[-i - 1 - final_pos]))
         if i + final_pos != 1:
-            swap_layer = swap_layer @ rigid.Id(types[-i + 1 - final_pos:])
+            swap_layer = swap_layer @ rigid.Id(domaine[-i + 1 - final_pos:])
         swaps = swap_layer >> swaps
-        types = swaps.dom
+        domaine = swaps.dom
     return swaps
 
-
-def _lambda_to_diag(expr, context):
-    context.add(expr.var)
-    body, inputs = _expr_to_diag(expr.expr, context)
-
+def expand_lambda(var, body):
     occurance_counter = 0
-    new_inputs = []
-    for i, inp in enumerate(reversed(inputs)):
-        if inp == expr.var:
-            if (i > 0):
-                swap_layer = _add_swaps(body.dom, i - occurance_counter, occurance_counter)
-                body = swap_layer >> body
 
+    # move all occurrences of var to the right
+    for i, inp in enumerate(reversed(body.cod[0:])):
+        if isinstance(inp, LambdaType) and inp == var:
+            swap_layer = _add_swaps(body.dom, i - occurance_counter,
+                                    occurance_counter)
+            body = swap_layer >> body
             occurance_counter += 1
-        else:
-            new_inputs.insert(0, inp)
+
 
     if occurance_counter == 0:
-        copy_box_output = rigid.Ty()
-    else:
-        copy_box_output = rigid.Ty.tensor(*[expr.var.final_type for _ in range(occurance_counter)])
-
-    if occurance_counter == 0:
-        copy_box = rigid.Box(f"del: {expr.var}", expr.var.final_type, copy_box_output)
+        copy_box = rigid.Box(f"del: {var}", var.final_type,
+                             Ty())
     elif occurance_counter == 1:
-        copy_box = rigid.Id(expr.var.final_type)
+        copy_box = rigid.Id(var.final_type)
     else:
-        copy_box = rigid.Box(f"copy: {expr.var}", expr.var.final_type,
-                                copy_box_output)
+        copy_box = rigid.Box(f"copy: {var}", var.final_type,
+                             rigid.Ty.tensor(
+                                 *[var.final_type for _ in
+                                   range(occurance_counter)]))
 
     body = rigid.Id(body.dom[:-occurance_counter]) @ copy_box >> body
 
-    return body, new_inputs + [expr.var.final_type]
+    return body
+
+def _lambda_to_diag(expr, context, expand_state_lambda):
+    context.add(expr.var)
+    body = expr_to_diag(expr.expr, context, expand_state_lambda)
+    context.remove(expr.var)
+
+    if isinstance(expr.var.final_type, Func) or not expand_state_lambda:
+        return Frame(f"lambda: {expr.var.name}: {expr.var.final_type}",
+                     body.dom @ expr.var.final_type,
+                     body.cod,
+                     [body]
+                )
+    else:
+        return expand_lambda(expr.var, body)
 
 
 def get_next_input(inputs):
     for i in range(1, len(inputs) + 1):
         if isinstance(inputs[-i], rigid.Ty) or \
                 isinstance(inputs[-i], Func):
-            next_input = inputs[-i]
             index = len(inputs) - i
             break
 
-    return next_input, index
+    return index
 
-def _application_to_diag(expr, context):
-    arg, arg_inputs = _expr_to_diag(expr.arg, context)
-    body, body_inputs = _expr_to_diag(expr.expr, context)
+def _application_to_diag(expr, context, expand_state_lambda):
+    arg = expr_to_diag(expr.arg, context, expand_state_lambda)
+    body = expr_to_diag(expr.expr, context, expand_state_lambda)
 
-    next_input, input_index = get_next_input(body_inputs)
+    input_index = get_next_input(body.cod)
 
-    if not isinstance(next_input, Func):
-        new_args = rigid.Id(body.dom[:input_index]) @ \
+    if not isinstance(expr.arg.final_type, Func):
+        new_args = rigid.Id(body.dom[:input_index - len(arg.cod) + 1]) @ \
                     arg @ \
-                    rigid.Id(body.dom[input_index + 1:])
-        new_inputs = body_inputs[:input_index] + arg_inputs + \
-                    body_inputs[input_index + 1:]
-        return new_args >> body, new_inputs
+                    rigid.Id(body.dom[input_index + len(arg.cod):])
+        return new_args >> body
 
     else:
         new_dom = body.dom[:input_index] @ \
                     body.dom[input_index + 1:]
-        new_inputs = body_inputs[:input_index] + \
-                    body_inputs[input_index + 1:]
 
         # TODO: this assumes that the thing we apply to is on the last layer
         inputs = rigid.Id(new_dom)
@@ -120,31 +119,30 @@ def _application_to_diag(expr, context):
         else:
             frame = Frame(body[-1], inputs.cod, body.cod, [arg])
 
-        return inputs >> frame, new_inputs
+        return inputs >> frame
 
 
 
-def _list_to_diag(expr, context):
-    output, inputs = _expr_to_diag(expr.expr_list[0], context)
-    for val in expr.expr_list[1:]:
-        diag, diag_inputs = _expr_to_diag(val, context)
+def _list_to_diag(expr, context, expand_state_lambda):
+    output = rigid.Id(Ty())
+    for val in expr.expr_list:
+        diag = expr_to_diag(val, context, expand_state_lambda)
         output = output @ diag
-        inputs = inputs + diag_inputs
 
-    return output, inputs
+    return output
 
 
-def _expr_to_diag(expr, context):
+def expr_to_diag(expr, context=None, expand_state_lambda=False):
+    if context is None:
+        context = set()
+
     if expr.expr_type == "literal":
-        return _literal_to_diag(expr, context)
+        return _literal_to_diag(expr, context, expand_state_lambda)
     elif expr.expr_type == "lambda":
-        return _lambda_to_diag(expr, context)
+        return _lambda_to_diag(expr, context, expand_state_lambda)
     elif expr.expr_type == "application":
-        return _application_to_diag(expr, context)
+        return _application_to_diag(expr, context, expand_state_lambda)
     elif expr.expr_type == "list":
-        return _list_to_diag(expr, context)
-    raise NotImplementedError(expr.expr_type)
-
-def expr_to_diag(expr):
-    diag, _ = _expr_to_diag(expr, set())
-    return diag
+        return _list_to_diag(expr, context, expand_state_lambda)
+    else:
+        raise NotImplementedError(expr.expr_type)
