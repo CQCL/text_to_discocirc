@@ -81,6 +81,6 @@ def uncurry_types(typ, uncurry_everything=False):
             inp = typ.input
             out_inp = typ.output.input
             out_out = typ.output.output
-        return uncurry_types((inp @ out_inp) >> out_out)
+        return uncurry_types((out_inp @ inp) >> out_out)
     else:
         return typ
