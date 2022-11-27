@@ -8,11 +8,17 @@ def _literal_to_diag(expr, context):
     if expr in context:
         name = f"context: {expr.name}: {expr.final_type}"
 
-    uncurried = uncurry_types(expr.final_type)
-    if isinstance(uncurried, Func):
-        return rigid.Box(name, uncurried.input, uncurried.output)
+    output = expr.final_type
+    if isinstance(output, Func):
+        input = Ty()
+        while isinstance(output, Func):
+            input = output.input @ input
+            output = output.output
+
+        return rigid.Box(name, input, output)
     else:
-        return rigid.Box(name, Ty(), uncurried)
+        return rigid.Box(name, Ty(), output)
+
 
 def _lambda_to_diag(expr, context):
     context.add(expr.var)
@@ -23,13 +29,24 @@ def _lambda_to_diag(expr, context):
                  body.dom @ expr.var.final_type,
                  body.cod,
                  [body]
-            )
+                 )
+
 
 def _application_to_diag(expr, context):
+    if expr.arg.expr_type == "list":
+        body = expr_to_diag(expr.expr, context)
+        for arg_expr in reversed(expr.arg.expr_list):
+            arg = expr_to_diag(arg_expr, context)
+            body = compose(arg, body)
+        return body
+
     arg = expr_to_diag(expr.arg, context)
     body = expr_to_diag(expr.expr, context)
+    return compose(arg, body)
 
-    if not isinstance(expr.arg.final_type, Func):
+
+def compose(arg, body):
+    if arg.dom == Ty():
         new_args = rigid.Id(body.dom[:-len(arg.cod)]) @ arg
         return new_args >> body
 
