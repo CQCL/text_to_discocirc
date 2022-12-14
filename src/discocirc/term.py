@@ -46,8 +46,33 @@ class TR:
     def __call__(self, x: Term) -> Term:
         return x(self.arg)
 
+def make_term(diagram):
+    terms = []
+    for box, offset in zip(diagram.boxes, diagram.offsets):
+        if not box.dom:  # is word
+            simple_type = closed.biclosed_to_closed(box.cod)
+            terms.append(Term(box.name, simple_type, simple_type, []))
+        else:
+            if len(box.dom) == 2:
+                if box.name.startswith("FA"):
+                    term = terms[offset](terms[offset + 1])
+                elif box.name.startswith("BA"):
+                    term = terms[offset + 1](terms[offset])
+                elif box.name.startswith("FC"):
+                    term = Compose(terms[offset], terms[offset + 1])
+                elif box.name.startswith("BC") or box.name.startswith("BX"):
+                    term = Compose(terms[offset + 1], terms[offset])
+                else:
+                    raise NotImplementedError
+                # term.final_type = closed.biclosed_to_closed(box.cod)
+                terms[offset:offset + 2] = [term]
+            elif box.name == "Curry(BA(n >> s))":
+                terms[offset] = TR(terms[offset])
+            else:
+                raise NotImplementedError
+    return terms[0]
 
-def make_term(ccg_parse):
+def ccg_to_term(ccg_parse):
     children = [make_term(child) for child in ccg_parse.children]
 
     result = None
