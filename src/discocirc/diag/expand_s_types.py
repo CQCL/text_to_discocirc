@@ -1,6 +1,6 @@
 from discopy import rigid, Ob
 
-from discocirc.frame import Frame
+from discocirc.diag.frame import Frame
 
 
 def expand_wires(wires, last_n_n):

@@ -5,9 +5,9 @@ import spacy
 from discopy import Id, Ty, hypergraph
 from lambeq import BobcatParser
 
-from discocirc.discocirc_utils import get_last_initial_noun
-from discocirc.drag_up import drag_all
-from discocirc.sentence_to_circuit import convert_sentence
+from discocirc.helpers.discocirc_utils import get_last_initial_noun
+from discocirc.diag.drag_up import drag_all
+from discocirc.pipeline.sentence_to_circuit import convert_sentence
 
 parser = BobcatParser(verbose='suppress')
 # Loadone of SpaCy English models

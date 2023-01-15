@@ -1,7 +1,7 @@
 from discopy import rigid
 
-from discocirc.closed import Func, Ty
-from discocirc.frame import Frame
+from discocirc.diag.frame import Frame
+from discocirc.helpers.closed import Func, Ty
 
 
 def _literal_to_diag(expr, context):

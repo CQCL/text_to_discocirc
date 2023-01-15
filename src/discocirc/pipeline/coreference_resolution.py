@@ -9,13 +9,10 @@ import neuralcoref
 import spacy
 import string
 
-from discocirc.sentence_to_circuit import sentence2circ, make_term, make_diagram
-from discocirc.discocirc_utils import get_last_initial_noun
-from discocirc.drag_up import drag_all
-from discocirc.text_to_circuit import compose_circuits, noun_sort, noun_normal_form, collect_normal_nouns, sentence_list_to_circuit
-from discocirc.expand_s_types import expand_s_types
-from discocirc.frame import Frame
-from discocirc.pulling_out import recurse_pull
+from discocirc.pipeline.sentence_to_circuit import sentence2circ
+from discocirc.helpers.discocirc_utils import get_last_initial_noun
+from discocirc.diag.drag_up import drag_all
+from discocirc.pipeline.text_to_circuit import compose_circuits, noun_sort
 
 # Loadone of SpaCy English models
 nlp = spacy.load('en_core_web_md')

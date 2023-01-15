@@ -1,6 +1,7 @@
 from copy import deepcopy
-from discocirc.closed import Func, Ty
-from discocirc.expr import Expr
+
+from discocirc.expr.expr import Expr
+from discocirc.helpers.closed import Func, Ty
 
 
 def is_higher_order(simple_type):

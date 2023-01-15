@@ -4,7 +4,7 @@ import time
 
 from lambeq import CCGRule, CCGAtomicType
 
-from discocirc.closed import Func, biclosed_to_closed, uncurry_types, Ty
+from discocirc.helpers.closed import Func, biclosed_to_closed, uncurry_types, Ty
 
 
 class Expr:

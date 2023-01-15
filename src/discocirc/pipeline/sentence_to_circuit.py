@@ -1,11 +1,11 @@
+from discocirc.diag.expand_s_types import expand_s_types
+from discocirc.expr.expr_to_diag import expr_to_diag
+from discocirc.diag.frame import Frame
+from discocirc.expr.pulling_out import pull_out
 from discopy import rigid
 
-from discocirc import closed
-from discocirc.expand_s_types import expand_s_types
-from discocirc.expr import Expr
-from discocirc.expr_to_diag import expr_to_diag
-from discocirc.frame import Frame
-from discocirc.pulling_out_expr import pull_out
+from discocirc.helpers import closed
+from discocirc.expr.expr import Expr
 
 
 def make_word(name, simple_type, *diags):
