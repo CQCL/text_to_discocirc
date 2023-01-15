@@ -58,8 +58,8 @@ def sentence_list_to_circuit(context, simplify_swaps=False, wire_order='intro_or
     """
     sentence_circuits = []
     for sentence in context:
-        sentence_diag = parser.sentence2tree(sentence).to_biclosed_diagram()
-        sentence_diag = convert_sentence(sentence_diag)
+        ccg = parser.sentence2tree(sentence)
+        sentence_diag = convert_sentence(ccg)
         sentence_circuits.append(sentence_diag)
     context_circ = sentence_circuits[0]
     for circ in sentence_circuits[1:]:

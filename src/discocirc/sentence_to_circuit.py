@@ -2,9 +2,10 @@ from discopy import rigid
 
 from discocirc import closed
 from discocirc.expand_s_types import expand_s_types
+from discocirc.expr import Expr
+from discocirc.expr_to_diag import expr_to_diag
 from discocirc.frame import Frame
-from discocirc.pulling_out import recurse_pull
-from discocirc.term import make_term
+from discocirc.pulling_out_expr import pull_out
 
 
 def make_word(name, simple_type, *diags):
@@ -39,19 +40,18 @@ def make_diagram(term):
     return make_word(term.name, term.simple_type, *diags)
 
 
-def convert_sentence(diagram):
-    term = make_term(diagram)
-    recurse_pull(term)
+def convert_sentence(ccg):
+    expr = Expr.ccg_to_expr(ccg)
+    expr = pull_out(expr)
+    diag = expr_to_diag(expr)
+    diag = expand_s_types(diag)
+    # diag = (Frame.get_decompose_functor())(diag)
 
-    step = make_diagram(term)
-    step = expand_s_types(step)
-    # step = (Frame.get_decompose_functor())(step)
-
-    return step
+    return diag
 
 
 def sentence2circ(parser, sentence):
-    biclosed_diag = parser.sentence2tree(sentence).to_biclosed_diagram()
-    return convert_sentence(biclosed_diag)
+    ccg = parser.sentence2tree(sentence)
+    return convert_sentence(ccg)
 
 

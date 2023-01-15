@@ -42,9 +42,9 @@ functor = get_star_removal_functor()
 for i, line in enumerate(no_question_lines):
 
     # obtain circ for the line
-    line_diag = parser.sentence2tree(line).to_biclosed_diagram()
+    ccg = parser.sentence2tree(line)
     try:  # TODO: sentences invovlving cross-composition are not supported yet
-        line_circ = convert_sentence(line_diag)
+        line_circ = convert_sentence(ccg)
     except:
         print("problematic line: {}".format(line))
 
@@ -66,8 +66,8 @@ print(vocab)
 #%%
 
 # add additional vocab from questions, using a representative question
-line_diag = parser.sentence2tree('Where is the apple').to_biclosed_diagram()
-line_circ = convert_sentence(line_diag)
+ccg = parser.sentence2tree('Where is the apple')
+line_circ = convert_sentence(ccg)
 # star removal
 line_circ = functor(line_circ)
 line_boxes = line_circ.boxes
