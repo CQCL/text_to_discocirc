@@ -188,6 +188,9 @@ def do_the_obvious(expr, function):
     elif expr.expr_type == "application":
         arg = function(expr.arg)
         body = function(expr.expr)
+        # TODO: is this alright? I don't think so, to be honest.
+        #  If we fix unary rule, we can also fix this one
+        body.final_type.input = arg.final_type
         new_expr = body(arg)
     else:
         raise TypeError(f'Unknown type {expr.expr_type} of expression')

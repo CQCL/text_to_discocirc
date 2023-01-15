@@ -5,7 +5,7 @@ import spacy
 from discopy import Id, Ty, hypergraph
 from lambeq import BobcatParser
 
-from discocirc.discocirc_utils import init_nouns
+from discocirc.discocirc_utils import get_last_initial_noun
 from discocirc.drag_up import drag_all
 from discocirc.sentence_to_circuit import convert_sentence
 
@@ -24,7 +24,7 @@ def noun_sort(circ):
     assert circ.boxes[0].dom == Ty()
 
     # find how many initial nouns there are
-    index = init_nouns(circ)
+    index = get_last_initial_noun(circ)
 
     # perform bubblesort on nouns
     swapped = True
@@ -95,7 +95,7 @@ def collect_normal_nouns(circuit):
     Takes in a circuit in noun normal form, 
     and returns a list of the pulled up nouns
     """
-    return circuit.boxes[:init_nouns(circuit) + 1]
+    return circuit.boxes[:get_last_initial_noun(circuit) + 1]
 
 def compose_circuits(circ1, circ2, wire_order='intro_order'):
     """

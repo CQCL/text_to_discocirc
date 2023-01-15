@@ -257,7 +257,7 @@ class Expr:
                     x = Expr.literal("temp", Ty('n') >> Ty('s'))
                     terms[offset] = Expr.lmbda(x, x(terms[offset]))
                 else:
-                    raise NotImplementedError
+                    raise NotImplementedError(box)
         return terms[0]
 
     @staticmethod

@@ -10,7 +10,7 @@ import spacy
 import string
 
 from discocirc.sentence_to_circuit import sentence2circ, make_term, make_diagram
-from discocirc.discocirc_utils import init_nouns
+from discocirc.discocirc_utils import get_last_initial_noun
 from discocirc.drag_up import drag_all
 from discocirc.text_to_circuit import compose_circuits, noun_sort, noun_normal_form, collect_normal_nouns, sentence_list_to_circuit
 from discocirc.expand_s_types import expand_s_types
@@ -72,8 +72,8 @@ def merge_circuits(circ1, circ2, corefs_to_merge):
     circ1 = noun_sort(drag_all(circ1))
     circ2 = noun_sort(drag_all(circ2))
     # get noun boxes
-    nouns_circ1 = circ1.boxes[:init_nouns(circ1) + 1]
-    nouns_circ2 = circ2.boxes[:init_nouns(circ2) + 1]
+    nouns_circ1 = circ1.boxes[:get_last_initial_noun(circ1) + 1]
+    nouns_circ2 = circ2.boxes[:get_last_initial_noun(circ2) + 1]
     # resolve coreferences between nouns
     for noun1, noun2 in corefs_to_merge:
         noun1_box = find_box_using_name(nouns_circ1, noun1)

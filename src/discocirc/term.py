@@ -113,3 +113,19 @@ def decomp(term):
 
     args = [decomp(arg) for arg in term.args]
     return Term(term.name, term.simple_type, term.final_type, args, term.head)
+
+def type_check_term(term):
+    """
+    Given a term, check if all the arguments match the required type.
+
+    :param term: Term - The term which should be type checked.
+    :return: None - If term does not type check.
+        type - The output type of the term, if it type checks.
+    """
+    simple_type = term.simple_type
+    for arg in term.args:
+        if not simple_type.input == type_check_term(arg):
+            return None
+        simple_type = simple_type.output
+
+    return simple_type

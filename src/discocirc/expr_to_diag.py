@@ -1,7 +1,8 @@
-from discopy import rigid, Diagram
+from discopy import rigid
 
-from discocirc.closed import Func, Ty, uncurry_types
+from discocirc.closed import Func, Ty
 from discocirc.frame import Frame
+
 
 def _literal_to_diag(expr, context):
     name = expr.name
@@ -37,15 +38,15 @@ def _application_to_diag(expr, context):
         body = expr_to_diag(expr.expr, context)
         for arg_expr in reversed(expr.arg.expr_list):
             arg = expr_to_diag(arg_expr, context)
-            body = compose(arg, body)
+            body = _compose(arg, body)
         return body
 
     arg = expr_to_diag(expr.arg, context)
     body = expr_to_diag(expr.expr, context)
-    return compose(arg, body)
+    return _compose(arg, body)
 
 
-def compose(arg, body):
+def _compose(arg, body):
     if arg.dom == Ty():
         new_args = rigid.Id(body.dom[:-len(arg.cod)]) @ arg
         return new_args >> body
@@ -57,8 +58,10 @@ def compose(arg, body):
         inputs = rigid.Id(new_dom)
         for left, box, right in body.layers[:-1]:
             assert(len(right) == 0)
-            # right = right[:-1]
-            inputs = inputs >> (rigid.Id(left[:-1]) @ box)
+            if box.dom == Ty():
+                inputs = inputs @ box
+            else:
+                inputs = inputs >> (rigid.Id(inputs.cod[:-len(box.dom)]) @ box)
 
         if isinstance(body.boxes[-1], Frame):
             frame = Frame(body.boxes[-1], inputs.cod, body.cod,

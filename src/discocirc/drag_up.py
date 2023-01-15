@@ -15,7 +15,6 @@ def swap_right(diagram, i):
 
 
 def drag_out(diagram, i, stop):
-    box = diagram.boxes[i]
     while i > stop:
         try:
             diagram = diagram.interchange(i-1, i)
