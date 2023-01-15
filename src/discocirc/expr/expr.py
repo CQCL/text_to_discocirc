@@ -77,6 +77,9 @@ class Expr:
     def __hash__(self) -> int:
         return hash(self.__members())
 
+    def type_check(self):
+        return True
+
     @staticmethod
     def literal(name, simple_type):
         expr = Expr()
@@ -225,40 +228,7 @@ class Expr:
         expr.final_type = f_type.input[:num_inputs] >> (f_type.input[num_inputs:] >> f_type.output)
         arg.final_type = arg.final_type
         return Expr.apply(expr, arg, context=None)
-            
 
-    @staticmethod
-    def biclosed_to_expr(diagram):
-        terms = []
-        for box, offset in zip(diagram.boxes, diagram.offsets):
-            if not box.dom:  # is word
-                simple_type = biclosed_to_closed(box.cod)
-                terms.append(Expr.literal(box.name, simple_type))
-            else:
-                if len(box.dom) == 2:
-                    if box.name.startswith("FA"):
-                        term = terms[offset](terms[offset + 1])
-                    elif box.name.startswith("BA"):
-                        term = terms[offset + 1](terms[offset])
-                    elif box.name.startswith("FC"):
-                        x = Expr.literal("temp", terms[offset + 1].final_type.input)
-                        term = Expr.lmbda(x, terms[offset](terms[offset + 1](x)))
-                    elif box.name.startswith("BC") or box.name.startswith(
-                            "BX"):
-                        x = Expr.literal("temp",
-                                         terms[offset].final_type.input)
-                        term = Expr.lmbda(x,
-                                          terms[offset + 1](terms[offset](x)))
-                    else:
-                        raise NotImplementedError
-                    # term.final_type = biclosed_to_closed(box.cod)
-                    terms[offset:offset + 2] = [term]
-                elif box.name == "Curry(BA(n >> s))":
-                    x = Expr.literal("temp", Ty('n') >> Ty('s'))
-                    terms[offset] = Expr.lmbda(x, x(terms[offset]))
-                else:
-                    raise NotImplementedError(box)
-        return terms[0]
 
     @staticmethod
     def ccg_to_expr(ccg_parse):
@@ -287,8 +257,7 @@ class Expr:
         elif ccg_parse.rule == CCGRule.FORWARD_COMPOSITION:
             x = Expr.literal("temp", biclosed_to_closed(ccg_parse.children[1].biclosed_type).input)
             result = Expr.lmbda(x, children[0](children[1](x)))
-        elif ccg_parse.rule == CCGRule.BACKWARD_COMPOSITION\
-                or ccg_parse.rule == CCGRule.BACKWARD_CROSSED_COMPOSITION:
+        elif ccg_parse.rule == CCGRule.BACKWARD_COMPOSITION:
             x = Expr.literal("temp", biclosed_to_closed(
                 ccg_parse.children[0].biclosed_type).input)
             result = Expr.lmbda(x, children[1](children[0](x)))

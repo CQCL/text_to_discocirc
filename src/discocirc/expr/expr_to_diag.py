@@ -54,7 +54,7 @@ def _compose(arg, body):
     else:
         new_dom = body.dom[:-1]
 
-        # TODO: this assumes that the thing we apply to is on the last layer
+        # TODO: this assumes that the thing we apply to is on the last layer (Issue #13)
         inputs = rigid.Id(new_dom)
         for left, box, right in body.layers[:-1]:
             assert(len(right) == 0)
@@ -70,7 +70,6 @@ def _compose(arg, body):
             frame = Frame(body.boxes[-1], inputs.cod, body.cod, [arg])
 
         return inputs >> frame
-
 
 
 def _list_to_diag(expr, context):

@@ -43,7 +43,7 @@ for i, line in enumerate(no_question_lines):
 
     # obtain circ for the line
     ccg = parser.sentence2tree(line)
-    try:  # TODO: sentences invovlving cross-composition are not supported yet
+    try:
         line_circ = convert_sentence(ccg)
     except:
         print("problematic line: {}".format(line))
