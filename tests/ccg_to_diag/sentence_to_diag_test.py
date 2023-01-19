@@ -4,12 +4,12 @@ import unittest
 from lambeq import BobcatParser
 from parameterized import parameterized
 
-from discocirc.diag.expand_s_types import expand_s_types
-from discocirc.diag.frame import Frame
-from discocirc.expr.expr import Expr
-from discocirc.expr.expr_to_diag import expr_to_diag
-from discocirc.expr.pulling_out import pull_out
-from discocirc.expr.type_expansion import type_expand
+from discocirc.diag import expand_s_types
+from discocirc.diag import Frame
+from discocirc.expr import Expr
+from discocirc.expr import expr_to_diag
+from discocirc.expr import pull_out
+from discocirc.expr import type_expand
 from discocirc.helpers.closed import biclosed_to_closed, Ty
 
 sentences = [

@@ -65,7 +65,7 @@ def expand_layer(layer, last_n_n):
     right, last_n_n, new = expand_wires(right, last_n_n)
     new_n_n += new
 
-    assert(len(last_n_n) == 0)
+    assert len(last_n_n) == 0
 
     return left, box, right, new_n_n
 
