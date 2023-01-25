@@ -142,3 +142,5 @@ saved_models/
 wandb/
 
 src/local_tests
+
+discocirc/version.py
