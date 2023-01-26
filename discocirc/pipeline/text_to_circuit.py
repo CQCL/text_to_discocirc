@@ -160,17 +160,14 @@ def compose_circuits(circ1, circ2, wire_order='intro_order'):
 
     # NOTE: inv_perm and perm behaviour in the permute() function
     if wire_order == 'intro_order':
-        final_circ = circ1.permute(*inv_perm) >> circ2[len(nouns_circ2):].permute(*perm)
+        # adopt the noun ordering of circ1
+        final_circ = circ1.permute(*perm) >> circ2[len(nouns_circ2):].permute(*inv_perm)
     elif wire_order == 'update_order':
-        # permute the list of nouns
-        nouns_circ1 = [nouns_circ1[i] for i in inv_perm]
-        
-        final_circ = Id(Ty())
-        for noun in nouns_circ1:
-            final_circ = final_circ @ noun
+        # adopt the noun ordering of circ2
+        final_circ = circ2[:len(nouns_circ2)]
 
-        final_circ = final_circ.permute(*perm)\
-            >> circ1[len(nouns_circ1):].permute(*inv_perm)\
+        final_circ = final_circ.permute(*inv_perm)\
+            >> circ1[len(nouns_circ1):].permute(*perm)\
             >> circ2[len(nouns_circ2):]
     else:
         raise Exception("Invalid wire_order.")
