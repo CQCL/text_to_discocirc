@@ -241,8 +241,8 @@ class Expr:
             result = Expr.literal(ccg_parse.text, closed_type)
 
         # Rules with 1 child
-        elif ccg_parse.rule == CCGRule.FORWARD_TYPE_RAISING or \
-            ccg_parse.rule == CCGRule.BACKWARD_TYPE_RAISING:
+        elif ccg_parse.rule == CCGRule.FORWARD_TYPE_RAISING \
+                or ccg_parse.rule == CCGRule.BACKWARD_TYPE_RAISING:
             x = Expr.literal(f"temp{time.time()}", biclosed_to_closed(ccg_parse.biclosed_type).input)
             result = Expr.lmbda(x, x(children[0]))
         elif ccg_parse.rule == CCGRule.UNARY:
@@ -255,10 +255,13 @@ class Expr:
             result = children[0](children[1])
         elif ccg_parse.rule == CCGRule.BACKWARD_APPLICATION:
             result = children[1](children[0])
-        elif ccg_parse.rule == CCGRule.FORWARD_COMPOSITION:
-            x = Expr.literal("temp", biclosed_to_closed(ccg_parse.children[1].biclosed_type).input)
+        elif ccg_parse.rule == CCGRule.FORWARD_COMPOSITION \
+                or ccg_parse.rule == CCGRule.FORWARD_CROSSED_COMPOSITION:
+            x = Expr.literal("temp", biclosed_to_closed(
+                ccg_parse.children[1].biclosed_type).input)
             result = Expr.lmbda(x, children[0](children[1](x)))
-        elif ccg_parse.rule == CCGRule.BACKWARD_COMPOSITION:
+        elif ccg_parse.rule == CCGRule.BACKWARD_COMPOSITION \
+                or ccg_parse.rule == CCGRule.BACKWARD_CROSSED_COMPOSITION:
             x = Expr.literal("temp", biclosed_to_closed(
                 ccg_parse.children[0].biclosed_type).input)
             result = Expr.lmbda(x, children[1](children[0](x)))
