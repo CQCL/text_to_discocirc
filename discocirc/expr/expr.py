@@ -241,7 +241,8 @@ class Expr:
             result = Expr.literal(ccg_parse.text, closed_type)
 
         # Rules with 1 child
-        elif ccg_parse.rule == CCGRule.FORWARD_TYPE_RAISING:
+        elif ccg_parse.rule == CCGRule.FORWARD_TYPE_RAISING or \
+            ccg_parse.rule == CCGRule.BACKWARD_TYPE_RAISING:
             x = Expr.literal(f"temp{time.time()}", biclosed_to_closed(ccg_parse.biclosed_type).input)
             result = Expr.lmbda(x, x(children[0]))
         elif ccg_parse.rule == CCGRule.UNARY:
