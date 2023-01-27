@@ -277,6 +277,10 @@ class Expr:
                 children[1].simple_type = type
                 children[1].final_type = type
                 result = children[1](children[0])
+        elif ccg_parse.rule == CCGRule.REMOVE_PUNCTUATION_RIGHT:
+            result = children[0]
+        elif ccg_parse.rule == CCGRule.REMOVE_PUNCTUATION_LEFT:
+            result = children[1]
 
         if result is None:
             raise NotImplementedError(ccg_parse.rule)
