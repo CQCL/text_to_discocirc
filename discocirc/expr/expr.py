@@ -78,7 +78,54 @@ class Expr:
         return hash(self.__members())
 
     def type_check(self):
-        return True
+        if self.expr_type == "literal":
+            if self.simple_type == self.final_type:
+                return [self.simple_type, self.final_type]
+            else:
+                return None
+
+        elif self.expr_type == "list":
+            simple_type = Ty()
+            final_type = Ty()
+            for expr in self.expr_list:
+                type = expr.type_check()
+                if type is None:
+                    return None
+                simple_type = simple_type @ type[0]
+                final_type = final_type @ type[1]
+
+            # TODO:
+            # - simple_type is currently not checked
+            # - currently no check for when interchange = True
+            if self.final_type == final_type:
+                return [simple_type, final_type]
+            else:
+                return None
+
+        elif self.expr_type == "application":
+            type_arg = self.arg.type_check()
+            type_expr = self.expr.type_check()
+
+            if type_arg is None or type_expr is None:
+                return None
+
+            if self.simple_type != type_expr[0] \
+                    or self.final_type != type_expr[1].output:
+                return None
+
+            return [self.simple_type, self.final_type]
+        elif self.expr_type == "lambda":
+            type_var = self.var.type_check()
+            type_expr = self.expr.type_check()
+
+            if type_var is None or type_expr is None:
+                return None
+
+            if self.simple_type != type_expr[0] \
+                    or self.final_type != type_var[1] >> type_expr[1]:
+                return None
+
+            return [self.simple_type, self.final_type]
 
     @staticmethod
     def literal(name, simple_type):
