@@ -73,8 +73,8 @@ def biclosed_to_expr(diagram):
     terms = []
     for box, offset in zip(diagram.boxes, diagram.offsets):
         if not box.dom:  # is word
-            simple_type = biclosed_to_closed(box.cod)
-            terms.append(Expr.literal(box.name, simple_type))
+            typ = biclosed_to_closed(box.cod)
+            terms.append(Expr.literal(box.name, typ))
         else:
             if len(box.dom) == 2:
                 if box.name.startswith("FA"):
@@ -101,7 +101,6 @@ def biclosed_to_expr(diagram):
             else:
                 raise NotImplementedError(box)
     return terms[0]
-
 
 class CCGToDiagTests(unittest.TestCase):
     def compare_ccg_creation(self, ccg_parse, expr):
@@ -173,6 +172,12 @@ class CCGToDiagTests(unittest.TestCase):
         # ------- Step 5: Expr to Diag -----------
         diag = expr_to_diag(expr)
         diag = (Frame.get_decompose_functor())(diag)
+
+        expr_uncurried = Expr.uncurry(expr)
+        diag_uncurried = expr_to_diag(expr_uncurried)
+        diag_uncurried = (Frame.get_decompose_functor())(diag_uncurried)
+
+        # self.assertEqual(diag, diag_uncurried)
 
         if config["draw_result"] or config["draw_steps"]:
             diag.draw()

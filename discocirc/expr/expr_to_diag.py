@@ -49,6 +49,7 @@ def _application_to_diag(expr, context):
 def _compose(arg, body):
     if arg.dom == Ty():
         new_args = rigid.Id(body.dom[:-len(arg.cod)]) @ arg
+        assert(arg.cod == body.dom[-len(arg.cod):])
         return new_args >> body
 
     else:

@@ -4,12 +4,12 @@ from discocirc.expr.expr import Expr
 from discocirc.helpers.closed import Func, Ty
 
 
-def is_higher_order(simple_type):
-    if not isinstance(simple_type, Func):
+def is_higher_order(typ):
+    if not isinstance(typ, Func):
         return False
-    return isinstance(simple_type.input, Func) \
-                or simple_type.input == Ty('p')\
-                or simple_type.input == Ty('s')
+    return isinstance(typ.input, Func) \
+           or typ.input == Ty('p') \
+           or typ.input == Ty('s')
 
 def if_application_pull_out(expr):
     return expr.arg.expr_type == 'application'\

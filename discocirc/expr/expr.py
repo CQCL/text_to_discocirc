@@ -79,10 +79,7 @@ class Expr:
 
     def type_check(self):
         if self.expr_type == "literal":
-            if self.simple_type == self.final_type:
-                return [self.simple_type, self.final_type]
-            else:
-                return None
+            return [self.simple_type, self.final_type]
 
         elif self.expr_type == "list":
             simple_type = Ty()
@@ -128,11 +125,11 @@ class Expr:
             return [self.simple_type, self.final_type]
 
     @staticmethod
-    def literal(name, simple_type):
+    def literal(name, typ):
         expr = Expr()
         expr.expr_type = "literal"
-        expr.simple_type = simple_type
-        expr.final_type = simple_type
+        expr.simple_type = typ
+        expr.final_type = typ
         expr.name = name
         return expr
 
