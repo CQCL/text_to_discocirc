@@ -41,7 +41,10 @@ def b_combinator(f, g, h):
     bf = change_expr_typ(bf, final_type)
     return (bf(g))(h)
 
-def c_combinator(f, y, x, n=1):
+def c_combinator(expr):
+    f = expr.expr.expr
+    y = expr.expr.arg
+    x = expr.arg
     f = deepcopy(f)
     new_type = x.final_type >> (y.final_type >> f.final_type.output.output)
     f = change_expr_typ(f, new_type)
@@ -51,9 +54,9 @@ def pull_out(expr):
     if expr.expr_type == 'application':
         if if_application_pull_out(expr):
             if expr.expr.expr_type == 'application':
-                return pull_out(c_combinator(expr.expr.expr,
-                                             expr.expr.arg,
-                                             expr.arg))
+                expr = c_combinator(expr)
+                f = pull_out(expr.expr)
+                return pull_out(f(expr.arg))
             else:
                 f = pull_out(expr.expr)
                 arg = pull_out(expr.arg)
