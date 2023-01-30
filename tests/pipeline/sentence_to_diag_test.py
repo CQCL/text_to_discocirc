@@ -83,17 +83,16 @@ def biclosed_to_expr(diagram):
                     term = terms[offset + 1](terms[offset])
                 elif box.name.startswith("FC"):
                     x = Expr.literal("temp",
-                                     terms[offset + 1].final_type.input)
+                                     terms[offset + 1].typ.input)
                     term = Expr.lmbda(x, terms[offset](terms[offset + 1](x)))
                 elif box.name.startswith("BC") or box.name.startswith(
                         "BX"):
                     x = Expr.literal("temp",
-                                     terms[offset].final_type.input)
+                                     terms[offset].typ.input)
                     term = Expr.lmbda(x,
                                       terms[offset + 1](terms[offset](x)))
                 else:
                     raise NotImplementedError
-                # term.final_type = biclosed_to_closed(box.cod)
                 terms[offset:offset + 2] = [term]
             elif box.name == "Curry(BA(n >> s))":
                 x = Expr.literal("temp", Ty('n') >> Ty('s'))
@@ -173,9 +172,9 @@ class CCGToDiagTests(unittest.TestCase):
         diag = expr_to_diag(expr)
         diag = (Frame.get_decompose_functor())(diag)
 
-        expr_uncurried = Expr.uncurry(expr)
-        diag_uncurried = expr_to_diag(expr_uncurried)
-        diag_uncurried = (Frame.get_decompose_functor())(diag_uncurried)
+        # expr_uncurried = Expr.uncurry(expr)
+        # diag_uncurried = expr_to_diag(expr_uncurried)
+        # diag_uncurried = (Frame.get_decompose_functor())(diag_uncurried)
 
         # self.assertEqual(diag, diag_uncurried)
 

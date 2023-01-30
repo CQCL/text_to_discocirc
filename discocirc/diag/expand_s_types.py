@@ -7,13 +7,13 @@ def expand_wires(wires, last_n_n):
     new_n_n = []
     new_wires = rigid.Ty()
 
-    for type in wires:
-        if type == Ob('s'):
+    for wire in wires:
+        if wire == Ob('s'):
             new_wires = new_wires @ last_n_n[0]
             new_n_n.append(last_n_n[0])
             last_n_n = last_n_n[1:]
         else:
-            new_wires = new_wires @ rigid.Ty(type)
+            new_wires = new_wires @ rigid.Ty(wire)
 
     return new_wires, last_n_n, new_n_n
 
@@ -28,12 +28,12 @@ def expand_box(box, last_n_n):
 
     # Expand dom
     new_dom = rigid.Ty()
-    for type in box.dom:
-        if type == Ob('s'):
+    for wire in box.dom:
+        if wire == Ob('s'):
             new_dom = new_dom @ last_n_n[0]
             last_n_n = last_n_n[1:]
         else:
-            new_dom = new_dom @ rigid.Ty(type)
+            new_dom = new_dom @ rigid.Ty(wire)
 
     # Expand cod
     new_cod = box.cod

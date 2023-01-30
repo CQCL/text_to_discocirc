@@ -13,27 +13,27 @@ def is_higher_order(typ):
 
 def if_application_pull_out(expr):
     return expr.arg.expr_type == 'application'\
-            and is_higher_order(expr.expr.final_type)\
-            and not isinstance(expr.arg.arg.final_type, Func)
+            and is_higher_order(expr.expr.typ)\
+            and not isinstance(expr.arg.arg.typ, Func)
 
 def if_lambda_pull_out(expr):
-    return expr.arg.expr_type == 'lambda' and\
-        is_higher_order(expr.expr.final_type) and\
-        expr.expr.final_type.input.input == expr.arg.var.final_type and\
-        expr.expr.final_type.output.input == expr.arg.var.final_type
+    return expr.arg.expr_type == 'lambda' and \
+           is_higher_order(expr.expr.typ) and \
+           expr.expr.typ.input.input == expr.arg.var.typ and \
+           expr.expr.typ.output.input == expr.arg.var.typ
 
 def b_combinator(f, g, h):
-    final_type = (h.final_type >> f.final_type.input) >>\
-                 (h.final_type >> f.final_type.output)
+    new_type = (h.typ >> f.typ.input) >> \
+                 (h.typ >> f.typ.output)
     bf = deepcopy(f)
-    bf.final_type = final_type
+    bf.typ = new_type
     return (bf(g))(h)
 
 def c_combinator(f, y, x, n=1):
     if f.expr_type == "application":
         fx = c_combinator(f.expr, f.arg, x, n+1)
         return fx(y)
-    typ = f.final_type
+    typ = f.typ
     typs = []
     for _ in range(n):
         typs.append(typ.input)
@@ -44,7 +44,7 @@ def c_combinator(f, y, x, n=1):
         output = t >> output
     output = x_type >> output
     f = deepcopy(f)
-    f.final_type = output
+    f.typ = output
     return (f(x))(y)
 
 def pull_out(expr):
@@ -62,8 +62,8 @@ def pull_out(expr):
                 return pull_out(b_combinator(f, g, h))
         elif if_lambda_pull_out(expr):
             expr2 = deepcopy(expr.expr)
-            expr2.final_type.input = expr2.final_type.input.output
-            expr2.final_type.output = expr2.final_type.output.output
+            expr2.typ.input = expr2.typ.input.output
+            expr2.typ.output = expr2.typ.output.output
             expr2 = pull_out(expr2(expr.arg.expr))
             return Expr.lmbda(expr.arg.var, expr2)
         else:
@@ -73,10 +73,10 @@ def pull_out(expr):
                 return pull_out(f(g))
             return f(g)
     elif expr.expr_type == 'lambda':
-        return Expr.lmbda(expr.var, pull_out(expr.expr), expr.simple_type)
+        return Expr.lmbda(expr.var, pull_out(expr.expr))
     elif expr.expr_type == 'list':
         pulled_out_list = [pull_out(e) for e in expr.expr_list]
-        return Expr.lst(pulled_out_list, expr.simple_type)
+        return Expr.lst(pulled_out_list)
     elif expr.expr_type == 'literal':
         return expr
     return expr
