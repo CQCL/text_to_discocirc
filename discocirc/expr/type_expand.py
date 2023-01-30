@@ -30,7 +30,7 @@ def do_the_obvious(expr, function):
         body = function(expr.expr)
         # TODO: is this alright? I don't think so, to be honest.
         #  If we fix unary rule, we can also fix this one
-        body.final_type.input = arg.final_type
+        body.typ.input = arg.typ
         new_expr = body(arg)
     else:
         raise TypeError(f'Unknown type {expr.expr_type} of expression')
@@ -40,6 +40,6 @@ def do_the_obvious(expr, function):
 
 def type_expand(expr):
     if expr.expr_type == "literal":
-        final_type = s_expand_t(expr.final_type)
-        return Expr.literal(expr.name, final_type)
+        new_type = s_expand_t(expr.typ)
+        return Expr.literal(expr.name, new_type)
     return do_the_obvious(expr, type_expand)

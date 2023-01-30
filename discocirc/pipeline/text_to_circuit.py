@@ -7,7 +7,7 @@ from lambeq import BobcatParser
 
 from discocirc.helpers.discocirc_utils import get_last_initial_noun
 from discocirc.diag.drag_up import drag_all
-from discocirc.pipeline.sentence_to_circuit import convert_sentence
+from discocirc.pipeline.sentence_to_circuit import sentence2circ
 
 parser = BobcatParser(verbose='suppress')
 # Loadone of SpaCy English models
@@ -58,8 +58,7 @@ def sentence_list_to_circuit(context, simplify_swaps=False, wire_order='intro_or
     """
     sentence_circuits = []
     for sentence in context:
-        ccg = parser.sentence2tree(sentence)
-        sentence_diag = convert_sentence(ccg)
+        sentence_diag = sentence2circ(parser, sentence)
         sentence_circuits.append(sentence_diag)
     context_circ = sentence_circuits[0]
     for circ in sentence_circuits[1:]:

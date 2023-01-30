@@ -7,9 +7,9 @@ from discocirc.helpers.closed import Func, Ty
 def _literal_to_diag(expr, context):
     name = expr.name
     if expr in context:
-        name = f"context: {expr.name}: {expr.final_type}"
+        name = f"context: {expr.name}: {expr.typ}"
 
-    output = expr.final_type
+    output = expr.typ
     if isinstance(output, Func):
         input = Ty()
         while isinstance(output, Func):
@@ -26,8 +26,8 @@ def _lambda_to_diag(expr, context):
     body = expr_to_diag(expr.expr, context)
     context.remove(expr.var)
 
-    return Frame(f"lambda: {expr.var.name}: {expr.var.final_type}",
-                 body.dom @ expr.var.final_type,
+    return Frame(f"lambda: {expr.var.name}: {expr.var.typ}",
+                 body.dom @ expr.var.typ,
                  body.cod,
                  [body]
                  )
@@ -49,6 +49,7 @@ def _application_to_diag(expr, context):
 def _compose(arg, body):
     if arg.dom == Ty():
         new_args = rigid.Id(body.dom[:-len(arg.cod)]) @ arg
+        assert(arg.cod == body.dom[-len(arg.cod):])
         return new_args >> body
 
     else:
