@@ -4,15 +4,16 @@ from discocirc.expr.expr import Expr
 from discocirc.helpers.closed import Func, Ty
 
 
-def is_higher_order(simple_type):
-    if not isinstance(simple_type, Func):
+def is_higher_order(typ):
+    if not isinstance(typ, Func):
         return False
-    return isinstance(simple_type.input, Func) \
-                or simple_type.input == Ty('p')\
-                or simple_type.input == Ty('s')
+    return isinstance(typ.input, Func) \
+                or typ.input == Ty('p')\
+                or typ.input == Ty('s')
 
 def if_application_pull_out(expr):
-    return expr.arg.expr_type == 'application'\
+    return expr.expr_type == 'application'\
+            and expr.arg.expr_type == 'application'\
             and is_higher_order(expr.expr.final_type)\
             and not isinstance(expr.arg.arg.final_type, Func)
 
@@ -22,29 +23,28 @@ def if_lambda_pull_out(expr):
         expr.expr.final_type.input.input == expr.arg.var.final_type and\
         expr.expr.final_type.output.input == expr.arg.var.final_type
 
+def change_expr_typ(expr, new_type):
+    if expr.expr_type == 'literal':
+        expr.final_type = new_type
+        return expr
+    elif expr.expr_type == 'application':
+        fun_new_type = expr.arg.final_type >> new_type
+        fun = change_expr_typ(expr.expr, fun_new_type)
+        new_expr = fun(expr.arg)
+        return new_expr
+    #TODO: implement lambda case
+
 def b_combinator(f, g, h):
     final_type = (h.final_type >> f.final_type.input) >>\
                  (h.final_type >> f.final_type.output)
     bf = deepcopy(f)
-    bf.final_type = final_type
+    bf = change_expr_typ(bf, final_type)
     return (bf(g))(h)
 
 def c_combinator(f, y, x, n=1):
-    if f.expr_type == "application":
-        fx = c_combinator(f.expr, f.arg, x, n+1)
-        return fx(y)
-    typ = f.final_type
-    typs = []
-    for _ in range(n):
-        typs.append(typ.input)
-        typ = typ.output
-    x_type = typ.input
-    output = typ.output
-    for t in typs:
-        output = t >> output
-    output = x_type >> output
     f = deepcopy(f)
-    f.final_type = output
+    new_type = x.final_type >> (y.final_type >> f.final_type.output.output)
+    f = change_expr_typ(f, new_type)
     return (f(x))(y)
 
 def pull_out(expr):
