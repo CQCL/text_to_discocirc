@@ -1,4 +1,5 @@
 from __future__ import annotations
+from copy import deepcopy
 
 import time
 
@@ -18,7 +19,21 @@ class Expr:
             string += f'{typ:^{length}}'
             return string
         elif self.expr_type == "lambda":
-            return f'(λ{self.var}.{self.expr}):{self.typ}'
+            var_temp = deepcopy(self.var)
+            var_temp.name = 'λ ' + var_temp.name
+            var = str(var_temp)
+            expr = str(self.expr)
+            typ = str(self.typ)
+            var_lines = var.split('\n')
+            expr_lines = expr.split('\n')
+            empty_expr_lines = [' ' * len(max(expr_lines))] * (len(var_lines) - len(expr_lines))
+            expr_lines = empty_expr_lines + expr_lines
+            empty_var_lines = [' ' * len(max(var_lines))] * (len(expr_lines) - len(var_lines))
+            var_lines = empty_var_lines + var_lines
+            string = ['  '.join([var_l, expr_l]) for var_l, expr_l in zip(var_lines, expr_lines)]
+            string.append('─' * len(string[0]))
+            string.append(f'{typ:^{len(string[0])}}')
+            return '\n'.join(string)
         elif self.expr_type == "application":
             expr = str(self.expr)
             arg = str(self.arg)
