@@ -34,7 +34,10 @@ def change_expr_typ(expr, new_type):
         return new_expr
     #TODO: implement lambda case
 
-def b_combinator(f, g, h):
+def b_combinator(expr):
+    f = expr.expr
+    g = expr.arg.expr
+    h = expr.arg.arg
     new_type = (h.typ >> f.typ.input) >> \
                  (h.typ >> f.typ.output)
     bf = deepcopy(f)
@@ -50,31 +53,52 @@ def c_combinator(expr):
     f = change_expr_typ(f, new_type)
     return (f(x))(y)
 
+def count_applications(expr):
+    count = 0
+    while expr.expr_type == "application":
+        count += 1
+        expr = expr.expr
+    return count
+
+def n_fold_c_combinator(expression, n):
+    expr = deepcopy(expression)
+    if expr.expr_type != "application" or expr.expr.expr_type != "application":
+        raise ValueError(f'cannot apply C combinator {n} > {0} times to:\n{expression}')
+    args = []
+    for i in range(n-1):
+        args.append(expr.arg)
+        expr = expr.expr
+        if expr.expr.expr_type != "application":
+            raise ValueError(f'cannot apply C combinator {n} > {i+1} times to:\n{expression}')
+    expr = c_combinator(expr)
+    for arg in reversed(args):
+        expr = c_combinator(expr(arg))
+    return expr
+
+def pull_out_application(expr):
+    f = pull_out(expr.expr)
+    g = pull_out(expr.arg)
+    expr = f(g)
+    if if_application_pull_out(expr):
+        expr = pull_out(b_combinator(expr))
+    return expr
+
 def pull_out(expr):
     if expr.expr_type == 'application':
-        if if_application_pull_out(expr):
-            if expr.expr.expr_type == 'application':
-                expr = c_combinator(expr)
-                f = pull_out(expr.expr)
-                return pull_out(f(expr.arg))
-            else:
-                f = pull_out(expr.expr)
-                arg = pull_out(expr.arg)
-                g = arg.expr
-                h = arg.arg
-                return pull_out(b_combinator(f, g, h))
-        elif if_lambda_pull_out(expr):
+        if if_lambda_pull_out(expr):
             expr2 = deepcopy(expr.expr)
             expr2.typ.input = expr2.typ.input.output
             expr2.typ.output = expr2.typ.output.output
             expr2 = pull_out(expr2(expr.arg.expr))
             return Expr.lmbda(expr.arg.var, expr2)
         else:
-            f = pull_out(expr.expr)
-            g = pull_out(expr.arg)
-            if if_application_pull_out(f(g)):
-                return pull_out(f(g))
-            return f(g)
+            expr = pull_out_application(expr)
+            for n in reversed(range(1, count_applications(expr.arg))): # we can only apply C combinator if we have at least two applications
+                n_c_combi_expr = expr.expr(n_fold_c_combinator(expr.arg, n))
+                expr = pull_out_application(n_c_combi_expr)
+                if expr != n_c_combi_expr:
+                    return pull_out(expr)
+            return expr
     elif expr.expr_type == 'lambda':
         return Expr.lmbda(expr.var, pull_out(expr.expr))
     elif expr.expr_type == 'list':
