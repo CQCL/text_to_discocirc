@@ -42,4 +42,5 @@ def type_expand(expr):
     if expr.expr_type == "literal":
         new_type = s_expand_t(expr.typ)
         return Expr.literal(expr.name, new_type)
-    return do_the_obvious(expr, type_expand)
+    else:
+        return do_the_obvious(expr, type_expand)

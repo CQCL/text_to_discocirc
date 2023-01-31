@@ -34,7 +34,14 @@ class Expr:
             string.append(f'{typ:^{len(string[0])}}')
             return '\n'.join(string)
         elif self.expr_type == "list":
-            return f'{self.expr_list}:{self.typ}'
+            names = ', '.join([str(ex.name) for ex in self.expr_list])
+            # types = ', '.join([str(ex.typ) for ex in self.expr_list])
+            types = str(self.typ)
+            length = max(len(names), len(types))
+            string = f'{names:^{length}}' + '\n'
+            string += '═' * length + '\n'
+            string += f'{types:^{length}}'
+            return string
         else:
             raise NotImplementedError(self.expr_type)
 
@@ -97,7 +104,7 @@ class Expr:
             if type_arg is None or type_expr is None:
                 return None
 
-            if self.typ != type_expr.output:
+            if self.typ != type_expr.output or type_expr.input != type_arg:
                 return None
 
             return self.typ
@@ -178,33 +185,29 @@ class Expr:
     @staticmethod
     def uncurry(expr):
         if expr.expr_type == "literal":
-            return Expr.literal(expr.name, uncurry_types(expr.final_type, uncurry_everything=True))
+            return Expr.literal(expr.name, uncurry_types(expr.typ, uncurry_everything=True))
         elif expr.expr_type == "lambda":
             if expr.expr.expr_type == "lambda":
                 # a -> b -> c = (a @ b) -> c
                 a_b = Expr.lst([Expr.uncurry(expr.var),
                                 Expr.uncurry(expr.expr.var)])
                 c = Expr.uncurry(expr.expr.expr)
-                simple_type = uncurry_types(expr.simple_type,
-                                            uncurry_everything=True)
-                return Expr.lmbda(a_b, c, simple_type)
+                return Expr.uncurry(Expr.lmbda(a_b, c))
             else:
                 return Expr.lmbda(Expr.uncurry(expr.var),
-                                  Expr.uncurry(expr.expr),
-                                  uncurry_types(expr.simple_type,
-                                                uncurry_everything=True))
+                                  Expr.uncurry(expr.expr))
         elif expr.expr_type == "application":
             if expr.expr.expr_type == "application":
                 a = Expr.uncurry(expr.arg)
                 b = Expr.uncurry(expr.expr.arg)
                 c = Expr.uncurry(expr.expr.expr)
-                return c(Expr.lst([b, a], interchange=False))
+                return Expr.uncurry(c(Expr.lst([a, b], interchange=False)))
             else:
                 arg = Expr.uncurry(expr.arg)
                 expr = Expr.uncurry(expr.expr)
                 return expr(arg)
         elif expr.expr_type == "list":
-            return Expr.lst([Expr.uncurry(e) for e in expr.expr_list], expr.simple_type, interchange=False)
+            return Expr.lst([Expr.uncurry(e) for e in expr.expr_list], interchange=False)
         else:
             raise TypeError(f'Unknown type {expr.expr_type} of expression')
 
@@ -245,16 +248,15 @@ class Expr:
     def partial_apply(expr, arg, context=None):
         num_inputs = 0
         for i in range(len(expr.typ.input) + 1):
-            if expr.typ.input[:i] == arg.typ:
+            if expr.typ.input[-i:] == arg.typ:
                 num_inputs = i
                 break
         if num_inputs == 0:
             raise TypeError(f"Type of {arg} is not compatible "
                             + f"with the input type of {expr}")
-        f_type = expr.typ
-        expr.typ = f_type.input[:num_inputs] >> (f_type.input[num_inputs:] >> f_type.output)
-        arg.typ = arg.typ
-        return Expr.apply(expr, arg, context=None)
+        expr.typ = expr.typ.input[-i:] >> \
+                   (expr.typ.input[:-num_inputs] >> expr.typ.output)
+        return Expr.apply(expr, arg, context)
 
 
     @staticmethod

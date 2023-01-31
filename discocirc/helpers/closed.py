@@ -61,27 +61,26 @@ class Func(Ty):
 def biclosed_to_closed(x):
     """Converts the biclosed types to closed types."""
     if isinstance(x, biclosed.Under):
-        fx = Func(biclosed_to_closed(x.left), biclosed_to_closed(x.right))
+        return Func(biclosed_to_closed(x.left), biclosed_to_closed(x.right))
     elif isinstance(x, biclosed.Over):
-        fx = Func(biclosed_to_closed(x.right), biclosed_to_closed(x.left))
+        return Func(biclosed_to_closed(x.right), biclosed_to_closed(x.left))
     elif isinstance(x, biclosed.Ty):
-        fx = Ty(*[biclosed_to_closed(y) for y in x.objects])
+        return Ty(*[biclosed_to_closed(y) for y in x.objects])
     else:
-        fx = x
-    return fx
+        return x
 
 
 def uncurry_types(typ, uncurry_everything=False):
     if isinstance(typ, Func) and isinstance(typ.output, Func):
         if uncurry_everything:
-            inp = uncurry_types(typ.input, uncurry_everything)
-            out_inp = uncurry_types(typ.output.input, uncurry_everything)
-            out_out = uncurry_types(typ.output.output, uncurry_everything)
+            inp = uncurry_types(typ.input, uncurry_everything=True)
+            out_inp = uncurry_types(typ.output.input, uncurry_everything=True)
+            out_out = uncurry_types(typ.output.output, uncurry_everything=True)
         else:
             inp = typ.input
             out_inp = typ.output.input
             out_out = typ.output.output
-        return uncurry_types((inp @ out_inp) >> out_out)
+        return uncurry_types((out_inp @ inp) >> out_out)
 
     else:
         return typ

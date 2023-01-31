@@ -66,7 +66,7 @@ def _compose(arg, body):
 
         if isinstance(body.boxes[-1], Frame):
             frame = Frame(body.boxes[-1], inputs.cod, body.cod,
-                          body.boxes[-1].insides + [arg])
+                          [arg] + body.boxes[-1].insides)
         else:
             frame = Frame(body.boxes[-1], inputs.cod, body.cod, [arg])
 
