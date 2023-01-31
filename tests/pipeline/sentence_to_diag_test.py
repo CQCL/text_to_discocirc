@@ -10,6 +10,9 @@ from discocirc.expr import Expr
 from discocirc.expr import expr_to_diag
 from discocirc.expr import pull_out
 from discocirc.expr import type_expand
+from discocirc.expr.ccg_to_expr import ccg_to_expr
+from discocirc.expr.ccg_type_check import expr_type_check
+from discocirc.expr.expr_uncurry import expr_uncurry
 from discocirc.helpers.closed import biclosed_to_closed, Ty
 
 sentences = [
@@ -124,9 +127,9 @@ class CCGToDiagTests(unittest.TestCase):
         ccg_parse = parser.sentence2tree(sentence)
 
         # ------- Step 2: CCG to Expr -----------
-        expr = Expr.ccg_to_expr(ccg_parse)
+        expr = ccg_to_expr(ccg_parse)
         if config["check_ccg_types"]:
-            self.assertTrue(expr.type_check(), msg="Typechecking ccg to expr")
+            self.assertTrue(expr_type_check(expr), msg="Typechecking ccg to expr")
 
         if config["compare_ccg_creations"]:
             self.compare_ccg_creation(ccg_parse, expr)
@@ -140,7 +143,7 @@ class CCGToDiagTests(unittest.TestCase):
         # ------- Step 3: Pulling out -----------
         expr = pull_out(expr)
         if config["check_ccg_types"]:
-            self.assertTrue(expr.type_check(),
+            self.assertTrue(expr_type_check(expr),
                             msg="Typechecking pulled out expr")
 
         # TODO: write test to check that all types have been pulled out
@@ -157,7 +160,7 @@ class CCGToDiagTests(unittest.TestCase):
 
         expr = type_expand(expr)
         if config["check_ccg_types"]:
-            self.assertTrue(expr.type_check(),
+            self.assertTrue(expr_type_check(expr),
                             msg="Typechecking expanded expr")
 
         # TODO: write test to check that all types have been expanded
@@ -172,7 +175,7 @@ class CCGToDiagTests(unittest.TestCase):
         diag = expr_to_diag(expr)
         diag = (Frame.get_decompose_functor())(diag)
 
-        expr_uncurried = Expr.uncurry(expr)
+        expr_uncurried = expr_uncurry(expr)
         diag_uncurried = expr_to_diag(expr_uncurried)
         diag_uncurried = (Frame.get_decompose_functor())(diag_uncurried)
 
