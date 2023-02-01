@@ -1,7 +1,6 @@
 from __future__ import annotations
 from copy import deepcopy
 
-from discocirc.expr.expr_to_diag import draw_expr
 from discocirc.helpers.closed import Func, uncurry_types, Ty
 
 

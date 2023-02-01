@@ -51,10 +51,10 @@ sentences = [
 ]
 parser = BobcatParser()
 config = {
-    "draw_result": False,
+    "draw_result": True,
     "draw_steps": False,
     "type_check_ccg": True,
-    "compare_type_expansions": False,
+    "compare_type_expansions": True,
 }
 
 class CCGToDiagTests(UnitTestBaseClass):

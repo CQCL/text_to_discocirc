@@ -1,6 +1,7 @@
 from discopy import rigid, Ob
 
 from discocirc.diag.frame import Frame
+from discocirc.helpers import closed
 
 
 def expand_wires(wires, last_n_n):
@@ -71,13 +72,13 @@ def expand_layer(layer, last_n_n):
 
 
 def expand_s_types(diagram):
-    new_diag = rigid.Id(diagram.dom)
+    new_diag = closed.Id(diagram.dom)
     last_n_n = []
 
     for layer in diagram.layers:
         left, box, right, last_n_n = expand_layer(layer, last_n_n)
 
-        left, right = map(rigid.Id, (left, right))
+        left, right = map(closed.Id, (left, right))
         new_diag = new_diag >> left @ box @ right
 
     return new_diag

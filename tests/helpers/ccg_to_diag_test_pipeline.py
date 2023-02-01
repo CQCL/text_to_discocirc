@@ -31,7 +31,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse):
     expr = pull_out(expr)
     if config["type_check_ccg"]:
         unittest.assertTrue(expr_type_check(expr),
-                        msg="Typechecking pulled out expr")
+                            msg="Typechecking pulled out expr")
 
     # TODO: write test to check that all types have been pulled out
     #  correctly (Issue #14)
@@ -42,14 +42,14 @@ def ccg_to_diag_test(unittest, config, ccg_parse):
         diag.draw()
 
     # ------- Step 3: Type expansion -----------
-    if config["compare_type_expansions"]:
-        unittest.compare_type_expansions(expr)
-
     expr = type_expand(expr)
+
     if config["type_check_ccg"]:
         unittest.assertTrue(expr_type_check(expr),
-                        msg="Typechecking expanded expr")
+                            msg="Typechecking expanded expr")
 
+    if config["compare_type_expansions"]:
+        compare_type_expansions(unittest, expr)
     # TODO: write test to check that all types have been expanded
     #  correctly (Issue #14)
 

@@ -19,7 +19,7 @@ def ccg_to_expr(ccg_parse):
     # Rules with 1 child
     elif ccg_parse.rule == CCGRule.FORWARD_TYPE_RAISING \
             or ccg_parse.rule == CCGRule.BACKWARD_TYPE_RAISING:
-        x = Expr.literal(f"x__{time.time()}__", # Format for temporary variables such that time of creation is irrelevant for equivalence checking
+        x = Expr.literal(f"x__{time.time()}__",
                          biclosed_to_closed(ccg_parse.biclosed_type).input)
         result = Expr.lmbda(x, x(children[0]))
     elif ccg_parse.rule == CCGRule.UNARY:
@@ -59,9 +59,10 @@ def ccg_to_expr(ccg_parse):
     if result is None:
         raise NotImplementedError(ccg_parse.rule)
 
-    # if ccg_parse.original.cat.var in ccg_parse.original.var_map.keys():
-    #     result.head = ccg_parse.original.variable.fillers
-    # else:
-    #     result.head = None
+    if hasattr(ccg_parse, "original"):
+        if ccg_parse.original.cat.var in ccg_parse.original.var_map.keys():
+            result.head = ccg_parse.original.variable.fillers
+        else:
+            result.head = None
 
     return result
