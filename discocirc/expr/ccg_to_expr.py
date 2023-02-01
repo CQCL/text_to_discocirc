@@ -19,7 +19,7 @@ def ccg_to_expr(ccg_parse):
     # Rules with 1 child
     elif ccg_parse.rule == CCGRule.FORWARD_TYPE_RAISING \
             or ccg_parse.rule == CCGRule.BACKWARD_TYPE_RAISING:
-        x = Expr.literal(f"x{time.time()}",
+        x = Expr.literal(f"x__{time.time()}__", # Format for temporary variables such that time of creation is irrelevant for equivalence checking
                          biclosed_to_closed(ccg_parse.biclosed_type).input)
         result = Expr.lmbda(x, x(children[0]))
     elif ccg_parse.rule == CCGRule.UNARY:
@@ -33,12 +33,12 @@ def ccg_to_expr(ccg_parse):
         result = children[1](children[0])
     elif ccg_parse.rule == CCGRule.FORWARD_COMPOSITION \
             or ccg_parse.rule == CCGRule.FORWARD_CROSSED_COMPOSITION:
-        x = Expr.literal(f"temp", biclosed_to_closed(
+        x = Expr.literal(f"temp__{time.time()}__", biclosed_to_closed(
             ccg_parse.children[1].biclosed_type).input)
         result = Expr.lmbda(x, children[0](children[1](x)))
     elif ccg_parse.rule == CCGRule.BACKWARD_COMPOSITION \
             or ccg_parse.rule == CCGRule.BACKWARD_CROSSED_COMPOSITION:
-        x = Expr.literal(f"temp", biclosed_to_closed(
+        x = Expr.literal(f"temp__{time.time()}__", biclosed_to_closed(
             ccg_parse.children[0].biclosed_type).input)
         result = Expr.lmbda(x, children[1](children[0](x)))
     elif ccg_parse.rule == CCGRule.CONJUNCTION:
@@ -59,9 +59,9 @@ def ccg_to_expr(ccg_parse):
     if result is None:
         raise NotImplementedError(ccg_parse.rule)
 
-    if ccg_parse.original.cat.var in ccg_parse.original.var_map.keys():
-        result.head = ccg_parse.original.variable.fillers
-    else:
-        result.head = None
+    # if ccg_parse.original.cat.var in ccg_parse.original.var_map.keys():
+    #     result.head = ccg_parse.original.variable.fillers
+    # else:
+    #     result.head = None
 
     return result
