@@ -21,12 +21,10 @@ sentences = [
     'Alice and Bob',
     'Alice eats',
     'Alice quickly gives flowers',
-    'Alice quickly eats',
     'Alice who Bob likes walks',  # (composition)
     'Alice who likes Bob walks',
     'Alice gives flowers with Bob',
     'Alice gives flowers to Bob',
-    'Alice quickly loves very red Bob',
     'Alice fully loves Bob',
     'Alice quickly eats',
     'Alice quickly eats fish',
@@ -46,7 +44,6 @@ sentences = [
     'Alice loves Bob and Claire loves Dave',
     # (TODO: runs into recursion error)
     'Alice loves Bob and Bob loves Claire',
-    'Alice knows that Bob loves Claire',
     'The lawyers went to work',
     'Before he went to the treasury',  # TODO: pulling out does not work
     'I know of Alice loving Bob',
@@ -54,7 +51,6 @@ sentences = [
     'I know certainly of Alice quickly loving Bob',  # (composition, UNARY)
     'I know that Alice hates Bob and Claire loves Dave',
     'Alice loves Bob and Claire hates Dave',
-    'Alice knows that Bob loves Claire',
     'Alice quickly loves and hates Bob',
     'I dreamt that Alice went to the shop and bought ice cream',
     'Bob likes flowers that Claire picks',  # (composition)

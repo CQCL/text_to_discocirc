@@ -2,6 +2,7 @@ from copy import deepcopy
 
 from discocirc.expr.expr import Expr
 from discocirc.helpers.closed import Func, Ty
+from discocirc.helpers.discocirc_utils import change_expr_typ
 
 
 def is_higher_order(typ):
@@ -22,17 +23,6 @@ def if_lambda_pull_out(expr):
            is_higher_order(expr.expr.typ) and \
            expr.expr.typ.input.input == expr.arg.var.typ and \
            expr.expr.typ.output.input == expr.arg.var.typ
-
-def change_expr_typ(expr, new_type):
-    if expr.expr_type == 'literal':
-        expr.typ = new_type
-        return expr
-    elif expr.expr_type == 'application':
-        fun_new_type = expr.arg.typ >> new_type
-        fun = change_expr_typ(expr.expr, fun_new_type)
-        new_expr = fun(expr.arg)
-        return new_expr
-    #TODO: implement lambda case
 
 def b_combinator(expr):
     f = expr.expr
