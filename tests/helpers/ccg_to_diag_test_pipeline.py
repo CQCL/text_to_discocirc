@@ -17,7 +17,7 @@ def compare_type_expansions(unittest, expr):
 
 
 def ccg_to_diag_test(unittest, config, ccg_parse):
-    # ------- Step 2: CCG to Expr -----------
+    # ------- Step 1: CCG to Expr -----------
     expr = ccg_to_expr(ccg_parse)
     if config["type_check_ccg"]:
         unittest.assertTrue(expr_type_check(expr), msg="Typechecking ccg to expr")
@@ -27,7 +27,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse):
         diag = (Frame.get_decompose_functor())(diag)
         diag.draw()
 
-    # ------- Step 3: Pulling out -----------
+    # ------- Step 2: Pulling out -----------
     expr = pull_out(expr)
     if config["type_check_ccg"]:
         unittest.assertTrue(expr_type_check(expr),
@@ -41,7 +41,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse):
         diag = (Frame.get_decompose_functor())(diag)
         diag.draw()
 
-    # ------- Step 4: Type expansion -----------
+    # ------- Step 3: Type expansion -----------
     if config["compare_type_expansions"]:
         unittest.compare_type_expansions(expr)
 
@@ -58,7 +58,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse):
         diag = (Frame.get_decompose_functor())(diag)
         diag.draw()
 
-    # ------- Step 5: Expr to Diag -----------
+    # ------- Step 4: Expr to Diag -----------
     diag = expr_to_diag(expr)
     diag = (Frame.get_decompose_functor())(diag)
 
