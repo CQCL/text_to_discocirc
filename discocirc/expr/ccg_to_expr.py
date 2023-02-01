@@ -4,6 +4,7 @@ from lambeq import CCGAtomicType, CCGRule
 
 from discocirc.expr import Expr
 from discocirc.helpers.closed import biclosed_to_closed
+from discocirc.helpers.discocirc_utils import change_expr_typ
 
 
 def ccg_to_expr(ccg_parse):
@@ -22,9 +23,8 @@ def ccg_to_expr(ccg_parse):
                          biclosed_to_closed(ccg_parse.biclosed_type).input)
         result = Expr.lmbda(x, x(children[0]))
     elif ccg_parse.rule == CCGRule.UNARY:
-        if children[0].typ != biclosed_to_closed(ccg_parse.biclosed_type):
-            raise NotImplementedError("Changing types for UNARY rules")
-        result = children[0]
+        result = change_expr_typ(children[0],
+                                 biclosed_to_closed(ccg_parse.biclosed_type))
 
     # Rules with 2 children
     elif ccg_parse.rule == CCGRule.FORWARD_APPLICATION:
@@ -33,12 +33,12 @@ def ccg_to_expr(ccg_parse):
         result = children[1](children[0])
     elif ccg_parse.rule == CCGRule.FORWARD_COMPOSITION \
             or ccg_parse.rule == CCGRule.FORWARD_CROSSED_COMPOSITION:
-        x = Expr.literal(f"x{time.time()}", biclosed_to_closed(
+        x = Expr.literal(f"temp", biclosed_to_closed(
             ccg_parse.children[1].biclosed_type).input)
         result = Expr.lmbda(x, children[0](children[1](x)))
     elif ccg_parse.rule == CCGRule.BACKWARD_COMPOSITION \
             or ccg_parse.rule == CCGRule.BACKWARD_CROSSED_COMPOSITION:
-        x = Expr.literal(f"x{time.time()}", biclosed_to_closed(
+        x = Expr.literal(f"temp", biclosed_to_closed(
             ccg_parse.children[0].biclosed_type).input)
         result = Expr.lmbda(x, children[1](children[0](x)))
     elif ccg_parse.rule == CCGRule.CONJUNCTION:
