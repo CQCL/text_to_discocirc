@@ -26,3 +26,13 @@ def get_star_removal_functor():
     f = Functor(ob=star_removal_ob, ar=star_removal_ar)
     return f
 
+def change_expr_typ(expr, new_type):
+    if expr.expr_type == 'literal':
+        expr.typ = new_type
+        return expr
+    elif expr.expr_type == 'application':
+        fun_new_type = expr.arg.typ >> new_type
+        fun = change_expr_typ(expr.expr, fun_new_type)
+        new_expr = fun(expr.arg)
+        return new_expr
+    #TODO: implement lambda case
