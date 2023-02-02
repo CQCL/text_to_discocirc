@@ -85,9 +85,9 @@ def pull_out(expr):
             expr = pull_out_application(expr)
             for n in reversed(range(1, count_applications(expr.arg))): # we can only apply C combinator if we have at least two applications
                 n_c_combi_expr = expr.expr(n_fold_c_combinator(expr.arg, n))
-                expr = pull_out_application(n_c_combi_expr)
-                if expr != n_c_combi_expr:
-                    return pull_out(expr)
+                n_c_combi_expr_pulled = pull_out_application(n_c_combi_expr)
+                if n_c_combi_expr_pulled != n_c_combi_expr: # check if something was pulled out
+                    return pull_out(n_c_combi_expr_pulled)
             return expr
     elif expr.expr_type == 'lambda':
         return Expr.lmbda(expr.var, pull_out(expr.expr))
