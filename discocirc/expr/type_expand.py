@@ -29,8 +29,6 @@ def do_the_obvious(expr, function):
     elif expr.expr_type == "application":
         arg = function(expr.arg)
         body = function(expr.expr)
-        # TODO: is this alright? I don't think so, to be honest.
-        #  If we fix unary rule, we can also fix this one
         assert(arg.typ == body.typ.input)
         body = change_expr_typ(body, arg.typ >> body.typ.output)
         new_expr = body(arg)

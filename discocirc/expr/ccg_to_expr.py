@@ -52,11 +52,17 @@ def ccg_to_expr(ccg_parse):
             children[1].typ = type
             result = children[1](children[0])
     elif ccg_parse.rule == CCGRule.REMOVE_PUNCTUATION_RIGHT:
-        result = change_expr_typ(children[0],
-                                 biclosed_to_closed(ccg_parse.biclosed_type))
+        if children[0].typ != biclosed_to_closed(ccg_parse.biclosed_type):
+            punctuation = Expr.literal(children[1].name, children[0].typ >> biclosed_to_closed(ccg_parse.biclosed_type))
+            result = punctuation(children[0])
+        else:
+            result = children[0]
     elif ccg_parse.rule == CCGRule.REMOVE_PUNCTUATION_LEFT:
-        result = change_expr_typ(children[1],
-                                 biclosed_to_closed(ccg_parse.biclosed_type))
+        if children[1].typ != biclosed_to_closed(ccg_parse.biclosed_type):
+            punctuation = Expr.literal({children[0].name}, children[1].typ >> biclosed_to_closed(ccg_parse.biclosed_type))
+            result = punctuation(children[1])
+        else:
+            result = children[1]
 
     if result is None:
         raise NotImplementedError(ccg_parse.rule)

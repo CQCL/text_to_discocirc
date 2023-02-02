@@ -20,5 +20,6 @@ class CCGToDiagTests(UnitTestBaseClass):
     @parameterized.expand(trees)
     def test_sequence(self, name):
         print(trees[name])
+        print(trees[name].deriv())
         self.test_logger = name
         ccg_to_diag_test(self, config, trees[name])

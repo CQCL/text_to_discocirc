@@ -47,11 +47,13 @@ sentences = [
     'Fred is no longer in the office',
     'How many objects is Mary carrying',
     'Alice quickly and hastily eats',
-    'The son of a physicist , Mr. Hahn skipped first grade because his reading ability was so far above his classmates .'
+    'The son of a physicist , Mr. Hahn skipped first grade because his reading ability was so far above his classmates .',
+    'Alice , Bob and Claire',
+    'Focus on what company knows best',
 ]
 parser = BobcatParser()
 config = {
-    "draw_result": True,
+    "draw_result": False,
     "draw_steps": False,
     "type_check_ccg": True,
     "compare_type_expansions": True,
@@ -63,4 +65,5 @@ class CCGToDiagTests(UnitTestBaseClass):
         print(sentence)
         self.test_logger = sentence
         ccg_parse = parser.sentence2tree(sentence)
+        print(ccg_parse.deriv())
         ccg_to_diag_test(self, config, ccg_parse)
