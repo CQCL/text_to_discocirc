@@ -96,3 +96,7 @@ def expr_to_diag(expr, context=None):
         return _list_to_diag(expr, context)
     else:
         raise NotImplementedError(expr.expr_type)
+
+
+def draw_expr(expr):
+    (Frame.get_decompose_functor())(expr_to_diag(expr)).draw()

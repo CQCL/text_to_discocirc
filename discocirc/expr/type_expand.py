@@ -1,5 +1,6 @@
 from discocirc.expr.expr import Expr
 from discocirc.helpers.closed import Func, Ty
+from discocirc.helpers.discocirc_utils import change_expr_typ
 
 
 def s_expand_t(t):
@@ -28,9 +29,8 @@ def do_the_obvious(expr, function):
     elif expr.expr_type == "application":
         arg = function(expr.arg)
         body = function(expr.expr)
-        # TODO: is this alright? I don't think so, to be honest.
-        #  If we fix unary rule, we can also fix this one
-        body.typ.input = arg.typ
+        assert(arg.typ == body.typ.input)
+        body = change_expr_typ(body, arg.typ >> body.typ.output)
         new_expr = body(arg)
     else:
         raise TypeError(f'Unknown type {expr.expr_type} of expression')

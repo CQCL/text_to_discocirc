@@ -1,12 +1,7 @@
 from __future__ import annotations
 from copy import deepcopy
 
-import time
-
-from lambeq import CCGRule, CCGAtomicType
-
-from discocirc.helpers.closed import Func, biclosed_to_closed, uncurry_types, Ty
-from discocirc.helpers.discocirc_utils import change_expr_typ
+from discocirc.helpers.closed import Func, uncurry_types, Ty
 
 
 class Expr:
@@ -51,7 +46,6 @@ class Expr:
             return '\n'.join(string)
         elif self.expr_type == "list":
             names = ', '.join([str(ex.name) for ex in self.expr_list])
-            # types = ', '.join([str(ex.typ) for ex in self.expr_list])
             types = str(self.typ)
             length = max(len(names), len(types))
             string = f'{names:^{length}}' + '\n'
@@ -95,46 +89,6 @@ class Expr:
 
     def __hash__(self) -> int:
         return hash(self.__members())
-
-    def type_check(self):
-        if self.expr_type == "literal":
-            return self.typ
-
-        elif self.expr_type == "list":
-            expected_type = Ty()
-            for expr in self.expr_list:
-                element_type = expr.type_check()
-                if element_type is None:
-                    return None
-                expected_type = expected_type @ element_type
-
-            if self.typ == expected_type:
-                return expected_type
-            else:
-                return None
-
-        elif self.expr_type == "application":
-            type_arg = self.arg.type_check()
-            type_expr = self.expr.type_check()
-
-            if type_arg is None or type_expr is None:
-                return None
-
-            if self.typ != type_expr.output or type_expr.input != type_arg:
-                return None
-
-            return self.typ
-        elif self.expr_type == "lambda":
-            type_var = self.var.type_check()
-            type_expr = self.expr.type_check()
-
-            if type_var is None or type_expr is None:
-                return None
-
-            if self.typ != type_var >> type_expr:
-                return None
-
-            return self.typ
 
     @staticmethod
     def literal(name, typ):
@@ -197,35 +151,6 @@ class Expr:
             for e in expr_list:
                 list_type = list_type @ e.typ
         return list_type
-    
-    @staticmethod
-    def uncurry(expr):
-        if expr.expr_type == "literal":
-            return Expr.literal(expr.name, uncurry_types(expr.typ, uncurry_everything=True))
-        elif expr.expr_type == "lambda":
-            if expr.expr.expr_type == "lambda":
-                # a -> b -> c = (a @ b) -> c
-                a_b = Expr.lst([Expr.uncurry(expr.var),
-                                Expr.uncurry(expr.expr.var)])
-                c = Expr.uncurry(expr.expr.expr)
-                return Expr.uncurry(Expr.lmbda(a_b, c))
-            else:
-                return Expr.lmbda(Expr.uncurry(expr.var),
-                                  Expr.uncurry(expr.expr))
-        elif expr.expr_type == "application":
-            if expr.expr.expr_type == "application":
-                a = Expr.uncurry(expr.arg)
-                b = Expr.uncurry(expr.expr.arg)
-                c = Expr.uncurry(expr.expr.expr)
-                return Expr.uncurry(c(Expr.lst([a, b], interchange=False)))
-            else:
-                arg = Expr.uncurry(expr.arg)
-                expr = Expr.uncurry(expr.expr)
-                return expr(arg)
-        elif expr.expr_type == "list":
-            return Expr.lst([Expr.uncurry(e) for e in expr.expr_list], interchange=False)
-        else:
-            raise TypeError(f'Unknown type {expr.expr_type} of expression')
 
     @staticmethod
     def evl(context, expr):
@@ -273,63 +198,4 @@ class Expr:
         expr.typ = expr.typ.input[-i:] >> \
                    (expr.typ.input[:-num_inputs] >> expr.typ.output)
         return Expr.apply(expr, arg, context)
-
-
-    @staticmethod
-    def ccg_to_expr(ccg_parse):
-        children = [Expr.ccg_to_expr(child) for child in ccg_parse.children]
-
-        result = None
-        # Rules with 0 children
-        if ccg_parse.rule == CCGRule.LEXICAL:
-            closed_type = biclosed_to_closed(ccg_parse.biclosed_type)
-            result = Expr.literal(ccg_parse.text, closed_type)
-
-        # Rules with 1 child
-        elif ccg_parse.rule == CCGRule.FORWARD_TYPE_RAISING \
-                or ccg_parse.rule == CCGRule.BACKWARD_TYPE_RAISING:
-            x = Expr.literal(f"x{time.time()}", biclosed_to_closed(ccg_parse.biclosed_type).input)
-            result = Expr.lmbda(x, x(children[0]))
-        elif ccg_parse.rule == CCGRule.UNARY:
-            result = change_expr_typ(children[0], biclosed_to_closed(ccg_parse.biclosed_type))
-
-        # Rules with 2 children
-        elif ccg_parse.rule == CCGRule.FORWARD_APPLICATION:
-            result = children[0](children[1])
-        elif ccg_parse.rule == CCGRule.BACKWARD_APPLICATION:
-            result = children[1](children[0])
-        elif ccg_parse.rule == CCGRule.FORWARD_COMPOSITION \
-                or ccg_parse.rule == CCGRule.FORWARD_CROSSED_COMPOSITION:
-            x = Expr.literal(f"temp", biclosed_to_closed(
-                ccg_parse.children[1].biclosed_type).input)
-            result = Expr.lmbda(x, children[0](children[1](x)))
-        elif ccg_parse.rule == CCGRule.BACKWARD_COMPOSITION \
-                or ccg_parse.rule == CCGRule.BACKWARD_CROSSED_COMPOSITION:
-            x = Expr.literal(f"temp", biclosed_to_closed(
-                ccg_parse.children[0].biclosed_type).input)
-            result = Expr.lmbda(x, children[1](children[0](x)))
-        elif ccg_parse.rule == CCGRule.CONJUNCTION:
-            left, right = children[0].typ, children[1].typ
-            if CCGAtomicType.conjoinable(left):
-                type = right >> biclosed_to_closed(ccg_parse.biclosed_type)
-                children[0].typ = type
-                result = children[0](children[1])
-            elif CCGAtomicType.conjoinable(right):
-                type = left >> biclosed_to_closed(ccg_parse.biclosed_type)
-                children[1].typ = type
-                result = children[1](children[0])
-        elif ccg_parse.rule == CCGRule.REMOVE_PUNCTUATION_RIGHT:
-            result = children[0]
-        elif ccg_parse.rule == CCGRule.REMOVE_PUNCTUATION_LEFT:
-            result = children[1]
-
-        if result is None:
-            raise NotImplementedError(ccg_parse.rule)
-
-        if ccg_parse.original.cat.var in ccg_parse.original.var_map.keys():
-            result.head = ccg_parse.original.variable.fillers
-        else:
-            result.head = None
-
-        return result
 
