@@ -46,6 +46,7 @@ def pull_out(expr):
     if expr.expr_type == 'application':
         if if_lambda_pull_out(expr):
             expr2 = deepcopy(expr.expr)
+            # TODO: Check if the types need to be changed using change_expr_type
             expr2.typ.input = expr2.typ.input.output
             expr2.typ.output = expr2.typ.output.output
             expr2 = pull_out(expr2(expr.arg.expr))
