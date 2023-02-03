@@ -2,6 +2,8 @@ from copy import deepcopy
 from discopy.rigid import Ty, Box
 from discopy.monoidal import Functor
 
+from discocirc.expr.expr import Expr
+
 
 def get_last_initial_noun(circ):
     """
@@ -82,3 +84,24 @@ def inv_n_fold_c_combinator(expression, n):
 
 def apply_at_root(fun, arg):
     return inv_n_fold_c_combinator(fun(arg), count_applications(fun))
+
+def expr_type_recursion(expr, function):
+    if expr.expr_type == "literal":
+        new_expr = function(expr)
+    elif expr.expr_type == "list":
+        new_list = [function(e) for e in expr.expr_list]
+        new_expr = Expr.lst(new_list)
+    elif expr.expr_type == "lambda":
+        new_expr = function(expr.expr)
+        new_var = function(expr.var)
+        new_expr = Expr.lmbda(new_var, new_expr)
+    elif expr.expr_type == "application":
+        arg = function(expr.arg)
+        body = function(expr.expr)
+        assert(arg.typ == body.typ.input)
+        new_expr = body(arg)
+    else:
+        raise TypeError(f'Unknown type {expr.expr_type} of expression')
+    if hasattr(expr, 'head'):
+        new_expr.head = expr.head
+    return new_expr
