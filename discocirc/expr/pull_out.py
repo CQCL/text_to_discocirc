@@ -2,7 +2,7 @@ from copy import deepcopy
 
 from discocirc.expr.expr import Expr
 from discocirc.helpers.closed import Func, Ty
-from discocirc.helpers.discocirc_utils import change_expr_typ
+from discocirc.helpers.discocirc_utils import change_expr_typ, count_applications, n_fold_c_combinator
 
 
 def is_higher_order(typ):
@@ -33,37 +33,6 @@ def b_combinator(expr):
     bf = deepcopy(f)
     bf = change_expr_typ(bf, new_type)
     return (bf(g))(h)
-
-def c_combinator(expr):
-    f = expr.expr.expr
-    y = expr.expr.arg
-    x = expr.arg
-    f = deepcopy(f)
-    new_type = x.typ >> (y.typ >> f.typ.output.output)
-    f = change_expr_typ(f, new_type)
-    return (f(x))(y)
-
-def count_applications(expr):
-    count = 0
-    while expr.expr_type == "application":
-        count += 1
-        expr = expr.expr
-    return count
-
-def n_fold_c_combinator(expression, n):
-    expr = deepcopy(expression)
-    if expr.expr_type != "application" or expr.expr.expr_type != "application":
-        raise ValueError(f'cannot apply C combinator {n} > {0} times to:\n{expression}')
-    args = []
-    for i in range(n-1):
-        args.append(expr.arg)
-        expr = expr.expr
-        if expr.expr.expr_type != "application":
-            raise ValueError(f'cannot apply C combinator {n} > {i+1} times to:\n{expression}')
-    expr = c_combinator(expr)
-    for arg in reversed(args):
-        expr = c_combinator(expr(arg))
-    return expr
 
 def pull_out_application(expr):
     f = pull_out(expr.expr)
