@@ -65,3 +65,20 @@ def n_fold_c_combinator(expression, n):
         expr = c_combinator(expr(arg))
     return expr
 
+def inv_n_fold_c_combinator(expression, n):
+    expr = deepcopy(expression)
+    if expr.expr_type != "application" or expr.expr.expr_type != "application":
+        return expr
+    args = []
+    for i in range(n):
+        expr = c_combinator(expr)
+        args.append(expr.arg)
+        expr = expr.expr
+        if expr.expr_type != "application":
+            raise ValueError(f'cannot apply C combinator {n} > {i+1} times to:\n{expression}')
+    for arg in reversed(args):
+        expr = expr(arg)
+    return expr
+
+def apply_at_root(fun, arg):
+    return inv_n_fold_c_combinator(fun(arg), count_applications(fun))
