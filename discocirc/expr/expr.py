@@ -1,5 +1,6 @@
 from __future__ import annotations
 from copy import deepcopy
+from prettytable import PrettyTable
 
 from discocirc.helpers.closed import Func, uncurry_types, Ty
 
@@ -45,12 +46,27 @@ class Expr:
             string.append(f'{typ:^{len(string[0])}}')
             return '\n'.join(string)
         elif self.expr_type == "list":
-            names = ', '.join([str(ex.name) for ex in self.expr_list])
-            types = str(self.typ)
-            length = max(len(names), len(types))
-            string = f'{names:^{length}}' + '\n'
-            string += '═' * length + '\n'
-            string += f'{types:^{length}}'
+            max_lines = max([len(str(expr).splitlines()) for expr in self.expr_list])
+            tb = PrettyTable()
+            tb.border=False
+            tb.preserve_internal_border = False
+            tb.header = False
+            tb.left_padding_width = 0
+            tb.right_padding_width = 0
+            tb.align = "l"
+            tb_list = []
+            for i, expr in enumerate(self.expr_list):
+                expr_lines = str(expr).splitlines()
+                if i != len(self.expr_list) - 1:
+                    expr_lines[-2] += ' x '
+                expr_lines = ['\n'*(max_lines - len(expr_lines))] + expr_lines
+                expr_lines = '\n'.join(expr_lines)
+                tb_list.append(expr_lines)
+            tb.add_row(tb_list)
+            string = tb.get_string()
+            length = len(string.splitlines()[-1])
+            string += '\n' + '─' * length + '\n'
+            string += f'{str(self.typ):^{length}}'
             return string
         else:
             raise NotImplementedError(self.expr_type)
