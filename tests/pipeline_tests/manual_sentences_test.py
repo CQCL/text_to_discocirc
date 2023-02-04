@@ -50,6 +50,7 @@ sentences = [
     'Alice quickly and hastily eats',
     'The son of a physicist , Mr. Hahn skipped first grade because his reading ability was so far above his classmates .',
     'Alice , Bob and Claire',
+    'Alice likes what she knows'
     'Focus on what company knows best',
 ]
 parser = BobcatParser()
