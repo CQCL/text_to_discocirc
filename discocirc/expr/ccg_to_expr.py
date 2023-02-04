@@ -21,7 +21,7 @@ def ccg_to_expr(ccg_parse):
     # application (top vs bottom of the tree). Incorporate that in the following.
     elif ccg_parse.rule == CCGRule.FORWARD_TYPE_RAISING \
             or ccg_parse.rule == CCGRule.BACKWARD_TYPE_RAISING:
-        x = Expr.literal(f"x__{time.time()}__",
+        x = Expr.literal(f"x__{str(time.time())}__",
                          biclosed_to_closed(ccg_parse.biclosed_type).input)
         result = Expr.lmbda(x, x(children[0]))
     elif ccg_parse.rule == CCGRule.UNARY:
@@ -34,28 +34,28 @@ def ccg_to_expr(ccg_parse):
     elif ccg_parse.rule == CCGRule.BACKWARD_APPLICATION:
         result = children[1](children[0])
     elif ccg_parse.rule == CCGRule.FORWARD_COMPOSITION:
-        x = Expr.literal(f"temp__{time.time()}__", biclosed_to_closed(
+        x = Expr.literal(f"temp_{str(time.time())[-4:]}", biclosed_to_closed(
             ccg_parse.children[1].biclosed_type).input)
         f = children[0]
         g = children[1]
         expr = apply_at_root(f, apply_at_root(g, x))
         result = Expr.lmbda(x, expr)
     elif ccg_parse.rule == CCGRule.FORWARD_CROSSED_COMPOSITION:
-        x = Expr.literal(f"temp__{time.time()}__", biclosed_to_closed(
+        x = Expr.literal(f"temp_{str(time.time())[-4:]}", biclosed_to_closed(
             ccg_parse.children[1].biclosed_type).input)
         f = children[0]
         g = children[1]
         expr = apply_at_root(f, g(x))
         result = Expr.lmbda(x, expr)
     elif ccg_parse.rule == CCGRule.BACKWARD_COMPOSITION:
-        x = Expr.literal(f"temp__{time.time()}__", biclosed_to_closed(
+        x = Expr.literal(f"temp_{str(time.time())[-4:]}", biclosed_to_closed(
             ccg_parse.children[0].biclosed_type).input)
         g = children[0]
         f = children[1]
         expr = f(g(x))
         result = Expr.lmbda(x, expr)
     elif ccg_parse.rule == CCGRule.BACKWARD_CROSSED_COMPOSITION:
-        x = Expr.literal(f"temp__{time.time()}__", biclosed_to_closed(
+        x = Expr.literal(f"temp_{str(time.time())[-4:]}", biclosed_to_closed(
             ccg_parse.children[0].biclosed_type).input)
         g = children[0]
         f = children[1]

@@ -26,7 +26,7 @@ def _lambda_to_diag(expr, context):
     body = expr_to_diag(expr.expr, context)
     context.remove(expr.var)
     if expr.var.expr_type == "list":
-        var_name = str([v.name for v in expr.var.expr_list])
+        var_name = str(list(reversed([str(v).splitlines()[0] for v in expr.var.expr_list])))
     else:
         var_name = expr.var.name
     return Frame(f"λ: {var_name}: {expr.var.typ}",
