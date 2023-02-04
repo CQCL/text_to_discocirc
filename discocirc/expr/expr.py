@@ -17,8 +17,11 @@ class Expr:
             return string
         elif self.expr_type == "lambda":
             var_temp = deepcopy(self.var)
-            var_temp.name = 'λ ' + var_temp.name
-            var = str(var_temp)
+            if hasattr(var_temp, "name"):
+                var_temp.name = 'λ ' + var_temp.name
+                var = str(var_temp)
+            else:
+                var = 'λ ' + str(var_temp)
             expr = str(self.expr)
             typ = str(self.typ)
             var_lines = var.split('\n')
@@ -59,7 +62,8 @@ class Expr:
                 expr_lines = str(expr).splitlines()
                 if i != len(self.expr_list) - 1:
                     expr_lines[-2] += ' x '
-                expr_lines = ['\n'*(max_lines - len(expr_lines))] + expr_lines
+                if max_lines - len(expr_lines) > 0:
+                    expr_lines = ['\n'*(max_lines - len(expr_lines))] + expr_lines
                 expr_lines = '\n'.join(expr_lines)
                 tb_list.append(expr_lines)
             tb.add_row(tb_list)
@@ -119,6 +123,7 @@ class Expr:
         lambda_expr = Expr()
         lambda_expr.expr_type = "lambda"
         lambda_expr.var = var
+        #TODO: rename .expr to something else. possible option: "body"
         lambda_expr.expr = expr
         lambda_expr.typ = var.typ >> expr.typ
         return lambda_expr
@@ -131,6 +136,7 @@ class Expr:
         app_expr = Expr()
         app_expr.expr_type = "application"
         app_expr.typ = expr.typ.output
+        #TODO: rename .expr to .fun or .func
         app_expr.expr = expr
         app_expr.arg = arg
         return app_expr
@@ -209,8 +215,8 @@ class Expr:
                 num_inputs = i
                 break
         if num_inputs == 0:
-            raise TypeError(f"Type of {arg} is not compatible "
-                            + f"with the input type of {expr}")
+            raise TypeError(f"Type of:\n{arg}\n is not compatible "
+                            + f"with the input type of:\n{expr}")
         expr.typ = expr.typ.input[-i:] >> \
                    (expr.typ.input[:-num_inputs] >> expr.typ.output)
         return Expr.apply(expr, arg, context)
