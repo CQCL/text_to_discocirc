@@ -191,10 +191,10 @@ class Expr:
             raise TypeError(f'Unknown type {expr.expr_type} of expression')
 
     @staticmethod
-    def apply(expr, arg, context=None):
+    def apply(expr, arg, context=None, reduce=True):
         if expr.typ.input != arg.typ:
             return Expr.partial_apply(expr, arg, context)
-        if expr.expr_type == "lambda":
+        if expr.expr_type == "lambda" and reduce:
             if context == None:
                 context = {}
             if expr.var.expr_type == "list":
@@ -208,7 +208,7 @@ class Expr:
             return new_expr
         
     @staticmethod
-    def partial_apply(expr, arg, context=None):
+    def partial_apply(expr, arg, context=None, reduce=True):
         num_inputs = 0
         for i in range(len(expr.typ.input) + 1):
             if expr.typ.input[-i:] == arg.typ:
@@ -219,5 +219,5 @@ class Expr:
                             + f"with the input type of:\n{expr}")
         expr.typ = expr.typ.input[-i:] >> \
                    (expr.typ.input[:-num_inputs] >> expr.typ.output)
-        return Expr.apply(expr, arg, context)
+        return Expr.apply(expr, arg, context, reduce=True)
 

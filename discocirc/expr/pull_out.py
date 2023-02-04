@@ -19,10 +19,11 @@ def if_application_pull_out(expr):
             and not isinstance(expr.arg.arg.typ, Func)
 
 def if_lambda_pull_out(expr):
-    return expr.arg.expr_type == 'lambda' and \
-           is_higher_order(expr.expr.typ) and \
-           expr.expr.typ.input.input == expr.arg.var.typ and \
-           expr.expr.typ.output.input == expr.arg.var.typ
+    return expr.expr_type == 'application' \
+            and expr.arg.expr_type == 'lambda' \
+            and is_higher_order(expr.expr.typ) \
+            and expr.arg.expr.expr_type == 'application' \
+            and not isinstance(expr.arg.expr.arg.typ, Func)
 
 def b_combinator(expr):
     f = expr.expr
@@ -45,12 +46,13 @@ def pull_out_application(expr):
 def pull_out(expr):
     if expr.expr_type == 'application':
         if if_lambda_pull_out(expr):
-            expr2 = deepcopy(expr.expr)
-            # TODO: Check if the types need to be changed using change_expr_type
-            expr2.typ.input = expr2.typ.input.output
-            expr2.typ.output = expr2.typ.output.output
-            expr2 = pull_out(expr2(expr.arg.expr))
-            return Expr.lmbda(expr.arg.var, expr2)
+            f = expr.expr
+            g = expr.arg
+            arg_to_pull = g.expr.arg
+            inv_beta_g = Expr.apply(Expr.lmbda(arg_to_pull, g), arg_to_pull, reduce=False)
+            expr = f(inv_beta_g)
+            expr = pull_out(b_combinator(expr))
+            return expr
         else:
             expr = pull_out_application(expr)
             for n in range(1, count_applications(expr.arg)): # we can only apply C combinator if we have at least two applications
