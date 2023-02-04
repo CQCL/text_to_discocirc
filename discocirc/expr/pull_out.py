@@ -18,13 +18,6 @@ def if_application_pull_out(expr):
             and is_higher_order(expr.expr.typ)\
             and not isinstance(expr.arg.arg.typ, Func)
 
-def if_lambda_pull_out(expr):
-    return expr.expr_type == 'application' \
-            and expr.arg.expr_type == 'lambda' \
-            and is_higher_order(expr.expr.typ) \
-            and expr.arg.expr.expr_type == 'application' \
-            and not isinstance(expr.arg.expr.arg.typ, Func)
-
 def b_combinator(expr):
     f = expr.expr
     g = expr.arg.expr
@@ -38,20 +31,39 @@ def b_combinator(expr):
 def pull_out_application(expr):
     f = pull_out(expr.expr)
     g = pull_out(expr.arg)
-    expr = f(g)
+    expr = Expr.apply(f, g, reduce=False)
     if if_application_pull_out(expr):
         expr = pull_out(b_combinator(expr))
     return expr
 
 def pull_out(expr):
     if expr.expr_type == 'application':
-        if if_lambda_pull_out(expr):
+        if expr.arg.expr_type == 'lambda' \
+            and is_higher_order(expr.expr.typ):
+            original_expr = deepcopy(expr)
             f = expr.expr
             g = expr.arg
-            arg_to_pull = g.expr.arg
-            inv_beta_g = Expr.apply(Expr.lmbda(arg_to_pull, g), arg_to_pull, reduce=False)
-            expr = f(inv_beta_g)
-            expr = pull_out(b_combinator(expr))
+            variables = []
+            while g.expr_type == 'lambda':
+                variables.append(g.var)
+                g = g.expr
+            g = pull_out(g)
+            args_to_pull = []
+            for n in range(count_applications(g)): # we can only apply C combinator if we have at least two applications
+                nth_arg = n_fold_c_combinator(g, n).arg
+                if nth_arg in variables or isinstance(nth_arg.typ, Func):
+                    continue
+                args_to_pull.append(nth_arg)
+            for variable in reversed(variables):
+                g = Expr.lmbda(variable, g)
+            # the following two loops perform inverse beta reduction to take the args_to_pull outside the lambda
+            for arg in args_to_pull:
+                g = Expr.lmbda(arg, g)
+            for arg in reversed(args_to_pull):
+                g = Expr.apply(g, arg, reduce=False)
+            expr = f(g)
+            if expr != original_expr:
+                expr = pull_out(expr)
             return expr
         else:
             expr = pull_out_application(expr)

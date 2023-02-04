@@ -53,6 +53,8 @@ def c_combinator(expr):
     return (f(x))(y)
 
 def n_fold_c_combinator(expression, n):
+    if n == 0:
+        return expression
     expr = deepcopy(expression)
     if expr.expr_type != "application" or expr.expr.expr_type != "application":
         raise ValueError(f'cannot apply C combinator {n} > {0} times to:\n{expression}')
