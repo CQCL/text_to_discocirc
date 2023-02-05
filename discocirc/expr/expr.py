@@ -92,7 +92,7 @@ class Expr:
             return (self.expr_type,
                     self.typ,
                     self.arg,
-                    self.expr)
+                    self.fun)
         elif self.expr_type == "list":
             return (self.expr_type,
                     self.typ,
@@ -129,15 +129,15 @@ class Expr:
         return lambda_expr
     
     @staticmethod
-    def application(expr, arg):
-        if expr.typ.input != arg.typ:
+    def application(fun, arg):
+        if fun.typ.input != arg.typ:
             raise TypeError(f"Type of {arg} does not"
-                            + f"match the input type of {expr}")
+                            + f"match the input type of {fun}")
         app_expr = Expr()
         app_expr.expr_type = "application"
-        app_expr.typ = expr.typ.output
+        app_expr.typ = fun.typ.output
         #TODO: rename .expr to .fun or .func
-        app_expr.expr = expr
+        app_expr.fun = fun
         app_expr.arg = arg
         return app_expr
     
@@ -184,7 +184,7 @@ class Expr:
         elif expr.expr_type == "lambda":
             return Expr.lmbda(expr.var, Expr.evl(context, expr.expr))
         elif expr.expr_type == "application":
-            return Expr.apply(Expr.evl(context, expr.expr), Expr.evl(context, expr.arg), context)
+            return Expr.apply(Expr.evl(context, expr.fun), Expr.evl(context, expr.arg), context)
         elif expr.expr_type == "list":
             return Expr.lst([Expr.evl(context, e) for e in expr.expr_list])
         else:
@@ -208,7 +208,7 @@ class Expr:
             return new_expr
         
     @staticmethod
-    def partial_apply(expr, arg, context=None, reduce=True):
+    def partial_apply(expr, arg, context=None):
         num_inputs = 0
         for i in range(len(expr.typ.input) + 1):
             if expr.typ.input[-i:] == arg.typ:

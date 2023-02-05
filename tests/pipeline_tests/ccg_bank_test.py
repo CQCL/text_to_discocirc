@@ -13,7 +13,7 @@ config = {
 }
 
 ccgbankparser = CCGBankParser("../ccgbank")
-trees = ccgbankparser.section2trees(1)
+trees = ccgbankparser.section2trees(0) # there is a total of 25 sections
 
 
 class CCGToDiagTests(UnitTestBaseClass):

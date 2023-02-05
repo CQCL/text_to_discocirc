@@ -34,12 +34,12 @@ def n_expand(expr):
         expr_copy = deepcopy(expr)
         return change_expr_typ(expr_copy, new_type)
     elif expr.expr_type == "application":
-        if expr.expr.typ.input == Ty('n'):
+        if expr.fun.typ.input == Ty('n'):
             arg = n_expand(expr.arg)
-            fun = deepcopy(expr.expr)
+            fun = deepcopy(expr.fun)
             if hasattr(arg, 'head'):
                 new_fun_type = Ty().tensor(*([Ty('n')] * len(arg.head))) \
-                    >> expr.expr.typ.output
+                    >> expr.fun.typ.output
                 fun = change_expr_typ(fun, new_fun_type)
             fun = n_expand(fun)
             uncurried_arg = expr_uncurry(arg)
@@ -56,7 +56,7 @@ def n_expand(expr):
             new_expr = fun(arg) # this won't work
         else:
             arg = n_expand(expr.arg)
-            fun = n_expand(expr.expr)
+            fun = n_expand(expr.fun)
             fun = deepcopy(fun)
             new_fun_type = arg.typ >> fun.typ.output
             fun = change_expr_typ(fun, new_fun_type)
