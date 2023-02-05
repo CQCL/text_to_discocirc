@@ -52,6 +52,7 @@ sentences = [
     'Alice , Bob and Claire',
     'Alice likes what she knows'
     'Focus on what company knows best',
+    "We did n't have much of a choice , Cray Computer 's chief financial officer , Gregory Barnum , said in an interview .",
 ]
 parser = BobcatParser()
 config = {

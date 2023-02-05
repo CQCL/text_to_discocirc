@@ -34,9 +34,15 @@ def change_expr_typ(expr, new_type):
         fun = change_expr_typ(expr.fun, fun_new_type)
         new_expr = fun(expr.arg)
         return new_expr
+    elif expr.expr_type == 'lambda':
+        new_var = change_expr_typ(expr.var, new_type.input)
+        new_expr = change_expr_typ(expr.expr, new_type.output)
+        return Expr.lmbda(new_var, new_expr)
+    elif expr.expr_type == 'list':
+        raise NotImplementedError("List type changing")
+    #TODO: implement list case - a little bit more difficult as it is not clear,
+    # which list element should be updated how
 
-    raise NotImplementedError
-    #TODO: implement lambda case
 
 def count_applications(expr):
     count = 0

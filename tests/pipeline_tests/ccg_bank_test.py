@@ -9,7 +9,7 @@ config = {
     "draw_result": False,
     "draw_steps": False,
     "type_check_ccg": True,
-    "compare_type_expansions": False,
+    "compare_type_expansions": True,
 }
 
 ccgbankparser = CCGBankParser("../ccgbank")

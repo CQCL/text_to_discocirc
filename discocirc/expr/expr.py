@@ -35,7 +35,7 @@ class Expr:
             string.append(f'{typ:^{len(string[0])}}')
             return '\n'.join(string)
         elif self.expr_type == "application":
-            expr = str(self.expr)
+            expr = str(self.fun)
             arg = str(self.arg)
             typ = str(self.typ)
             expr_lines = expr.split('\n')
@@ -126,6 +126,7 @@ class Expr:
         #TODO: rename .expr to something else. possible option: "body"
         lambda_expr.expr = expr
         lambda_expr.typ = var.typ >> expr.typ
+        lambda_expr.name = expr.name
         return lambda_expr
     
     @staticmethod
@@ -136,9 +137,9 @@ class Expr:
         app_expr = Expr()
         app_expr.expr_type = "application"
         app_expr.typ = fun.typ.output
-        #TODO: rename .expr to .fun or .func
         app_expr.fun = fun
         app_expr.arg = arg
+        app_expr.name = f"{fun.name}({arg.name})"
         return app_expr
     
     @staticmethod
@@ -146,11 +147,14 @@ class Expr:
         expr = Expr()
         expr.expr_type = "list"
         new_expr_list = []
+        name = ""
         for e in expr_list:
             if e.expr_type == "list":
                 new_expr_list.extend(e.expr_list)
             else:
                 new_expr_list.append(e)
+            name += e.name + ", "
+        expr.name = name
         expr.expr_list = tuple(new_expr_list)
         expr.typ = Expr.infer_list_type(expr_list, interchange)
         return expr
@@ -206,7 +210,8 @@ class Expr:
         else:
             new_expr = Expr.application(expr, arg)
             return new_expr
-        
+
+
     @staticmethod
     def partial_apply(expr, arg, context=None):
         num_inputs = 0
