@@ -2,7 +2,7 @@ from copy import deepcopy
 
 from discocirc.expr.expr import Expr
 from discocirc.helpers.closed import Func, Ty
-from discocirc.helpers.discocirc_utils import change_expr_typ, count_applications, n_fold_c_combinator
+from discocirc.helpers.discocirc_utils import change_expr_typ, count_applications, expr_type_recursion, n_fold_c_combinator
 
 
 def is_higher_order(typ):
@@ -57,50 +57,52 @@ def pull_out_application(expr):
         expr = pull_out(b_combinator(expr))
     return expr
 
+def pull_out_lambda(expr):
+    original_expr = deepcopy(expr)
+    lambda_expr = expr.arg
+    variables = []
+    while lambda_expr.expr_type == 'lambda':
+        variables.append(lambda_expr.var)
+        lambda_expr = lambda_expr.expr
+    lambda_expr = pull_out(lambda_expr)
+    args_to_pull = []
+    for n in range(count_applications(lambda_expr)):
+        nth_arg = n_fold_c_combinator(lambda_expr, n).arg
+        if expr_has_variables(nth_arg, variables) or isinstance(nth_arg.typ, Func):
+            continue
+        args_to_pull.append(nth_arg)
+    # we add args_to_pull to the list of lambda variables as
+    # we are pulling out those args outside the lambda by
+    # performing an inverse beta reduction.
+    for variable in reversed(variables) + args_to_pull:
+        lambda_expr = Expr.lmbda(variable, lambda_expr)
+    for arg in reversed(args_to_pull):
+        lambda_expr = Expr.apply(lambda_expr, arg, reduce=False)
+    expr = original_expr.fun(lambda_expr)
+    if expr != original_expr:
+        expr = pull_out(expr)
+    return expr
+
 def pull_out(expr):
-    if expr.expr_type == 'application':
+    head = expr.head if hasattr(expr, 'head') else None
+    if expr.expr_type == 'literal':
+        return expr
+    elif expr.expr_type == 'application':
         if expr.arg.expr_type == 'lambda' \
             and is_higher_order(expr.fun.typ):
-            original_expr = deepcopy(expr)
-            f = expr.fun
-            g = expr.arg
-            # save the current variables of the expression in a list
-            variables = []
-            while g.expr_type == 'lambda':
-                variables.append(g.var)
-                g = g.expr
-            g = pull_out(g)
-            args_to_pull = []
-            for n in range(count_applications(g)): # we can only apply C combinator if we have at least two applications
-                nth_arg = n_fold_c_combinator(g, n).arg
-                if expr_has_variables(nth_arg, variables) or isinstance(nth_arg.typ, Func):
-                    continue
-                args_to_pull.append(nth_arg)
-            # reapply the variables of the original expression
-            for variable in reversed(variables):
-                g = Expr.lmbda(variable, g)
-            # the following two loops perform inverse beta reduction to take the args_to_pull outside the lambda
-            for arg in args_to_pull:
-                g = Expr.lmbda(arg, g)
-            for arg in reversed(args_to_pull):
-                g = Expr.apply(g, arg, reduce=False)
-            expr = f(g)
-            if expr != original_expr:
-                expr = pull_out(expr)
-            return expr
+            expr = pull_out_lambda(expr)
+            new_expr = expr
         else:
             expr = pull_out_application(expr)
             for n in range(1, count_applications(expr.arg)): # we can only apply C combinator if we have at least two applications
                 n_c_combi_expr = expr.fun(n_fold_c_combinator(expr.arg, n))
                 n_c_combi_expr_pulled = pull_out_application(n_c_combi_expr)
                 if n_c_combi_expr_pulled != n_c_combi_expr: # check if something was pulled out
-                    return pull_out(n_c_combi_expr_pulled)
-            return expr
-    elif expr.expr_type == 'lambda':
-        return Expr.lmbda(expr.var, pull_out(expr.expr))
-    elif expr.expr_type == 'list':
-        pulled_out_list = [pull_out(e) for e in expr.expr_list]
-        return Expr.lst(pulled_out_list)
-    elif expr.expr_type == 'literal':
-        return expr
-    return expr
+                    expr = pull_out(n_c_combi_expr_pulled)
+                    break
+            new_expr = expr
+        if head:
+            new_expr.head = head
+        return new_expr        
+    return expr_type_recursion(expr, pull_out)
+
