@@ -43,6 +43,7 @@ def pull_out(expr):
             original_expr = deepcopy(expr)
             f = expr.expr
             g = expr.arg
+            # save the current variables of the expression in a list
             variables = []
             while g.expr_type == 'lambda':
                 variables.append(g.var)
@@ -54,6 +55,7 @@ def pull_out(expr):
                 if nth_arg in variables or isinstance(nth_arg.typ, Func):
                     continue
                 args_to_pull.append(nth_arg)
+            # reapply the variables of the original expression
             for variable in reversed(variables):
                 g = Expr.lmbda(variable, g)
             # the following two loops perform inverse beta reduction to take the args_to_pull outside the lambda
