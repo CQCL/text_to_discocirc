@@ -18,6 +18,27 @@ def if_application_pull_out(expr):
             and is_higher_order(expr.fun.typ)\
             and not isinstance(expr.arg.arg.typ, Func)
 
+def expr_has_variable(expr, variable):
+    if expr == variable:
+        return True
+    if expr.expr_type == "literal":
+        return False
+    elif expr.expr_type == "list":
+        return any([expr_has_variable(e, variable) for e in expr.expr_list])
+    elif expr.expr_type == "lambda":
+        return any([expr_has_variable(expr.expr, variable),
+                    expr_has_variable(expr.var, variable)])
+    elif expr.expr_type == "application":
+        return any([expr_has_variable(expr.arg, variable),
+                    expr_has_variable(expr.fun, variable)])
+    return False
+
+def expr_has_variables(expr, variables):
+    for variable in variables:
+        if expr_has_variable(expr, variable):
+            return True
+    return False
+
 def b_combinator(expr):
     f = expr.fun
     g = expr.arg.fun
@@ -52,7 +73,7 @@ def pull_out(expr):
             args_to_pull = []
             for n in range(count_applications(g)): # we can only apply C combinator if we have at least two applications
                 nth_arg = n_fold_c_combinator(g, n).arg
-                if nth_arg in variables or isinstance(nth_arg.typ, Func):
+                if expr_has_variables(nth_arg, variables) or isinstance(nth_arg.typ, Func):
                     continue
                 args_to_pull.append(nth_arg)
             # reapply the variables of the original expression
