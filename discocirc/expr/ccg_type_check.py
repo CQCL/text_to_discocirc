@@ -20,7 +20,7 @@ def expr_type_check(expr):
 
     elif expr.expr_type == "application":
         type_arg = expr_type_check(expr.arg)
-        type_expr = expr_type_check(expr.expr)
+        type_expr = expr_type_check(expr.fun)
 
         if type_arg is None or type_expr is None:
             return None

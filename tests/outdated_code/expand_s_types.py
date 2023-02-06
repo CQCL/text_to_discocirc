@@ -1,19 +1,20 @@
-from discopy import rigid, Ob
+from discopy import rigid
 
 from discocirc.diag.frame import Frame
+from discocirc.helpers.closed import Ty
 
 
 def expand_wires(wires, last_n_n):
     new_n_n = []
-    new_wires = rigid.Ty()
+    new_wires = Ty()
 
     for wire in wires:
-        if wire == Ob('s'):
+        if wire == Ty('s'):
             new_wires = new_wires @ last_n_n[0]
             new_n_n.append(last_n_n[0])
             last_n_n = last_n_n[1:]
         else:
-            new_wires = new_wires @ rigid.Ty(wire)
+            new_wires = new_wires @ Ty(wire)
 
     return new_wires, last_n_n, new_n_n
 
@@ -24,16 +25,16 @@ def expand_box(box, last_n_n):
         for inside in box.insides:
             new_insides.append(expand_s_types(inside))
 
-    n, s = map(rigid.Ty, 'ns')
+    n, s = map(Ty, 'ns')
 
     # Expand dom
-    new_dom = rigid.Ty()
+    new_dom = Ty()
     for wire in box.dom:
-        if wire == Ob('s'):
+        if wire == Ty('s'):
             new_dom = new_dom @ last_n_n[0]
             last_n_n = last_n_n[1:]
         else:
-            new_dom = new_dom @ rigid.Ty(wire)
+            new_dom = new_dom @ Ty(wire)
 
     # Expand cod
     new_cod = box.cod
@@ -78,6 +79,6 @@ def expand_s_types(diagram):
         left, box, right, last_n_n = expand_layer(layer, last_n_n)
 
         left, right = map(rigid.Id, (left, right))
-        new_diag = new_diag >> left @ box @ right
+        new_diag = new_diag >> (left @ box @ right)
 
     return new_diag

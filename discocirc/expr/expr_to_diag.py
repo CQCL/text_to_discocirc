@@ -38,14 +38,14 @@ def _lambda_to_diag(expr, context):
 
 def _application_to_diag(expr, context):
     if expr.arg.expr_type == "list":
-        body = expr_to_diag(expr.expr, context)
+        body = expr_to_diag(expr.fun, context)
         for arg_expr in reversed(expr.arg.expr_list):
             arg = expr_to_diag(arg_expr, context)
             body = _compose(arg, body)
         return body
 
     arg = expr_to_diag(expr.arg, context)
-    body = expr_to_diag(expr.expr, context)
+    body = expr_to_diag(expr.fun, context)
     return _compose(arg, body)
 
 

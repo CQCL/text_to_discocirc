@@ -9,11 +9,11 @@ config = {
     "draw_result": False,
     "draw_steps": False,
     "type_check_ccg": True,
-    "compare_type_expansions": False,
+    "compare_type_expansions": True,
 }
 
 ccgbankparser = CCGBankParser("../ccgbank")
-trees = ccgbankparser.section2trees(1)
+trees = ccgbankparser.section2trees(0) # there is a total of 25 sections
 
 
 class CCGToDiagTests(UnitTestBaseClass):

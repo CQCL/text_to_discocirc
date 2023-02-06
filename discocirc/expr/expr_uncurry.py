@@ -1,7 +1,7 @@
 from discocirc.expr import Expr
 from discocirc.helpers.closed import uncurry_types
 
-
+# TODO: change to use deep copy
 def expr_uncurry(expr):
     if expr.expr_type == "literal":
         return Expr.literal(expr.name,
@@ -17,15 +17,15 @@ def expr_uncurry(expr):
             return Expr.lmbda(expr_uncurry(expr.var),
                               expr_uncurry(expr.expr))
     elif expr.expr_type == "application":
-        if expr.expr.expr_type == "application":
+        if expr.fun.expr_type == "application":
             a = expr_uncurry(expr.arg)
-            b = expr_uncurry(expr.expr.arg)
-            c = expr_uncurry(expr.expr.expr)
+            b = expr_uncurry(expr.fun.arg)
+            c = expr_uncurry(expr.fun.fun)
             return expr_uncurry(c(Expr.lst([a, b], interchange=False)))
         else:
             arg = expr_uncurry(expr.arg)
-            expr = expr_uncurry(expr.expr)
-            return expr(arg)
+            fun = expr_uncurry(expr.fun)
+            return fun(arg)
     elif expr.expr_type == "list":
         return Expr.lst([expr_uncurry(e) for e in expr.expr_list],
                         interchange=False)

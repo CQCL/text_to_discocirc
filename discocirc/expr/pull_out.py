@@ -15,12 +15,12 @@ def is_higher_order(typ):
 def if_application_pull_out(expr):
     return expr.expr_type == 'application'\
             and expr.arg.expr_type == 'application'\
-            and is_higher_order(expr.expr.typ)\
+            and is_higher_order(expr.fun.typ)\
             and not isinstance(expr.arg.arg.typ, Func)
 
 def b_combinator(expr):
-    f = expr.expr
-    g = expr.arg.expr
+    f = expr.fun
+    g = expr.arg.fun
     h = expr.arg.arg
     new_type = (h.typ >> f.typ.input) >> \
                  (h.typ >> f.typ.output)
@@ -29,7 +29,7 @@ def b_combinator(expr):
     return (bf(g))(h)
 
 def pull_out_application(expr):
-    f = pull_out(expr.expr)
+    f = pull_out(expr.fun)
     g = pull_out(expr.arg)
     expr = Expr.apply(f, g, reduce=False)
     if if_application_pull_out(expr):
@@ -39,9 +39,9 @@ def pull_out_application(expr):
 def pull_out(expr):
     if expr.expr_type == 'application':
         if expr.arg.expr_type == 'lambda' \
-            and is_higher_order(expr.expr.typ):
+            and is_higher_order(expr.fun.typ):
             original_expr = deepcopy(expr)
-            f = expr.expr
+            f = expr.fun
             g = expr.arg
             # save the current variables of the expression in a list
             variables = []
@@ -70,7 +70,7 @@ def pull_out(expr):
         else:
             expr = pull_out_application(expr)
             for n in range(1, count_applications(expr.arg)): # we can only apply C combinator if we have at least two applications
-                n_c_combi_expr = expr.expr(n_fold_c_combinator(expr.arg, n))
+                n_c_combi_expr = expr.fun(n_fold_c_combinator(expr.arg, n))
                 n_c_combi_expr_pulled = pull_out_application(n_c_combi_expr)
                 if n_c_combi_expr_pulled != n_c_combi_expr: # check if something was pulled out
                     return pull_out(n_c_combi_expr_pulled)
