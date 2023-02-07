@@ -36,24 +36,28 @@ def n_expand(expr):
     elif expr.expr_type == "application":
         if expr.fun.typ.input == Ty('n'):
             arg = n_expand(expr.arg)
-            fun = deepcopy(expr.fun)
             if hasattr(arg, 'head'):
-                new_fun_type = Ty().tensor(*([Ty('n')] * len(arg.head))) \
-                    >> expr.fun.typ.output
-                fun = change_expr_typ(fun, new_fun_type)
-            fun = n_expand(fun)
+                if len(arg.head) > 1:
+                    raise NotImplementedError
+            fun = n_expand(expr.fun)
             uncurried_arg = expr_uncurry(arg)
             if isinstance(uncurried_arg.typ, Func):
                 arg_output_wires = len(uncurried_arg.typ.output)
             else:
                 arg_output_wires = len(uncurried_arg.typ)
             if hasattr(arg, 'head') and len(arg.head) < arg_output_wires:
-                id_exprs = []
-                for _ in range(arg_output_wires - len(arg.head)):
-                    x = Expr.literal(f"temp__{time.time()}__", typ=Ty('n'))
-                    id_exprs.append(Expr.lmbda(x, x))
-                fun = Expr.lst([fun] + id_exprs)
-            new_expr = fun(arg) # this won't work
+                wire_index = 0
+                for e in expr_uncurry(arg).arg.expr_list:
+                    if e.typ == Ty('n'):
+                        if e.head == arg.head:
+                            break
+                        wire_index = wire_index + 1
+                x = Expr.literal(f"temp_{str(time.time())[-4:]}", typ=Ty('n'))
+                id_expr = Expr.lmbda(x, x)
+                left_ids = [id_expr] * wire_index
+                right_ids = [id_expr] * (arg_output_wires - wire_index - 1)
+                fun = Expr.lst(left_ids + [fun] + right_ids)
+            new_expr = fun(arg)
         else:
             arg = n_expand(expr.arg)
             fun = n_expand(expr.fun)
