@@ -108,7 +108,6 @@ def expr_type_recursion(expr, function):
     elif expr.expr_type == "application":
         arg = function(expr.arg)
         fun = function(expr.fun)
-        assert(arg.typ == fun.typ.input)
         new_expr = fun(arg)
     else:
         raise TypeError(f'Unknown type {expr.expr_type} of expression')
