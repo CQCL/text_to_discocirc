@@ -1,5 +1,5 @@
 from discocirc.expr import Expr
-from discocirc.helpers.closed import uncurry_types
+from discocirc.helpers.closed import Func, uncurry_types
 
 def expr_uncurry(expr):
     head = expr.head
@@ -21,14 +21,17 @@ def expr_uncurry(expr):
             a = expr_uncurry(expr.arg)
             b = expr_uncurry(expr.fun.arg)
             c = expr_uncurry(expr.fun.fun)
-            new_expr = expr_uncurry(c(Expr.lst([a, b], interchange=False)))
+            interchange = all([isinstance(e.typ, Func) for e in [a, b]])
+            a_b = Expr.lst([a, b], interchange=interchange)
+            new_expr = expr_uncurry(c(a_b))
         else:
             arg = expr_uncurry(expr.arg)
             fun = expr_uncurry(expr.fun)
             new_expr = fun(arg)
     elif expr.expr_type == "list":
-        new_expr =  Expr.lst([expr_uncurry(e) for e in expr.expr_list],
-                              interchange=False)
+        expr_list = [expr_uncurry(e) for e in expr.expr_list]
+        interchange = all([isinstance(e.typ, Func) for e in expr_list])
+        new_expr = Expr.lst(expr_list, interchange=interchange)
     else:
         raise TypeError(f'Unknown type {expr.expr_type} of expression')
     new_expr.head = head
