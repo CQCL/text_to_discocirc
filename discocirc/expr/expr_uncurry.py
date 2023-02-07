@@ -1,10 +1,10 @@
 from discocirc.expr import Expr
 from discocirc.helpers.closed import uncurry_types
 
-# TODO: change to use deep copy
 def expr_uncurry(expr):
+    head = expr.head
     if expr.expr_type == "literal":
-        return Expr.literal(expr.name,
+        new_expr = Expr.literal(expr.name,
                             uncurry_types(expr.typ, uncurry_everything=True))
     elif expr.expr_type == "lambda":
         if expr.expr.expr_type == "lambda":
@@ -12,22 +12,24 @@ def expr_uncurry(expr):
             a_b = Expr.lst([expr_uncurry(expr.var),
                             expr_uncurry(expr.expr.var)])
             c = expr_uncurry(expr.expr.expr)
-            return expr_uncurry(Expr.lmbda(a_b, c))
+            new_expr = expr_uncurry(Expr.lmbda(a_b, c))
         else:
-            return Expr.lmbda(expr_uncurry(expr.var),
+            new_expr = Expr.lmbda(expr_uncurry(expr.var),
                               expr_uncurry(expr.expr))
     elif expr.expr_type == "application":
         if expr.fun.expr_type == "application":
             a = expr_uncurry(expr.arg)
             b = expr_uncurry(expr.fun.arg)
             c = expr_uncurry(expr.fun.fun)
-            return expr_uncurry(c(Expr.lst([a, b], interchange=False)))
+            new_expr = expr_uncurry(c(Expr.lst([a, b], interchange=False)))
         else:
             arg = expr_uncurry(expr.arg)
             fun = expr_uncurry(expr.fun)
-            return fun(arg)
+            new_expr = fun(arg)
     elif expr.expr_type == "list":
-        return Expr.lst([expr_uncurry(e) for e in expr.expr_list],
-                        interchange=False)
+        new_expr =  Expr.lst([expr_uncurry(e) for e in expr.expr_list],
+                              interchange=False)
     else:
         raise TypeError(f'Unknown type {expr.expr_type} of expression')
+    new_expr.head = head
+    return new_expr
