@@ -111,15 +111,16 @@ class Expr:
         return hash(self.__members())
 
     @staticmethod
-    def literal(name, typ):
+    def literal(name, typ, head=None):
         expr = Expr()
         expr.expr_type = "literal"
         expr.typ = typ
         expr.name = name
+        expr.head = head
         return expr
 
     @staticmethod
-    def lmbda(var, expr):
+    def lmbda(var, expr, head=None):
         lambda_expr = Expr()
         lambda_expr.expr_type = "lambda"
         lambda_expr.var = var
@@ -127,10 +128,11 @@ class Expr:
         lambda_expr.expr = expr
         lambda_expr.typ = var.typ >> expr.typ
         lambda_expr.name = expr.name
+        lambda_expr.head = head
         return lambda_expr
     
     @staticmethod
-    def application(fun, arg):
+    def application(fun, arg, head=None):
         if fun.typ.input != arg.typ:
             raise TypeError(f"Type of {arg} does not"
                             + f"match the input type of {fun}")
@@ -140,10 +142,11 @@ class Expr:
         app_expr.fun = fun
         app_expr.arg = arg
         app_expr.name = f"{fun.name}({arg.name})"
+        app_expr.head = head
         return app_expr
     
     @staticmethod
-    def lst(expr_list, interchange=True):
+    def lst(expr_list, interchange=True, head = None):
         expr = Expr()
         expr.expr_type = "list"
         new_expr_list = []
@@ -157,15 +160,16 @@ class Expr:
         expr.name = name
         expr.expr_list = tuple(new_expr_list)
         expr.typ = Expr.infer_list_type(expr_list, interchange)
+        expr.head = head
         return expr
-    
+
     @staticmethod
     def infer_list_type(expr_list, interchange):
         if interchange:
             final_input = Ty()
             final_output = Ty()
             for e in expr_list:
-                f = uncurry_types(e.typ)
+                f = uncurry_types(e.typ, uncurry_everything=True)
                 if isinstance(e.typ, Func):
                     final_input = final_input @ f.input
                     final_output = final_output @ f.output

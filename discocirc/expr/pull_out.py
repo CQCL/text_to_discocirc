@@ -74,7 +74,7 @@ def pull_out_lambda(expr):
     # we add args_to_pull to the list of lambda variables as
     # we are pulling out those args outside the lambda by
     # performing an inverse beta reduction.
-    for variable in reversed(variables) + args_to_pull:
+    for variable in list(reversed(variables)) + args_to_pull:
         lambda_expr = Expr.lmbda(variable, lambda_expr)
     for arg in reversed(args_to_pull):
         lambda_expr = Expr.apply(lambda_expr, arg, reduce=False)
