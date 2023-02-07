@@ -53,6 +53,12 @@ sentences = [
     'Alice likes what she knows'
     'Focus on what company knows best',
     "We did n't have much of a choice , Cray Computer 's chief financial officer , Gregory Barnum , said in an interview .",
+    'Alice who Bob gives flowers to , walks',
+    'Alice who Bob gives flowers to in bedroom , walks',
+    'Alice likes what Bob knows',
+    'Alice likes what is known to Bob',
+    'Before looking around , he noticed a letter',
+    'He noticed a letter before looking around',
 ]
 parser = BobcatParser()
 config = {
