@@ -26,6 +26,7 @@ def get_star_removal_functor():
     return f
 
 def change_expr_typ(expr, new_type):
+    expr = deepcopy(expr)
     if expr.expr_type == 'literal':
         expr.typ = new_type
         return expr
@@ -55,7 +56,6 @@ def c_combinator(expr):
     f = expr.fun.fun
     y = expr.fun.arg
     x = expr.arg
-    f = deepcopy(f)
     new_type = x.typ >> (y.typ >> f.typ.output.output)
     f = change_expr_typ(f, new_type)
     return (f(x))(y)

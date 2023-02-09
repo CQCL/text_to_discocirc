@@ -45,8 +45,7 @@ def b_combinator(expr):
     h = expr.arg.arg
     new_type = (h.typ >> f.typ.input) >> \
                  (h.typ >> f.typ.output)
-    bf = deepcopy(f)
-    bf = change_expr_typ(bf, new_type)
+    bf = change_expr_typ(f, new_type)
     return (bf(g))(h)
 
 def pull_out_application(expr):
