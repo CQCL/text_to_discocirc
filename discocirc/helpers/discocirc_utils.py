@@ -1,3 +1,4 @@
+from argparse import ArgumentError
 from copy import deepcopy
 from discopy.rigid import Ty, Box
 from discopy.monoidal import Functor
@@ -45,11 +46,16 @@ def change_expr_typ(expr, new_type):
     # which list element should be updated how
 
 
-def count_applications(expr):
+def count_applications(expr, branch='fun'):
     count = 0
     while expr.expr_type == "application":
         count += 1
-        expr = expr.fun
+        if branch == 'fun':
+            expr = expr.fun
+        elif branch == 'arg':
+            expr = expr.arg
+        else:
+            raise ArgumentError(f'Invalid branch {branch}')
     return count
 
 def c_combinator(expr):
