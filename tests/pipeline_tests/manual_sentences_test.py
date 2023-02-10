@@ -50,7 +50,7 @@ sentences = [
     'Alice quickly and hastily eats',
     'The son of a physicist , Mr. Hahn skipped first grade because his reading ability was so far above his classmates .',
     'Alice , Bob and Claire',
-    'Alice likes what she knows'
+    'Alice likes what she knows',
     'Focus on what company knows best',
     "We did n't have much of a choice , Cray Computer 's chief financial officer , Gregory Barnum , said in an interview .",
     'Alice who Bob gives flowers to , walks',
@@ -59,6 +59,11 @@ sentences = [
     'Alice likes what is known to Bob',
     'Before looking around , he noticed a letter',
     'He noticed a letter before looking around',
+    'Alice and John drank water',
+    'Alice , Bob and John drank water , beer and wine',
+    'Alice , Bob and John who drank water , beer and wine walked',
+    'Alice and Bob who drank water and wine walked',
+    'If a farmer owns a donkey he beats it',
 ]
 parser = BobcatParser()
 config = {
