@@ -39,6 +39,23 @@ def expr_has_variables(expr, variables):
             return True
     return False
 
+def get_args_to_pull(expr, variables):
+    if expr in variables:
+        return []
+    if not isinstance(expr.typ, Func) and not expr_has_variables(expr, variables):
+        return [expr]
+    if expr.expr_type == "list":
+        args_to_pull = []
+        for e in expr.expr_list:
+            args_to_pull.extend(get_args_to_pull(e, variables))
+        return args_to_pull
+    elif expr.expr_type == "lambda":
+        return get_args_to_pull(expr.expr, variables + [expr.var])
+    elif expr.expr_type == "application":
+        return get_args_to_pull(expr.arg, variables) + \
+               get_args_to_pull(expr.fun, variables)
+    return []
+
 def b_combinator(expr):
     f = expr.fun
     g = expr.arg.fun
@@ -64,12 +81,7 @@ def pull_out_lambda(expr):
         variables.append(lambda_expr.var)
         lambda_expr = lambda_expr.expr
     lambda_expr = pull_out(lambda_expr)
-    args_to_pull = []
-    for n in range(count_applications(lambda_expr)):
-        nth_arg = n_fold_c_combinator(lambda_expr, n).arg
-        if expr_has_variables(nth_arg, variables) or isinstance(nth_arg.typ, Func):
-            continue
-        args_to_pull.append(nth_arg)
+    args_to_pull = get_args_to_pull(lambda_expr, variables)
     # we add args_to_pull to the list of lambda variables as
     # we are pulling out those args outside the lambda by
     # performing an inverse beta reduction.
