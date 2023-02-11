@@ -1,9 +1,9 @@
-from copy import deepcopy
+import random
 import time
 from discocirc.expr.expr_uncurry import expr_uncurry
 from discocirc.expr.expr import Expr
 from discocirc.helpers.closed import Func, Ty
-from discocirc.helpers.discocirc_utils import change_expr_typ, expr_type_recursion
+from discocirc.helpers.discocirc_utils import apply_at_root, change_expr_typ, count_applications, expr_type_recursion
 
 
 def expand_closed_type(typ, expand_which_type):
@@ -27,25 +27,50 @@ def type_expand(expr):
     else:
         return expr_type_recursion(expr, type_expand)
 
+def expand_coordination(expr):
+    if expr.expr_type == "application":
+        head = expr.head
+        fun = expand_coordination(expr.fun)
+        expr = fun(expr.arg)
+        for n in range(count_applications(expr, branch='arg'), 0, -1):
+            nth_arg = expr
+            funs = []
+            heads = []
+            for _ in range(n):
+                funs.append(nth_arg.fun)
+                heads.append(nth_arg.head)
+                nth_arg = nth_arg.arg
+            if nth_arg.typ == Ty('n') and nth_arg.head and len(nth_arg.head) > 1:
+                var = Expr.literal(f"x_{random.randint(1000,9999)}", nth_arg.typ)
+                var.head = nth_arg.head
+                body = var
+                for f, head in zip(reversed(funs), reversed(heads)):
+                    f = expand_coordination(f)
+                    body = f(body)
+                    body.head = head
+                composition = Expr.lmbda(var, body)
+                nth_arg = change_expr_typ(nth_arg, composition.typ >> nth_arg.typ)
+                nth_arg = apply_at_root(nth_arg, composition)
+                expr = change_expr_typ(nth_arg, expr.typ)
+                break
+        expr.head = head
+    return expr
 
 def n_expand(expr):
     if expr.expr_type == "literal":
         new_type = expand_closed_type(expr.typ, Ty('n'))
-        expr_copy = deepcopy(expr)
-        return change_expr_typ(expr_copy, new_type)
+        return change_expr_typ(expr, new_type)
     elif expr.expr_type == "application":
-        if expr.fun.typ.input == Ty('n'):
+        head = expr.head
+        if expr.fun.typ.input == Ty('n') and expr.arg.head:
             arg = n_expand(expr.arg)
-            if hasattr(arg, 'head'):
-                if len(arg.head) > 1:
-                    raise NotImplementedError
-            fun = n_expand(expr.fun)
+            fun = expr.fun
             uncurried_arg = expr_uncurry(arg)
             if isinstance(uncurried_arg.typ, Func):
                 arg_output_wires = len(uncurried_arg.typ.output)
             else:
                 arg_output_wires = len(uncurried_arg.typ)
-            if hasattr(arg, 'head') and len(arg.head) < arg_output_wires:
+            if arg.head and len(arg.head) < arg_output_wires:
                 wire_index = 0
                 for e in expr_uncurry(arg).arg.expr_list:
                     if e.typ == Ty('n'):
@@ -57,15 +82,13 @@ def n_expand(expr):
                 left_ids = [id_expr] * wire_index
                 right_ids = [id_expr] * (arg_output_wires - wire_index - 1)
                 fun = Expr.lst(left_ids + [fun] + right_ids)
-            new_expr = fun(arg)
-        else:
-            arg = n_expand(expr.arg)
-            fun = n_expand(expr.fun)
-            fun = deepcopy(fun)
-            new_fun_type = arg.typ >> fun.typ.output
-            fun = change_expr_typ(fun, new_fun_type)
-            new_expr = fun(arg)
-        if hasattr(expr, 'head'):
-            new_expr.head = expr.head
-        return new_expr
+                expr = fun(arg)
+        fun = n_expand(expr.fun)
+        arg = n_expand(expr.arg)
+        # new_fun_type = arg.typ >> fun.typ.output
+        # fun = change_expr_typ(fun, new_fun_type)
+        expr = fun(arg)
+        expr.head = head
+    else:
+        return expr_type_recursion(expr, n_expand)
     return expr
