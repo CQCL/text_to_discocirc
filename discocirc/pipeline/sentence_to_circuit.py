@@ -1,4 +1,4 @@
-from discocirc.diag.expand_s_types import expand_s_types
+from discocirc.expr.type_expand import type_expand
 from discocirc.expr.ccg_to_expr import ccg_to_expr
 from discocirc.expr.expr_to_diag import expr_to_diag
 from discocirc.diag.frame import Frame
@@ -12,8 +12,8 @@ def sentence2circ(parser, sentence):
     ccg = parser.sentence2tree(sentence)
     expr = ccg_to_expr(ccg)
     expr = pull_out(expr)
+    expr = type_expand(expr)
     diag = expr_to_diag(expr)
-    diag = expand_s_types(diag)
-    # diag = (Frame.get_decompose_functor())(diag)
+    diag = (Frame.get_decompose_functor())(diag)
 
     return diag
