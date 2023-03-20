@@ -15,7 +15,9 @@ def get_last_initial_noun(circ):
     for i in range(len(circ.boxes) - 1):
         if circ.boxes[i].dom == Ty() and circ.boxes[i + 1].dom != Ty():
             return i
-    return -1
+    # I think the line below is only triggered if the entire circuit consists of nouns
+    # In this case, we want to take the entire circuit
+    return len(circ.boxes)-1
 
 
 def get_star_removal_functor():
