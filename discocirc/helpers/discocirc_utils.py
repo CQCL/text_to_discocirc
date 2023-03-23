@@ -11,12 +11,11 @@ def get_last_initial_noun(circ):
     takes in a circuit with some number of states as the initial boxes
     returns the index of the last of these initial states
     """
-    assert(circ.boxes[0].dom == Ty())
+    assert(circ.boxes[0].dom == Ty())   # check that the first box is a noun
     for i in range(len(circ.boxes) - 1):
         if circ.boxes[i].dom == Ty() and circ.boxes[i + 1].dom != Ty():
             return i
-    # I think the line below is only triggered if the entire circuit consists of nouns
-    # In this case, we want to take the entire circuit
+    # I think we only reach here if the entire circuit consists of nouns
     return len(circ.boxes)-1
 
 
@@ -68,34 +67,44 @@ def c_combinator(expr):
     f = change_expr_typ(f, new_type)
     return (f(x))(y)
 
-def n_fold_c_combinator(expression, n):
+def n_fold_c_combinator(expr, n):
+    """
+    given an expr with at least n+1 applications along the 'fun' branch,
+    say f(a1)(a2)...(a(n+1)),
+    we pass a1 down to a(n+1), i.e.
+    return f'(a2)(a3)...(a(n+1))(a1)
+    """
     if n == 0:
-        return expression
-    expr = deepcopy(expression)
-    if expr.expr_type != "application" or expr.fun.expr_type != "application":
-        raise ValueError(f'cannot apply C combinator {n} > {0} times to:\n{expression}')
+        return expr
+    # check that expr has at least n+1 applications along the 'fun' branch
+    max_c_combi = count_applications(expr, branch='fun')-1
+    if n > max_c_combi:
+        raise ValueError(f'cannot apply C combinator {n} > {max_c_combi} times to:\n{expr}')
     args = []
     for i in range(n-1):
         args.append(expr.arg)
         expr = expr.fun
-        if expr.fun.expr_type != "application":
-            raise ValueError(f'cannot apply C combinator {n} > {i+1} times to:\n{expression}')
     expr = c_combinator(expr)
     for arg in reversed(args):
         expr = c_combinator(expr(arg))
     return expr
 
-def inv_n_fold_c_combinator(expression, n):
-    expr = deepcopy(expression)
-    if expr.expr_type != "application" or expr.fun.expr_type != "application":
-        return expr
+def inv_n_fold_c_combinator(expr, n):
+    """
+    given an expr with at least n+1 applications along the 'fun' branch,
+    say f(a1)(a2)...(a(n+1)),
+    we pass a(n+1) up to a1, i.e.
+    return f'(a(n+1))(a1)(a2)...(an)
+    """
+    # check that expr has at least n+1 applications along the 'fun' branch
+    max_c_combi = count_applications(expr, branch='fun')-1
+    if n > max_c_combi:
+        raise ValueError(f'cannot apply C combinator {n} > {max_c_combi} times to:\n{expr}')
     args = []
     for i in range(n):
         expr = c_combinator(expr)
         args.append(expr.arg)
         expr = expr.fun
-        if expr.expr_type != "application":
-            raise ValueError(f'cannot apply C combinator {n} > {i+1} times to:\n{expression}')
     for arg in reversed(args):
         expr = expr(arg)
     return expr
