@@ -55,7 +55,7 @@ def remove_free_vars(expr, variables):
             free_vars.extend(result[0])
             bound_vars.extend(result[1])
             exprs.append(result[2])
-        return free_vars, bound_vars, Expr.lst(exprs, interchange=False)
+        return free_vars, bound_vars, Expr.lst(exprs, interchange=False, head=expr.head)
     elif expr.expr_type == "lambda":
         return remove_free_vars(expr.expr, variables + [expr.var])
     elif expr.expr_type == "application":
