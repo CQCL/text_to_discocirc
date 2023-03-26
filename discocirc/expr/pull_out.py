@@ -47,11 +47,15 @@ def remove_free_vars(expr, variables):
         temp_var = Expr.literal(f"x_{randint(1000,9999)}", expr.typ, head=expr.head)
         return [expr], [temp_var], temp_var
     if expr.expr_type == "list":
-        args_to_pull = []
+        free_vars = []
+        bound_vars = []
+        exprs = []
         for e in expr.expr_list:
-            assert(False)
-            args_to_pull.extend(remove_free_vars(e, variables))
-        return args_to_pull
+            result = remove_free_vars(e, variables)
+            free_vars.extend(result[0])
+            bound_vars.extend(result[1])
+            exprs.append(result[2])
+        return free_vars, bound_vars, Expr.lst(exprs, interchange=False)
     elif expr.expr_type == "lambda":
         return remove_free_vars(expr.expr, variables + [expr.var])
     elif expr.expr_type == "application":
