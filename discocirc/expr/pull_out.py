@@ -1,4 +1,5 @@
 from copy import deepcopy
+from random import randint
 
 from discocirc.expr.expr import Expr
 from discocirc.helpers.closed import Func, Ty
@@ -39,22 +40,28 @@ def expr_has_variables(expr, variables):
             return True
     return False
 
-def get_args_to_pull(expr, variables):
+def remove_free_vars(expr, variables):
     if expr in variables:
-        return []
+        return [], [], expr
     if not isinstance(expr.typ, Func) and not expr_has_variables(expr, variables):
-        return [expr]
+        temp_var = Expr.literal(f"x_{randint(1000,9999)}", expr.typ, head=expr.head)
+        return [expr], [temp_var], temp_var
     if expr.expr_type == "list":
         args_to_pull = []
         for e in expr.expr_list:
-            args_to_pull.extend(get_args_to_pull(e, variables))
+            assert(False)
+            args_to_pull.extend(remove_free_vars(e, variables))
         return args_to_pull
     elif expr.expr_type == "lambda":
-        return get_args_to_pull(expr.expr, variables + [expr.var])
+        return remove_free_vars(expr.expr, variables + [expr.var])
     elif expr.expr_type == "application":
-        return get_args_to_pull(expr.arg, variables) + \
-               get_args_to_pull(expr.fun, variables)
-    return []
+        arg_result = remove_free_vars(expr.arg, variables)
+        fun_result = remove_free_vars(expr.fun, variables)
+
+        return arg_result[0] + fun_result[0], \
+               arg_result[1] + fun_result[1], \
+            Expr.apply(fun_result[2], arg_result[2], reduce=False)
+    return [], [], expr
 
 def b_combinator(expr):
     f = expr.fun
@@ -81,13 +88,13 @@ def pull_out_lambda(expr):
         variables.append(lambda_expr.var)
         lambda_expr = lambda_expr.expr
     lambda_expr = pull_out(lambda_expr)
-    args_to_pull = get_args_to_pull(lambda_expr, variables)
+    free_vars, bound_vars, lambda_expr = remove_free_vars(lambda_expr, variables)
     # we add args_to_pull to the list of lambda variables as
     # we are pulling out those args outside the lambda by
     # performing an inverse beta reduction.
-    for variable in list(reversed(variables)) + args_to_pull:
+    for variable in list(reversed(variables)) + bound_vars:
         lambda_expr = Expr.lmbda(variable, lambda_expr)
-    for arg in reversed(args_to_pull):
+    for arg in reversed(free_vars):
         lambda_expr = Expr.apply(lambda_expr, arg, reduce=False)
     expr = original_expr.fun(lambda_expr)
     if expr != original_expr:
