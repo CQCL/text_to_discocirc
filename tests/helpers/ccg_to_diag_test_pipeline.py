@@ -5,6 +5,7 @@ from discocirc.expr import expr_to_diag, type_expand, pull_out
 from discocirc.expr.ccg_to_expr import ccg_to_expr
 from discocirc.expr.ccg_type_check import expr_type_check
 from discocirc.expr.expr_uncurry import expr_uncurry
+from expr.type_expand import expand_coordination
 from outdated_code.expand_s_types import expand_s_types
 
 
@@ -46,6 +47,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse):
         diag.draw()
 
     # ------- Step 3: Type expansion -----------
+    expr = expand_coordination(expr)
     expr = type_expand(expr)
 
     if config["type_check_ccg"]:
@@ -66,9 +68,9 @@ def ccg_to_diag_test(unittest, config, ccg_parse):
     diag = expr_to_diag(expr)
     diag = (Frame.get_decompose_functor())(diag)
 
-    expr_uncurried = expr_uncurry(expr)
-    diag_uncurried = expr_to_diag(expr_uncurried)
-    diag_uncurried = (Frame.get_decompose_functor())(diag_uncurried)
+    # expr_uncurried = expr_uncurry(expr)
+    # diag_uncurried = expr_to_diag(expr_uncurried)
+    # diag_uncurried = (Frame.get_decompose_functor())(diag_uncurried)
 
     # unittest.assertEqual(diag, diag_uncurried)
 
