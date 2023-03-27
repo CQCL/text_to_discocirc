@@ -90,7 +90,7 @@ def pull_out_lambda(expr):
     variables = []
     while lambda_expr.expr_type == 'lambda':
         variables.append(lambda_expr.var)
-        lambda_expr = lambda_expr.expr
+        lambda_expr = lambda_expr.body
     lambda_expr = pull_out(lambda_expr)
     free_vars, bound_vars, lambda_expr = remove_free_vars(lambda_expr, variables)
     # we add args_to_pull to the list of lambda variables as
