@@ -139,6 +139,14 @@ def _lambda_to_diag_open_wire(expr, context, expand_lambda_frames):
     """
     assert(not isinstance(expr.var.typ, Func))
 
+    if expr.var.expr_type == 'list':
+        from expr import Expr
+        # Curry list to be able to use normal draw function
+        output = Expr.lmbda(expr.var.expr_list[0], expr.expr)
+        for var in (expr.var.expr_list[1:]):
+            output = Expr.lmbda(var, output)
+        return expr_to_diag(output, context, expand_lambda_frames)
+
     context.add(expr.var)
     body = expr_to_diag(expr.expr, context, expand_lambda_frames)
     context.remove(expr.var)

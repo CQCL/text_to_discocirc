@@ -186,6 +186,7 @@ class Expr:
     def evl(context, expr):
         if expr.expr_type == "literal":
             if expr in context.keys():
+                assert(context[expr].typ == expr.typ)
                 return context[expr]
             else:
                 return expr

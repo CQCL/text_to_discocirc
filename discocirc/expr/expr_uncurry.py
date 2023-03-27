@@ -14,8 +14,12 @@ def expr_uncurry(expr):
             c = expr_uncurry(expr.expr.expr)
             new_expr = expr_uncurry(Expr.lmbda(a_b, c))
         else:
-            new_expr = Expr.lmbda(expr_uncurry(expr.var),
-                              expr_uncurry(expr.expr))
+            var = expr_uncurry(expr.var)
+            body = expr_uncurry(expr.expr)
+            new_expr = Expr.lmbda(var, body)
+            if isinstance(body.typ, Func):
+                new_expr.typ = var.typ @ body.typ.input >> body.typ.output
+
     elif expr.expr_type == "application":
         if expr.fun.expr_type == "application":
             a = expr_uncurry(expr.arg)
