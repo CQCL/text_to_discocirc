@@ -7,15 +7,15 @@ def expr_uncurry(expr):
         new_expr = Expr.literal(expr.name,
                             uncurry_types(expr.typ, uncurry_everything=True))
     elif expr.expr_type == "lambda":
-        if expr.expr.expr_type == "lambda":
+        if expr.body.expr_type == "lambda":
             # a -> b -> c = (a @ b) -> c
             a_b = Expr.lst([expr_uncurry(expr.var),
-                            expr_uncurry(expr.expr.var)])
-            c = expr_uncurry(expr.expr.expr)
+                            expr_uncurry(expr.body.var)])
+            c = expr_uncurry(expr.body.body)
             new_expr = expr_uncurry(Expr.lmbda(a_b, c))
         else:
             var = expr_uncurry(expr.var)
-            body = expr_uncurry(expr.expr)
+            body = expr_uncurry(expr.body)
             new_expr = Expr.lmbda(var, body)
             if isinstance(body.typ, Func):
                 new_expr.typ = var.typ @ body.typ.input >> body.typ.output

@@ -31,7 +31,7 @@ def expr_type_check(expr):
         return expr.typ
     elif expr.expr_type == "lambda":
         type_var = expr_type_check(expr.var)
-        type_expr = expr_type_check(expr.expr)
+        type_expr = expr_type_check(expr.body)
 
         if type_var is None or type_expr is None:
             return None

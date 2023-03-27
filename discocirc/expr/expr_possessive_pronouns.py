@@ -16,7 +16,7 @@ def find_word_in_expr(expr, word, pos):
     elif expr.expr_type == "application":
         return find_word_in_expr(expr.fun, word, pos) or find_word_in_expr(expr.arg, word, pos)
     elif expr.expr_type == "lambda":
-        return find_word_in_expr(expr.expr, word, pos)
+        return find_word_in_expr(expr.body, word, pos)
     elif expr.expr_type == "list":
         for e in expr.expr_list:
             result = find_word_in_expr(e, word, pos)
@@ -34,7 +34,7 @@ def find_parent_in_expr(expr, child):
         return find_parent_in_expr(expr.fun, child) or find_parent_in_expr(
             expr.arg, child)
     elif expr.expr_type == "lambda":
-        return find_parent_in_expr(expr.expr, child)
+        return find_parent_in_expr(expr.body, child)
     elif expr.expr_type == "list":
         for e in expr.expr_list:
             result = find_parent_in_expr(e, child)

@@ -27,7 +27,7 @@ def expr_has_variable(expr, variable):
     elif expr.expr_type == "list":
         return any([expr_has_variable(e, variable) for e in expr.expr_list])
     elif expr.expr_type == "lambda":
-        return any([expr_has_variable(expr.expr, variable),
+        return any([expr_has_variable(expr.body, variable),
                     expr_has_variable(expr.var, variable)])
     elif expr.expr_type == "application":
         return any([expr_has_variable(expr.arg, variable),
@@ -57,7 +57,7 @@ def remove_free_vars(expr, variables):
             exprs.append(result[2])
         return free_vars, bound_vars, Expr.lst(exprs, interchange=False, head=expr.head)
     elif expr.expr_type == "lambda":
-        return remove_free_vars(expr.expr, variables + [expr.var])
+        return remove_free_vars(expr.body, variables + [expr.var])
     elif expr.expr_type == "application":
         arg_result = remove_free_vars(expr.arg, variables)
         fun_result = remove_free_vars(expr.fun, variables)
