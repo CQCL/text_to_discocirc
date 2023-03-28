@@ -38,6 +38,8 @@ def change_expr_typ(expr, new_type):
         new_expr = fun(expr.arg)
         return new_expr
     elif expr.expr_type == 'lambda':
+        # TODO: below is not quite correct - all instances of the bound variable
+        # inside the lambda 'body' also need to have their types changed 
         new_var = change_expr_typ(expr.var, new_type.input)
         new_expr = change_expr_typ(expr.expr, new_type.output)
         return Expr.lmbda(new_var, new_expr)
