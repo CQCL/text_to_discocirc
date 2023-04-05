@@ -25,12 +25,18 @@ def expr_has_variables(expr, variables):
     return False
 
 def remove_free_vars(expr, variables):
+    """
+    takes in an expr, and replaces all non-function-type exprs with dummy variables
+    (unless the non-function-type expr contains variables from 'variables' input)
+
+    importantly, this procedure preserves the type and structure of the expr
+    """
     if expr in variables:
         return [], [], expr
-    if not isinstance(expr.typ, Func) and not expr_has_variables(expr, variables):
+    elif not isinstance(expr.typ, Func) and not expr_has_variables(expr, variables):
         temp_var = Expr.literal(f"x_{randint(1000,9999)}", expr.typ, head=expr.head)
         return [expr], [temp_var], temp_var
-    if expr.expr_type == "list":
+    elif expr.expr_type == "list":
         free_vars = []
         bound_vars = []
         exprs = []
@@ -41,7 +47,8 @@ def remove_free_vars(expr, variables):
             exprs.append(result[2])
         return free_vars, bound_vars, Expr.lst(exprs, interchange=False, head=expr.head)
     elif expr.expr_type == "lambda":
-        return remove_free_vars(expr.expr, variables + [expr.var])
+        new_body = remove_free_vars(expr.expr, variables + [expr.var])
+        return new_body[0], new_body[1], Expr.lmbda(expr.var, new_body[2], head=expr.head)
     elif expr.expr_type == "application":
         arg_result = remove_free_vars(expr.arg, variables)
         fun_result = remove_free_vars(expr.fun, variables)
