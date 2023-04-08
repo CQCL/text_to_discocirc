@@ -62,7 +62,7 @@ def n_expand(expr):
         return change_expr_typ(expr, new_type)
     elif expr.expr_type == "application":
         head = expr.head
-        if expr.fun.typ.input == Ty('n') and expr.arg.head:
+        if expr.arg.typ == Ty('n') and expr.arg.head:
             arg = n_expand(expr.arg)
             fun = expr.fun
             uncurried_arg = expr_uncurry(arg)
@@ -89,6 +89,7 @@ def n_expand(expr):
         # fun = change_expr_typ(fun, new_fun_type)
         expr = fun(arg)
         expr.head = head
+        return expr
     else:
         return expr_type_recursion(expr, n_expand)
     return expr

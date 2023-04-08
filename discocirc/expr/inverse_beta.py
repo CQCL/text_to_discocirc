@@ -55,7 +55,7 @@ def remove_free_vars(expr, variables):
 
         return arg_result[0] + fun_result[0], \
                arg_result[1] + fun_result[1], \
-            Expr.apply(fun_result[2], arg_result[2], reduce=False)
+            Expr.apply(fun_result[2], arg_result[2], reduce=False, head=expr.head)
     return [], [], expr
 
 def inverse_beta(expr):

@@ -183,25 +183,31 @@ class Expr:
         return list_type
 
     @staticmethod
-    def evl(context, expr):
+    def evl(context, expr, head=None):
+        # NOTE: if no head kwarg is passed in, this function now erases the head
         if expr.expr_type == "literal":
             if expr in context.keys():
-                return context[expr]
+                new_expr = context[expr]
+                new_expr.head = head
+                return new_expr
             else:
-                return expr
+                new_expr = expr
+                new_expr.head = head
+                return new_expr
         elif expr.expr_type == "lambda":
-            return Expr.lmbda(expr.var, Expr.evl(context, expr.expr))
+            return Expr.lmbda(expr.var, Expr.evl(context, expr.expr), head=head) 
         elif expr.expr_type == "application":
-            return Expr.apply(Expr.evl(context, expr.fun), Expr.evl(context, expr.arg), context)
+            return Expr.apply(Expr.evl(context, expr.fun), Expr.evl(context, expr.arg), context, head=head)
         elif expr.expr_type == "list":
-            return Expr.lst([Expr.evl(context, e) for e in expr.expr_list])
+            return Expr.lst([Expr.evl(context, e) for e in expr.expr_list], head=head)
         else:
             raise TypeError(f'Unknown type {expr.expr_type} of expression')
 
     @staticmethod
-    def apply(expr, arg, context=None, reduce=True):
+    def apply(expr, arg, context=None, reduce=True, head=None):
+        # NOTE: if no head kwarg is passed in, this function now erases the head
         if expr.typ.input != arg.typ:
-            return Expr.partial_apply(expr, arg, context)
+            return Expr.partial_apply(expr, arg, context, head=head)
         if expr.expr_type == "lambda" and reduce:
             if context == None:
                 context = {}
@@ -210,14 +216,13 @@ class Expr:
                     context[var] = val
             else:
                 context[expr.var] = arg
-            return Expr.evl(context, expr.expr)
+            return Expr.evl(context, expr.expr, head=head)
         else:
-            new_expr = Expr.application(expr, arg)
-            return new_expr
-
+            return Expr.application(expr, arg, head=head)
 
     @staticmethod
-    def partial_apply(expr, arg, context=None):
+    def partial_apply(expr, arg, context=None, head=None):
+        # NOTE: if no head kwarg is passed in, this function now erases the head
         num_inputs = 0
         for i in range(len(expr.typ.input) + 1):
             if expr.typ.input[-i:] == arg.typ:
@@ -228,5 +233,5 @@ class Expr:
                             + f"with the input type of:\n{expr}")
         expr.typ = expr.typ.input[-i:] >> \
                    (expr.typ.input[:-num_inputs] >> expr.typ.output)
-        return Expr.apply(expr, arg, context, reduce=True)
+        return Expr.apply(expr, arg, context, reduce=True, head=head)
 
