@@ -1,3 +1,4 @@
+import random
 from discocirc.expr import Expr
 from discocirc.helpers.closed import Func, uncurry_types
 
@@ -14,8 +15,14 @@ def expr_uncurry(expr):
             c = expr_uncurry(expr.expr.expr)
             new_expr = expr_uncurry(Expr.lmbda(a_b, c))
         else:
-            new_expr = Expr.lmbda(expr_uncurry(expr.var),
-                              expr_uncurry(expr.expr))
+            new_var = expr_uncurry(expr.var)
+            new_body = expr_uncurry(expr.expr)
+            if isinstance(new_body.typ, Func):
+                var2 = Expr.literal(f"x_{random.randint(1000,9999)}", new_body.typ.input)
+                product_var = Expr.lst([new_var, var2], interchange=False)
+                new_expr = Expr.lmbda(product_var, new_body(var2))
+            else:
+                new_expr = Expr.lmbda(new_var, new_body)
     elif expr.expr_type == "application":
         if expr.fun.expr_type == "application":
             a = expr_uncurry(expr.arg)
