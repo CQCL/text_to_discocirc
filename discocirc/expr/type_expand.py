@@ -66,11 +66,14 @@ def n_expand(expr):
             arg = n_expand(expr.arg)
             fun = expr.fun
             uncurried_arg = expr_uncurry(arg)
+            old_uncurried_arg = expr_uncurry(expr.arg)
             if isinstance(uncurried_arg.typ, Func):
                 arg_output_wires = len(uncurried_arg.typ.output)
+                old_arg_output_wires = len(old_uncurried_arg.typ.output)
             else:
-                arg_output_wires = len(uncurried_arg.typ)
-            if arg.head and len(arg.head) < arg_output_wires:
+                arg_output_wires = len(uncurried_arg.typ) # find the number of output nouns of the argument
+                old_arg_output_wires = len(old_uncurried_arg.typ) # find the number of output nouns of the argument
+            if arg.head and old_arg_output_wires != arg_output_wires:
                 wire_index = 0
                 for e in expr_uncurry(arg).arg.expr_list:
                     if e.typ == Ty('n'):
@@ -85,6 +88,9 @@ def n_expand(expr):
                 expr = fun(arg)
         fun = n_expand(expr.fun)
         arg = n_expand(expr.arg)
+        if isinstance(arg.typ, Func):
+            if arg.typ != fun.typ.input:
+                fun = change_expr_typ(fun, arg.typ >> fun.typ.output)
         # new_fun_type = arg.typ >> fun.typ.output
         # fun = change_expr_typ(fun, new_fun_type)
         expr = fun(arg)
