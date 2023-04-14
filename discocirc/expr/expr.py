@@ -197,9 +197,12 @@ class Expr:
         elif expr.expr_type == "lambda":
             return Expr.lmbda(expr.var, Expr.evl(context, expr.expr), head=head) 
         elif expr.expr_type == "application":
-            return Expr.apply(Expr.evl(context, expr.fun), Expr.evl(context, expr.arg), context, head=head)
+            return Expr.apply(Expr.evl(context, expr.fun),
+                              Expr.evl(context, expr.arg), 
+                              context, head=head)
         elif expr.expr_type == "list":
-            return Expr.lst([Expr.evl(context, e) for e in expr.expr_list], head=head)
+            return Expr.lst([Expr.evl(context, e) for e in expr.expr_list],
+                            head=head, interchange=False)
         else:
             raise TypeError(f'Unknown type {expr.expr_type} of expression')
 
@@ -231,7 +234,9 @@ class Expr:
         if num_inputs == 0:
             raise TypeError(f"Type of:\n{arg}\n is not compatible "
                             + f"with the input type of:\n{expr}")
-        expr.typ = expr.typ.input[-i:] >> \
-                   (expr.typ.input[:-num_inputs] >> expr.typ.output)
+        var1 = Expr.literal(f"x_{random.randint(1000,9999)}", expr.typ.input[-i:])
+        var2 = Expr.literal(f"x_{random.randint(1000,9999)}", expr.typ.input[:-num_inputs])
+        var2_var1 = Expr.lst([var2, var1], interchange=False)
+        expr = Expr.lmbda(var1, Expr.lmbda(var2, expr(var2_var1)))
         return Expr.apply(expr, arg, context, reduce=True, head=head)
 
