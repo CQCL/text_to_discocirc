@@ -184,49 +184,54 @@ class Expr:
         return list_type
 
     @staticmethod
-    def evl(context, expr, head=None):
-        # NOTE: if no head kwarg is passed in, this function now erases the head
+    def evl(context, expr):
+        """
+        performs substitution of context into free variables in expr
+        """
         if expr.expr_type == "literal":
             if expr in context.keys():
                 new_expr = context[expr]
-                new_expr.head = head
                 return new_expr
             else:
                 new_expr = expr
-                new_expr.head = head
                 return new_expr
         elif expr.expr_type == "lambda":
-            return Expr.lmbda(expr.var, Expr.evl(context, expr.expr), head=head) 
+            return Expr.lmbda(expr.var, Expr.evl(context, expr.expr)) 
         elif expr.expr_type == "application":
             return Expr.apply(Expr.evl(context, expr.fun),
                               Expr.evl(context, expr.arg), 
-                              context, head=head)
+                              context)
         elif expr.expr_type == "list":
             interchange = all([isinstance(e.typ, Func) for e in expr.expr_list])
             return Expr.lst([Expr.evl(context, e) for e in expr.expr_list],
-                            head=head, interchange=interchange)
+                            interchange=interchange)
         else:
             raise TypeError(f'Unknown type {expr.expr_type} of expression')
 
     @staticmethod
-    def apply(expr, arg, context=None, reduce=True, head=None):
+    def apply(fun, arg, context=None, reduce=True, head=None):
+        """
+        apply expr to arg
+        """
         # NOTE: if no head kwarg is passed in, this function now erases the head
-        if expr.typ.input != arg.typ:
-            return Expr.partial_apply(expr, arg, context, head=head)
-        if expr.expr_type == "lambda" and reduce:
+        if fun.typ.input != arg.typ:
+            new_expr = Expr.partial_apply(fun, arg, context)
+        if fun.expr_type == "lambda" and reduce:
             if context == None:
                 context = {}
-            if expr.var.expr_type == "list":
-                for var, val in zip(expr.var.expr_list, arg.expr_list):
+            if fun.var.expr_type == "list":
+                for var, val in zip(fun.var.expr_list, arg.expr_list):
                     context[var] = val
             else:
-                context[expr.var] = arg
-            return Expr.evl(context, expr.expr, head=head)
+                context[fun.var] = arg
+            new_expr = Expr.evl(context, fun.expr)
         else:
-            return Expr.application(expr, arg, head=head)
+            new_expr = Expr.application(fun, arg)
+        new_expr.head = head
+        return new_expr
 
     @staticmethod
-    def partial_apply(expr, arg, context=None, head=None):
+    def partial_apply(expr, arg, context=None):
         # NOTE: if no head kwarg is passed in, this function now erases the head
         num_inputs = 0
         for i in range(len(expr.typ.input) + 1):
@@ -240,5 +245,5 @@ class Expr:
         var2 = Expr.literal(f"x_{random.randint(1000,9999)}", expr.typ.input[:-num_inputs])
         var2_var1 = Expr.lst([var2, var1], interchange=False)
         expr = Expr.lmbda(var1, Expr.lmbda(var2, expr(var2_var1)))
-        return Expr.apply(expr, arg, context, reduce=True, head=head)
+        return Expr.apply(expr, arg, context, reduce=True)
 
