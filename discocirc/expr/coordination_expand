@@ -2,7 +2,7 @@
 import random
 from discocirc.expr.expr import Expr
 from discocirc.helpers.closed import Ty
-from discocirc.helpers.discocirc_utils import apply_at_root, change_expr_typ, count_applications
+from discocirc.helpers.discocirc_utils import apply_at_root, change_expr_typ, count_applications, create_random_variable
 
 
 def expand_coordination(expr):
@@ -19,7 +19,7 @@ def expand_coordination(expr):
                 heads.append(nth_arg.head)
                 nth_arg = nth_arg.arg
             if nth_arg.typ == Ty('n') and nth_arg.head and len(nth_arg.head) > 1:
-                var = Expr.literal(f"x_{random.randint(1000,9999)}", nth_arg.typ)
+                var = create_random_variable(nth_arg.typ)
                 var.head = nth_arg.head
                 body = var
                 for f, head in zip(reversed(funs), reversed(heads)):

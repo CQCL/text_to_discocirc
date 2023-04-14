@@ -1,5 +1,6 @@
 from argparse import ArgumentError
 from copy import deepcopy
+import random
 from discopy.rigid import Ty, Box
 from discopy.monoidal import Functor
 
@@ -135,3 +136,6 @@ def expr_type_recursion(expr, function):
     if hasattr(expr, 'head'):
         new_expr.head = expr.head
     return new_expr
+
+def create_random_variable(typ, head=None):
+    return Expr.literal(f"x_{random.randint(1000,9999)}", typ=typ, head=head)

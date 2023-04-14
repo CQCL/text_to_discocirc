@@ -1,6 +1,7 @@
 import random
 from discocirc.expr import Expr
 from discocirc.helpers.closed import Func, uncurry_types
+from discocirc.helpers.discocirc_utils import create_random_variable
 
 def expr_uncurry(expr):
     head = expr.head
@@ -11,7 +12,7 @@ def expr_uncurry(expr):
         new_var = expr_uncurry(expr.var)
         new_body = expr_uncurry(expr.expr)
         if isinstance(new_body.typ, Func):
-            var2 = Expr.literal(f"x_{random.randint(1000,9999)}", new_body.typ.input)
+            var2 = create_random_variable(new_body.typ.input)
             product_var = Expr.lst([new_var, var2], interchange=False)
             new_expr = Expr.lmbda(product_var, new_body(var2))
         else:

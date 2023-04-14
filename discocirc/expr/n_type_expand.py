@@ -4,7 +4,7 @@ from discocirc.expr.expr import Expr
 from discocirc.expr.expr_uncurry import expr_uncurry
 from discocirc.expr.s_type_expand import expand_closed_type
 from discocirc.helpers.closed import Func, Ty
-from discocirc.helpers.discocirc_utils import change_expr_typ, expr_type_recursion
+from discocirc.helpers.discocirc_utils import change_expr_typ, create_random_variable, expr_type_recursion
 
 
 def n_expand(expr):
@@ -31,7 +31,7 @@ def n_expand(expr):
                         if e.head == arg.head:
                             break
                         wire_index = wire_index + 1
-                x = Expr.literal(f"x_{random.randint(1000,9999)}", typ=Ty('n'))
+                x = create_random_variable(Ty('n'))
                 id_expr = Expr.lmbda(x, x)
                 left_ids = [id_expr] * wire_index
                 right_ids = [id_expr] * (arg_output_wires - wire_index - 1)

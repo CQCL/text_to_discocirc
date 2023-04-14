@@ -4,6 +4,7 @@ import random
 from prettytable import PrettyTable
 
 from discocirc.helpers.closed import Func, uncurry_types, Ty
+from discocirc.helpers.discocirc_utils import create_random_variable
 
 
 class Expr:
@@ -241,8 +242,8 @@ class Expr:
         if num_inputs == 0:
             raise TypeError(f"Type of:\n{arg}\n is not compatible "
                             + f"with the input type of:\n{expr}")
-        var1 = Expr.literal(f"x_{random.randint(1000,9999)}", expr.typ.input[-i:])
-        var2 = Expr.literal(f"x_{random.randint(1000,9999)}", expr.typ.input[:-num_inputs])
+        var1 = create_random_variable(expr.typ.input[-i:])
+        var2 = create_random_variable(expr.typ.input[:-num_inputs])
         var2_var1 = Expr.lst([var2, var1], interchange=False)
         expr = Expr.lmbda(var1, Expr.lmbda(var2, expr(var2_var1)))
         return Expr.apply(expr, arg, context, reduce=True)

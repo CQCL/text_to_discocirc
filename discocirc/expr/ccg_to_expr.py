@@ -5,7 +5,7 @@ from lambeq import CCGAtomicType, CCGRule
 
 from discocirc.expr import Expr
 from discocirc.helpers.closed import biclosed_to_closed
-from discocirc.helpers.discocirc_utils import apply_at_root, change_expr_typ
+from discocirc.helpers.discocirc_utils import apply_at_root, change_expr_typ, create_random_variable
 
 
 def ccg_to_expr(ccg_parse):
@@ -91,8 +91,7 @@ def ccg_to_expr(ccg_parse):
     # Rules with 1 child
     elif ccg_parse.rule == CCGRule.FORWARD_TYPE_RAISING \
             or ccg_parse.rule == CCGRule.BACKWARD_TYPE_RAISING:
-        x = Expr.literal(f"x_{random.randint(1000,9999)}",
-                         biclosed_to_closed(ccg_parse.biclosed_type).input)
+        x = create_random_variable(biclosed_to_closed(ccg_parse.biclosed_type).input)
         result = Expr.lmbda(x, x(children[0]))
     elif ccg_parse.rule == CCGRule.UNARY:
         result = change_expr_typ(children[0],
@@ -105,12 +104,12 @@ def ccg_to_expr(ccg_parse):
         result = children[1](children[0])
     elif ccg_parse.rule == CCGRule.FORWARD_COMPOSITION \
             or ccg_parse.rule == CCGRule.FORWARD_CROSSED_COMPOSITION:
-        x = Expr.literal(f"x_{random.randint(1000,9999)}", biclosed_to_closed(
+        x = create_random_variable(biclosed_to_closed(
             ccg_parse.children[1].biclosed_type).input)
         result = Expr.lmbda(x, children[0](children[1](x)))
     elif ccg_parse.rule == CCGRule.BACKWARD_COMPOSITION \
             or ccg_parse.rule == CCGRule.BACKWARD_CROSSED_COMPOSITION:
-        x = Expr.literal(f"x_{random.randint(1000,9999)}", biclosed_to_closed(
+        x = create_random_variable(biclosed_to_closed(
             ccg_parse.children[0].biclosed_type).input)
         result = Expr.lmbda(x, children[1](children[0](x)))
     elif ccg_parse.rule == CCGRule.CONJUNCTION:
