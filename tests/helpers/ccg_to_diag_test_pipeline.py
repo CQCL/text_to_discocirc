@@ -1,7 +1,7 @@
 import traceback
 
 from discocirc.diag import Frame
-from discocirc.expr import expr_to_diag, type_expand, pull_out
+from discocirc.expr import expr_to_diag, s_type_expand, pull_out
 from discocirc.expr.ccg_to_expr import ccg_to_expr
 from discocirc.expr.ccg_type_check import expr_type_check
 from discocirc.expr.expr_uncurry import expr_uncurry
@@ -15,7 +15,7 @@ def compare_type_expansions(unittest, expr):
         expand_s_types(test_diag)
     except:
         return
-    expr = type_expand(expr)
+    expr = s_type_expand(expr)
     test_diag2 = expr_to_diag(expr)
     unittest.assertEqual(test_diag, test_diag2)
 
@@ -46,7 +46,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse):
         diag.draw()
 
     # ------- Step 3: Type expansion -----------
-    expr = type_expand(expr)
+    expr = s_type_expand(expr)
 
     if config["type_check_ccg"]:
         unittest.assertTrue(expr_type_check(expr),
