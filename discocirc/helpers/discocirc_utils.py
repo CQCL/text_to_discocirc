@@ -4,6 +4,7 @@ from discopy.rigid import Ty, Box
 from discopy.monoidal import Functor
 
 from discocirc.expr.expr import Expr
+from discocirc.helpers.closed import Func
 
 
 def get_last_initial_noun(circ):
@@ -119,7 +120,8 @@ def expr_type_recursion(expr, function):
         new_expr = function(expr)
     elif expr.expr_type == "list":
         new_list = [function(e) for e in expr.expr_list]
-        new_expr = Expr.lst(new_list)
+        interchange = all([isinstance(e.typ, Func) for e in expr.expr_list])
+        new_expr = Expr.lst(new_list, interchange=interchange)
     elif expr.expr_type == "lambda":
         new_expr = function(expr.expr)
         new_var = function(expr.var)

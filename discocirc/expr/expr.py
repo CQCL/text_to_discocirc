@@ -1,5 +1,6 @@
 from __future__ import annotations
 from copy import deepcopy
+import random
 from prettytable import PrettyTable
 
 from discocirc.helpers.closed import Func, uncurry_types, Ty
@@ -201,8 +202,9 @@ class Expr:
                               Expr.evl(context, expr.arg), 
                               context, head=head)
         elif expr.expr_type == "list":
+            interchange = all([isinstance(e.typ, Func) for e in expr.expr_list])
             return Expr.lst([Expr.evl(context, e) for e in expr.expr_list],
-                            head=head, interchange=False)
+                            head=head, interchange=interchange)
         else:
             raise TypeError(f'Unknown type {expr.expr_type} of expression')
 

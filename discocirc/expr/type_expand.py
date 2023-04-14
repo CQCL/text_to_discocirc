@@ -86,6 +86,7 @@ def n_expand(expr):
                 right_ids = [id_expr] * (arg_output_wires - wire_index - 1)
                 fun = Expr.lst(left_ids + [fun] + right_ids)
                 expr = fun(arg)
+                return n_expand(expr)
         fun = n_expand(expr.fun)
         arg = n_expand(expr.arg)
         if isinstance(arg.typ, Func):
