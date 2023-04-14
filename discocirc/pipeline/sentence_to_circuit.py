@@ -1,11 +1,11 @@
 from discocirc.expr.inverse_beta import inverse_beta
+from discocirc.expr.n_type_expand import n_type_expand
 from discocirc.expr.s_type_expand import s_type_expand
+from discocirc.expr.coordination_expand import coordination_expand
 from discocirc.expr.ccg_to_expr import ccg_to_expr
 from discocirc.expr.expr_to_diag import expr_to_diag
 from discocirc.diag.frame import Frame
 from discocirc.expr.pull_out import pull_out
-from discocirc.expr.s_type_expand import expand_coordination
-from discocirc.expr.s_type_expand import n_expand
 
 
 def sentence2circ(parser, sentence):
@@ -15,14 +15,14 @@ def sentence2circ(parser, sentence):
     expr = inverse_beta(expr)
     expr = pull_out(expr)
     # expand noun-noun coordination
-    expr = expand_coordination(expr)
+    expr = coordination_expand(expr)
     # second round of pull out
     expr = inverse_beta(expr)
     expr = pull_out(expr)
     # s expand
     expr = s_type_expand(expr)
     # then n expand
-    expr = n_expand(expr)
+    expr = n_type_expand(expr)
     # convert expr to diagram
     diag = expr_to_diag(expr)
     diag = (Frame.get_decompose_functor())(diag)

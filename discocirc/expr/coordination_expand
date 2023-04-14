@@ -1,14 +1,13 @@
 
-import random
 from discocirc.expr.expr import Expr
 from discocirc.helpers.closed import Ty
 from discocirc.helpers.discocirc_utils import apply_at_root, change_expr_typ, count_applications, create_random_variable
 
 
-def expand_coordination(expr):
+def coordination_expand(expr):
     if expr.expr_type == "application":
         head = expr.head
-        fun = expand_coordination(expr.fun)
+        fun = coordination_expand(expr.fun)
         expr = fun(expr.arg)
         for n in range(count_applications(expr, branch='arg'), 0, -1):
             nth_arg = expr
@@ -23,7 +22,7 @@ def expand_coordination(expr):
                 var.head = nth_arg.head
                 body = var
                 for f, head in zip(reversed(funs), reversed(heads)):
-                    f = expand_coordination(f)
+                    f = coordination_expand(f)
                     body = f(body)
                     body.head = head
                 composition = Expr.lmbda(var, body)
