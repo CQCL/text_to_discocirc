@@ -33,27 +33,13 @@ class Expr:
     
     def __members(self):
         if self.expr_type == "literal":
-            return (self.expr_type,
-                    self.typ,
-                    self.name,
-                    self.head)
+            return (self.expr_type, self.typ, self.name, self.head)
         elif self.expr_type == "lambda":
-            return (self.expr_type,
-                    self.typ,
-                    self.var,
-                    self.expr,
-                    self.head)
+            return (self.expr_type, self.typ, self.name, self.head, self.var, self.expr)
         elif self.expr_type == "application":
-            return (self.expr_type,
-                    self.typ,
-                    self.arg,
-                    self.fun,
-                    self.head)
+            return (self.expr_type, self.typ, self.name, self.head, self.arg, self.fun)
         elif self.expr_type == "list":
-            return (self.expr_type,
-                    self.typ,
-                    self.expr_list,
-                    self.head)
+            return (self.expr_type, self.typ, self.name, self.head, self.expr_list)
         else:
             raise NotImplementedError(self.expr_type)
 
