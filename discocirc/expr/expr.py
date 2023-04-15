@@ -32,13 +32,13 @@ class Expr:
     
     def __members(self):
         if self.expr_type == "literal":
-            return (self.expr_type, self.typ, self.name, self.head)
+            return (self.expr_type, self.typ, self.name, str(self.head))
         elif self.expr_type == "lambda":
-            return (self.expr_type, self.typ, self.name, self.head, self.var, self.expr)
+            return (self.expr_type, self.typ, self.name, str(self.head), self.var, self.expr)
         elif self.expr_type == "application":
-            return (self.expr_type, self.typ, self.name, self.head, self.arg, self.fun)
+            return (self.expr_type, self.typ, self.name, str(self.head), self.arg, self.fun)
         elif self.expr_type == "list":
-            return (self.expr_type, self.typ, self.name, self.head, self.expr_list)
+            return (self.expr_type, self.typ, self.name, str(self.head), self.expr_list)
         else:
             raise NotImplementedError(self.expr_type)
 
@@ -84,7 +84,7 @@ class Expr:
                     "list",
                     infer_list_type(flattened_list, interchange),
                     head)
-        expr.expr_list = flattened_list
+        expr.expr_list = tuple(flattened_list)
         return expr
 
     @staticmethod
