@@ -4,7 +4,6 @@ import random
 from prettytable import PrettyTable
 
 from discocirc.helpers.closed import Func, uncurry_types, Ty
-from discocirc.helpers.discocirc_utils import create_random_variable
 
 
 class Expr:
@@ -85,7 +84,7 @@ class Expr:
                     "list",
                     infer_list_type(flattened_list, interchange),
                     head)
-        expr.expr_list = tuple(flattened_list)
+        expr.expr_list = flattened_list
         return expr
 
     @staticmethod
@@ -95,11 +94,8 @@ class Expr:
         """
         if expr.expr_type == "literal":
             if expr in context.keys():
-                new_expr = context[expr]
-                return new_expr
-            else:
-                new_expr = expr
-                return new_expr
+                return context[expr]
+            return expr
         elif expr.expr_type == "lambda":
             return Expr.lmbda(expr.var, Expr.evl(context, expr.expr)) 
         elif expr.expr_type == "application":
@@ -110,15 +106,13 @@ class Expr:
             interchange = all([isinstance(e.typ, Func) for e in expr.expr_list])
             return Expr.lst([Expr.evl(context, e) for e in expr.expr_list],
                             interchange=interchange)
-        else:
-            raise TypeError(f'Unknown type {expr.expr_type} of expression')
+        raise TypeError(f'Unknown type {expr.expr_type} of expression')
 
     @staticmethod
     def apply(fun, arg, context=None, reduce=True, head=None):
         """
         apply expr to arg
         """
-        # NOTE: if no head kwarg is passed in, this function now erases the head
         if fun.typ.input != arg.typ:
             new_expr = Expr.partial_apply(fun, arg, context)
         if fun.expr_type == "lambda" and reduce:
@@ -137,7 +131,6 @@ class Expr:
 
     @staticmethod
     def partial_apply(expr, arg, context=None):
-        # NOTE: if no head kwarg is passed in, this function now erases the head
         num_inputs = 0
         for i in range(len(expr.typ.input) + 1):
             if expr.typ.input[-i:] == arg.typ:
@@ -146,8 +139,8 @@ class Expr:
         if num_inputs == 0:
             raise TypeError(f"Type of:\n{arg}\n is not compatible "
                             + f"with the input type of:\n{expr}")
-        var1 = create_random_variable(expr.typ.input[-i:])
-        var2 = create_random_variable(expr.typ.input[:-num_inputs])
+        var1 = Expr.literal(f"x_{random.randint(1000,9999)}", expr.typ.input[-i:])
+        var2 = Expr.literal(f"x_{random.randint(1000,9999)}", expr.typ.input[:-num_inputs])
         var2_var1 = Expr.lst([var2, var1], interchange=False)
         expr = Expr.lmbda(var1, Expr.lmbda(var2, expr(var2_var1)))
         return Expr.apply(expr, arg, context, reduce=True)
@@ -185,7 +178,8 @@ def infer_list_type(expr_list, interchange):
         for e in expr_list:
             list_type = list_type @ e.typ
     return list_type
-    
+
+
 def get_literal_string(expr):
     name = str(expr.name)
     typ = str(expr.typ)
@@ -216,10 +210,10 @@ def get_lambda_string(expr):
     output = '\n'.join(string)
     return output
 
-def get_application_string(self):
-    expr = str(self.fun)
-    arg = str(self.arg)
-    typ = str(self.typ)
+def get_application_string(expr):
+    expr = str(expr.fun)
+    arg = str(expr.arg)
+    typ = str(expr.typ)
     expr_lines = expr.split('\n')
     arg_lines = arg.split('\n')
     empty_arg_lines = [' ' * len(max(arg_lines))] * (len(expr_lines) - len(arg_lines))
