@@ -196,10 +196,10 @@ def get_lambda_string(expr):
         var = str(var_temp)
     else:
         var = 'λ ' + str(var_temp)
-    expr = str(expr.expr)
+    body = str(expr.expr)
     typ = str(expr.typ)
     var_lines = var.split('\n')
-    expr_lines = expr.split('\n')
+    expr_lines = body.split('\n')
     empty_expr_lines = [' ' * len(max(expr_lines))] * (len(var_lines) - len(expr_lines))
     expr_lines = empty_expr_lines + expr_lines
     empty_var_lines = [' ' * len(max(var_lines))] * (len(expr_lines) - len(var_lines))
@@ -207,14 +207,13 @@ def get_lambda_string(expr):
     string = ['  '.join([var_l, expr_l]) for var_l, expr_l in zip(var_lines, expr_lines)]
     string.append('─' * len(string[0]))
     string.append(f'{typ:^{len(string[0])}}')
-    output = '\n'.join(string)
-    return output
+    return '\n'.join(string)
 
 def get_application_string(expr):
-    expr = str(expr.fun)
+    fun = str(expr.fun)
     arg = str(expr.arg)
     typ = str(expr.typ)
-    expr_lines = expr.split('\n')
+    expr_lines = fun.split('\n')
     arg_lines = arg.split('\n')
     empty_arg_lines = [' ' * len(max(arg_lines))] * (len(expr_lines) - len(arg_lines))
     arg_lines = empty_arg_lines + arg_lines
@@ -223,8 +222,7 @@ def get_application_string(expr):
     string = ['  '.join([expr_l, arg_l]) for expr_l, arg_l in zip(expr_lines, arg_lines)]
     string.append('─' * len(string[0]))
     string.append(f'{typ:^{len(string[0])}}')
-    output = '\n'.join(string)
-    return output
+    return '\n'.join(string)
 
 def get_list_string(expr):
     max_lines = max([len(str(expr).splitlines()) for expr in expr.expr_list])
@@ -236,8 +234,8 @@ def get_list_string(expr):
     tb.right_padding_width = 0
     tb.align = "l"
     tb_list = []
-    for i, expr in enumerate(expr.expr_list):
-        expr_lines = str(expr).splitlines()
+    for i, ex in enumerate(expr.expr_list):
+        expr_lines = str(ex).splitlines()
         if i != len(expr.expr_list) - 1:
             expr_lines[-2] += ' x '
         if max_lines - len(expr_lines) > 0:
