@@ -8,6 +8,14 @@ from discocirc.helpers.discocirc_utils import create_random_variable
 
 
 class Expr:
+    def __init__(self, name, expr_type, typ, head) -> None:
+        self.name = name
+        self.expr_type = expr_type
+        if expr_type not in ["literal", "lambda", "application", "list"]:
+            raise ValueError("Invalid expression type")
+        self.typ = typ
+        self.head = head
+    
     def __repr__(self):
         if self.expr_type == "literal":
             name = str(self.name)
@@ -118,75 +126,38 @@ class Expr:
 
     @staticmethod
     def literal(name, typ, head=None):
-        expr = Expr()
-        expr.expr_type = "literal"
-        expr.typ = typ
-        expr.name = name
-        expr.head = head
-        return expr
+        return Expr(name, "literal", typ, head)
 
     @staticmethod
     def lmbda(var, expr, head=None):
-        lambda_expr = Expr()
-        lambda_expr.expr_type = "lambda"
+        lambda_expr = Expr(expr.name, "lambda", var.typ >> expr.typ, head)
         lambda_expr.var = var
         #TODO: rename .expr to something else. possible option: "body"
         lambda_expr.expr = expr
-        lambda_expr.typ = var.typ >> expr.typ
-        lambda_expr.name = expr.name
-        lambda_expr.head = head
         return lambda_expr
     
     @staticmethod
     def application(fun, arg, head=None):
         if fun.typ.input != arg.typ:
-            raise TypeError(f"Type of {arg} does not"
-                            + f"match the input type of {fun}")
-        app_expr = Expr()
-        app_expr.expr_type = "application"
-        app_expr.typ = fun.typ.output
+            raise TypeError(f"Type of \n{arg}\n does not"
+                            + f"match the input type of \n{fun}")
+        app_expr = Expr(f"{fun.name}({arg.name})",
+                        "application",
+                        fun.typ.output,
+                        head)
         app_expr.fun = fun
         app_expr.arg = arg
-        app_expr.name = f"{fun.name}({arg.name})"
-        app_expr.head = head
         return app_expr
     
     @staticmethod
     def lst(expr_list, interchange=True, head = None):
-        expr = Expr()
-        expr.expr_type = "list"
-        new_expr_list = []
-        name = ""
-        for e in expr_list:
-            if e.expr_type == "list":
-                new_expr_list.extend(e.expr_list)
-            else:
-                new_expr_list.append(e)
-            name += e.name + ", "
-        expr.name = name
-        expr.expr_list = tuple(new_expr_list)
-        expr.typ = Expr.infer_list_type(expr_list, interchange)
-        expr.head = head
+        flattened_list = get_flattened_expr_list(expr_list)
+        expr = Expr(get_expr_list_name(flattened_list),
+                    "list",
+                    infer_list_type(flattened_list, interchange),
+                    head)
+        expr.expr_list = tuple(flattened_list)
         return expr
-
-    @staticmethod
-    def infer_list_type(expr_list, interchange):
-        if interchange:
-            final_input = Ty()
-            final_output = Ty()
-            for e in expr_list:
-                f = uncurry_types(e.typ, uncurry_everything=True)
-                if isinstance(e.typ, Func):
-                    final_input = final_input @ f.input
-                    final_output = final_output @ f.output
-                else:
-                    final_output = final_output @ f
-            list_type = final_input >> final_output
-        else:
-            list_type = Ty()
-            for e in expr_list:
-                list_type = list_type @ e.typ
-        return list_type
 
     @staticmethod
     def evl(context, expr):
@@ -252,3 +223,37 @@ class Expr:
         expr = Expr.lmbda(var1, Expr.lmbda(var2, expr(var2_var1)))
         return Expr.apply(expr, arg, context, reduce=True)
 
+
+def get_flattened_expr_list(expr_list):
+    new_expr_list = []
+    for e in expr_list:
+        if e.expr_type == "list":
+            new_expr_list.extend(e.expr_list)
+        else:
+            new_expr_list.append(e)
+    return new_expr_list
+
+def get_expr_list_name(expr_list):
+    name = ""
+    for e in expr_list:
+        name += e.name + ", "
+    return name
+
+def infer_list_type(expr_list, interchange):
+    if interchange:
+        final_input = Ty()
+        final_output = Ty()
+        for e in expr_list:
+            f = uncurry_types(e.typ, uncurry_everything=True)
+            if isinstance(e.typ, Func):
+                final_input = final_input @ f.input
+                final_output = final_output @ f.output
+            else:
+                final_output = final_output @ f
+        list_type = final_input >> final_output
+    else:
+        list_type = Ty()
+        for e in expr_list:
+            list_type = list_type @ e.typ
+    return list_type
+    
