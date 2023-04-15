@@ -84,21 +84,25 @@ class Expr:
         if self.expr_type == "literal":
             return (self.expr_type,
                     self.typ,
-                    self.name)
+                    self.name,
+                    self.head)
         elif self.expr_type == "lambda":
             return (self.expr_type,
                     self.typ,
                     self.var,
-                    self.expr)
+                    self.expr,
+                    self.head)
         elif self.expr_type == "application":
             return (self.expr_type,
                     self.typ,
                     self.arg,
-                    self.fun)
+                    self.fun,
+                    self.head)
         elif self.expr_type == "list":
             return (self.expr_type,
                     self.typ,
-                    self.expr_list)
+                    self.expr_list,
+                    self.head)
         else:
             raise NotImplementedError(self.expr_type)
 
