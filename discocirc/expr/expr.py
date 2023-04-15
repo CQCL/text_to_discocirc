@@ -18,70 +18,13 @@ class Expr:
     
     def __repr__(self):
         if self.expr_type == "literal":
-            name = str(self.name)
-            typ = str(self.typ)
-            length = max(len(name), len(typ))
-            string = f'{name:^{length}}' + '\n'
-            string += '═' * length + '\n'
-            string += f'{typ:^{length}}'
-            return string
+            return get_literal_string(self)
         elif self.expr_type == "lambda":
-            var_temp = deepcopy(self.var)
-            if hasattr(var_temp, "name"):
-                var_temp.name = 'λ ' + var_temp.name
-                var = str(var_temp)
-            else:
-                var = 'λ ' + str(var_temp)
-            expr = str(self.expr)
-            typ = str(self.typ)
-            var_lines = var.split('\n')
-            expr_lines = expr.split('\n')
-            empty_expr_lines = [' ' * len(max(expr_lines))] * (len(var_lines) - len(expr_lines))
-            expr_lines = empty_expr_lines + expr_lines
-            empty_var_lines = [' ' * len(max(var_lines))] * (len(expr_lines) - len(var_lines))
-            var_lines = empty_var_lines + var_lines
-            string = ['  '.join([var_l, expr_l]) for var_l, expr_l in zip(var_lines, expr_lines)]
-            string.append('─' * len(string[0]))
-            string.append(f'{typ:^{len(string[0])}}')
-            return '\n'.join(string)
+            return get_lambda_string(self)
         elif self.expr_type == "application":
-            expr = str(self.fun)
-            arg = str(self.arg)
-            typ = str(self.typ)
-            expr_lines = expr.split('\n')
-            arg_lines = arg.split('\n')
-            empty_arg_lines = [' ' * len(max(arg_lines))] * (len(expr_lines) - len(arg_lines))
-            arg_lines = empty_arg_lines + arg_lines
-            empty_expr_lines = [' ' * len(max(expr_lines))] * (len(arg_lines) - len(expr_lines))
-            expr_lines = empty_expr_lines + expr_lines
-            string = ['  '.join([expr_l, arg_l]) for expr_l, arg_l in zip(expr_lines, arg_lines)]
-            string.append('─' * len(string[0]))
-            string.append(f'{typ:^{len(string[0])}}')
-            return '\n'.join(string)
+            return get_application_string(self)
         elif self.expr_type == "list":
-            max_lines = max([len(str(expr).splitlines()) for expr in self.expr_list])
-            tb = PrettyTable()
-            tb.border=False
-            tb.preserve_internal_border = False
-            tb.header = False
-            tb.left_padding_width = 0
-            tb.right_padding_width = 0
-            tb.align = "l"
-            tb_list = []
-            for i, expr in enumerate(self.expr_list):
-                expr_lines = str(expr).splitlines()
-                if i != len(self.expr_list) - 1:
-                    expr_lines[-2] += ' x '
-                if max_lines - len(expr_lines) > 0:
-                    expr_lines = ['\n'*(max_lines - len(expr_lines))] + expr_lines
-                expr_lines = '\n'.join(expr_lines)
-                tb_list.append(expr_lines)
-            tb.add_row(tb_list)
-            string = tb.get_string()
-            length = len(string.splitlines()[-1])
-            string += '\n' + '─' * length + '\n'
-            string += f'{str(self.typ):^{length}}'
-            return string
+            return get_list_string(self)
         else:
             raise NotImplementedError(self.expr_type)
 
@@ -257,3 +200,73 @@ def infer_list_type(expr_list, interchange):
             list_type = list_type @ e.typ
     return list_type
     
+def get_literal_string(expr):
+    name = str(expr.name)
+    typ = str(expr.typ)
+    length = max(len(name), len(typ))
+    string = f'{name:^{length}}' + '\n'
+    string += '═' * length + '\n'
+    string += f'{typ:^{length}}'
+    return string
+
+def get_lambda_string(expr):
+    var_temp = deepcopy(expr.var)
+    if hasattr(var_temp, "name"):
+        var_temp.name = 'λ ' + var_temp.name
+        var = str(var_temp)
+    else:
+        var = 'λ ' + str(var_temp)
+    expr = str(expr.expr)
+    typ = str(expr.typ)
+    var_lines = var.split('\n')
+    expr_lines = expr.split('\n')
+    empty_expr_lines = [' ' * len(max(expr_lines))] * (len(var_lines) - len(expr_lines))
+    expr_lines = empty_expr_lines + expr_lines
+    empty_var_lines = [' ' * len(max(var_lines))] * (len(expr_lines) - len(var_lines))
+    var_lines = empty_var_lines + var_lines
+    string = ['  '.join([var_l, expr_l]) for var_l, expr_l in zip(var_lines, expr_lines)]
+    string.append('─' * len(string[0]))
+    string.append(f'{typ:^{len(string[0])}}')
+    output = '\n'.join(string)
+    return output
+
+def get_application_string(self):
+    expr = str(self.fun)
+    arg = str(self.arg)
+    typ = str(self.typ)
+    expr_lines = expr.split('\n')
+    arg_lines = arg.split('\n')
+    empty_arg_lines = [' ' * len(max(arg_lines))] * (len(expr_lines) - len(arg_lines))
+    arg_lines = empty_arg_lines + arg_lines
+    empty_expr_lines = [' ' * len(max(expr_lines))] * (len(arg_lines) - len(expr_lines))
+    expr_lines = empty_expr_lines + expr_lines
+    string = ['  '.join([expr_l, arg_l]) for expr_l, arg_l in zip(expr_lines, arg_lines)]
+    string.append('─' * len(string[0]))
+    string.append(f'{typ:^{len(string[0])}}')
+    output = '\n'.join(string)
+    return output
+
+def get_list_string(expr):
+    max_lines = max([len(str(expr).splitlines()) for expr in expr.expr_list])
+    tb = PrettyTable()
+    tb.border=False
+    tb.preserve_internal_border = False
+    tb.header = False
+    tb.left_padding_width = 0
+    tb.right_padding_width = 0
+    tb.align = "l"
+    tb_list = []
+    for i, expr in enumerate(expr.expr_list):
+        expr_lines = str(expr).splitlines()
+        if i != len(expr.expr_list) - 1:
+            expr_lines[-2] += ' x '
+        if max_lines - len(expr_lines) > 0:
+            expr_lines = ['\n'*(max_lines - len(expr_lines))] + expr_lines
+        expr_lines = '\n'.join(expr_lines)
+        tb_list.append(expr_lines)
+    tb.add_row(tb_list)
+    string = tb.get_string()
+    length = len(string.splitlines()[-1])
+    string += '\n' + '─' * length + '\n'
+    string += f'{str(expr.typ):^{length}}'
+    return string
