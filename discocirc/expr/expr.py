@@ -115,7 +115,7 @@ class Expr:
         """
         if fun.typ.input != arg.typ:
             new_expr = Expr.partial_apply(fun, arg, context)
-        if fun.expr_type == "lambda" and reduce:
+        elif fun.expr_type == "lambda" and reduce:
             if context == None:
                 context = {}
             if fun.var.expr_type == "list":
