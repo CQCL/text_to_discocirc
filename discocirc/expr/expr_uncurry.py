@@ -22,17 +22,14 @@ def expr_uncurry(expr):
             a = expr_uncurry(expr.arg)
             b = expr_uncurry(expr.fun.arg)
             c = expr_uncurry(expr.fun.fun)
-            interchange = all([isinstance(e.typ, Func) for e in [a, b]])
-            a_b = Expr.lst([a, b], interchange=interchange)
+            a_b = Expr.lst([a, b])
             new_expr = expr_uncurry(c(a_b))
         else:
             arg = expr_uncurry(expr.arg)
             fun = expr_uncurry(expr.fun)
             new_expr = fun(arg)
     elif expr.expr_type == "list":
-        expr_list = [expr_uncurry(e) for e in expr.expr_list]
-        interchange = all([isinstance(e.typ, Func) for e in expr_list])
-        new_expr = Expr.lst(expr_list, interchange=interchange)
+        new_expr = Expr.lst([expr_uncurry(e) for e in expr.expr_list])
     else:
         raise TypeError(f'Unknown type {expr.expr_type} of expression')
     new_expr.head = head

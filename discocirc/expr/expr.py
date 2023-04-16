@@ -78,7 +78,9 @@ class Expr:
         return app_expr
     
     @staticmethod
-    def lst(expr_list, interchange=True, head = None):
+    def lst(expr_list, interchange='auto', head=None):
+        if interchange == 'auto':
+            interchange = if_interchange_list_type(expr_list)
         flattened_list = get_flattened_expr_list(expr_list)
         expr = Expr(get_expr_list_name(flattened_list),
                     "list",
@@ -103,9 +105,7 @@ class Expr:
                               Expr.evl(context, expr.arg), 
                               context)
         elif expr.expr_type == "list":
-            interchange = all([isinstance(e.typ, Func) for e in expr.expr_list])
-            return Expr.lst([Expr.evl(context, e) for e in expr.expr_list],
-                            interchange=interchange)
+            return Expr.lst([Expr.evl(context, e) for e in expr.expr_list])
         raise TypeError(f'Unknown type {expr.expr_type} of expression')
 
     @staticmethod
@@ -179,6 +179,16 @@ def infer_list_type(expr_list, interchange):
             list_type = list_type @ e.typ
     return list_type
 
+def if_interchange_list_type(expr_list):
+    for e in expr_list:
+        # do not interchange if expr_list has a state
+        if not isinstance(e.typ, Func): 
+            return False
+        # do not interchange if expr_list has a higher order map
+        for e_inputs in e.typ.input:
+            if isinstance(e_inputs, Func):
+                return False
+    return True
 
 def get_literal_string(expr):
     name = str(expr.name)

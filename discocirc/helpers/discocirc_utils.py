@@ -120,9 +120,7 @@ def expr_type_recursion(expr, function):
     if expr.expr_type == "literal":
         new_expr = function(expr)
     elif expr.expr_type == "list":
-        new_list = [function(e) for e in expr.expr_list]
-        interchange = all([isinstance(e.typ, Func) for e in expr.expr_list])
-        new_expr = Expr.lst(new_list, interchange=interchange)
+        new_expr = Expr.lst([function(e) for e in expr.expr_list])
     elif expr.expr_type == "lambda":
         new_expr = function(expr.expr)
         new_var = function(expr.var)
