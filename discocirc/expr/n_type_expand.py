@@ -35,7 +35,7 @@ def expand_app_with_n_arg(expr):
         fun = Expr.lst(left_ids + [expr.fun] + right_ids)
         new_expr = fun(arg)
         new_expr.head = expr.head
-        return n_type_expand(expr)
+        return n_type_expand(new_expr)
     else:
         return expand_app(expr)
 
