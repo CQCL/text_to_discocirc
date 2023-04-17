@@ -6,6 +6,7 @@ from discocirc.expr.ccg_to_expr import ccg_to_expr
 from discocirc.expr.expr_to_diag import expr_to_diag
 from discocirc.diag.frame import Frame
 from discocirc.expr.pull_out import pull_out
+from discocirc.semantics.rewrite import rewrite
 
 
 def sentence2circ(parser, sentence):
@@ -25,6 +26,8 @@ def sentence2circ(parser, sentence):
     expr = n_type_expand(expr)
     # convert expr to diagram
     diag = expr_to_diag(expr)
-    diag = (Frame.get_decompose_functor())(diag)
+    diag = (Frame.get_decompose_functor())(diag)\
+    # apply semantic rewrites
+    diag = rewrite(diag, rules='all')
 
     return diag
