@@ -1,13 +1,14 @@
 from discopy.rigid import Id
 
-from discocirc.diag.frame import Frame, Functor
+from discocirc.diag.frame import Functor
+from discocirc.helpers.closed import Ty
 
 
 def remove_articles(digram):
     def f_box(box):
         str = box.name.lower()
         if (str == "the" or str == "a" or str == "an") and \
-            box.dom == box.cod == 1:
+            box.dom == box.cod == Ty('n'):
             return Id(box.dom)
         return box
     f = Functor(ob=lambda x: x, ar=f_box, frame=lambda x: x)
