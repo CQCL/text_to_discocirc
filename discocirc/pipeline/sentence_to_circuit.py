@@ -9,7 +9,7 @@ from discocirc.expr.pull_out import pull_out
 from discocirc.semantics.rewrite import rewrite
 
 
-def sentence2circ(parser, sentence):
+def sentence2circ(parser, sentence, semantic_rewrites=True):
     ccg = parser.sentence2tree(sentence)
     expr = ccg_to_expr(ccg)
     # first round of pull out
@@ -27,7 +27,8 @@ def sentence2circ(parser, sentence):
     # convert expr to diagram
     diag = expr_to_diag(expr)
     # apply semantic rewrites
-    diag = rewrite(diag, rules='all')
+    if semantic_rewrites:
+        diag = rewrite(diag, rules='all')
     # decompose diagram
     diag = (Frame.get_decompose_functor())(diag)
 
