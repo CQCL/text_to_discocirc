@@ -3,9 +3,11 @@ from discopy.rigid import Id
 from discocirc.diag.frame import Frame, Functor
 
 
-def remove_the(digram):
+def remove_articles(digram):
     def f_box(box):
-        if box.name.lower() == "the" and box.dom == box.cod:
+        str = box.name.lower()
+        if (str == "the" or str == "a" or str == "an") and \
+            box.dom == box.cod == 1:
             return Id(box.dom)
         return box
     f = Functor(ob=lambda x: x, ar=f_box, frame=lambda x: x)
