@@ -42,7 +42,7 @@ def pull_out(expr):
     elif expr.expr_type == 'application':
         expr = pull_out_application(expr)
         for n in range(1, count_applications(expr.arg)): # we can only apply C combinator if we have at least two applications
-            n_c_combi_expr = expr.fun(n_fold_c_combinator(expr.arg, n))
+            n_c_combi_expr = Expr.apply(expr.fun, n_fold_c_combinator(expr.arg, n), reduce=False)
             n_c_combi_expr_pulled = pull_out_application(n_c_combi_expr)
             if n_c_combi_expr_pulled != n_c_combi_expr: # check if something was pulled out
                 expr = pull_out(n_c_combi_expr_pulled)
