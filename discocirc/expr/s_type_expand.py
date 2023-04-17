@@ -33,3 +33,10 @@ def s_type_expand(expr):
         return Expr.literal(expr.name, new_type, head=expr.head)
     else:
         return expr_type_recursion(expr, s_type_expand)
+
+def p_type_expand(expr):
+    if expr.expr_type == "literal":
+        new_type = expand_closed_type(expr.typ, Ty('p'))
+        return Expr.literal(expr.name, new_type, head=expr.head)
+    else:
+        return expr_type_recursion(expr, s_type_expand)
