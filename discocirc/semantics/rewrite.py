@@ -1,8 +1,9 @@
-from discocirc.semantics.rules import remove_the
+from discocirc.semantics.rules import remove_is, remove_the
 
 
 rules_dict = {
     "remove_the": remove_the,
+    "remove_is": remove_is,
 }
 
 

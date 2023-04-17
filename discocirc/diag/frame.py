@@ -16,7 +16,7 @@ def logical_form(diagram):
 class Frame(rigid.Box):
     def __init__(self, name, dom, cod, insides):
         self._insides = insides
-        super().__init__(name, dom, cod)
+        super().__init__(str(name), dom, cod)
         self.drawing_name = logical_form(self)
 
     def insert(self, position, inside):

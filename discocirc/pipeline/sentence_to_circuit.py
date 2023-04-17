@@ -26,8 +26,9 @@ def sentence2circ(parser, sentence):
     expr = n_type_expand(expr)
     # convert expr to diagram
     diag = expr_to_diag(expr)
-    diag = (Frame.get_decompose_functor())(diag)\
     # apply semantic rewrites
     diag = rewrite(diag, rules='all')
+    # decompose diagram
+    diag = (Frame.get_decompose_functor())(diag)
 
     return diag
