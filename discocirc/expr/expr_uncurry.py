@@ -22,8 +22,14 @@ def expr_uncurry(expr):
             a = expr_uncurry(expr.arg)
             b = expr_uncurry(expr.fun.arg)
             c = expr_uncurry(expr.fun.fun)
-            a_b = Expr.lst([a, b])
-            new_expr = expr_uncurry(c(a_b))
+            # I can't figure out when to interchange and when to not
+            try:
+                a_b = Expr.lst([a, b], interchange=False)
+                new_expr = c(a_b)
+            except TypeError:
+                a_b = Expr.lst([a, b], interchange=True)
+                new_expr = c(a)(b)
+            new_expr = expr_uncurry(new_expr)
         else:
             arg = expr_uncurry(expr.arg)
             fun = expr_uncurry(expr.fun)
