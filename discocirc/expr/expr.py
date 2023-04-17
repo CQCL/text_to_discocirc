@@ -94,19 +94,23 @@ class Expr:
         """
         performs substitution of context into free variables in expr
         """
+        head = expr.head
         if expr.expr_type == "literal":
             if expr in context.keys():
                 return context[expr]
             return expr
         elif expr.expr_type == "lambda":
-            return Expr.lmbda(expr.var, Expr.evl(context, expr.expr)) 
+            new_expr = Expr.lmbda(expr.var, Expr.evl(context, expr.expr)) 
         elif expr.expr_type == "application":
-            return Expr.apply(Expr.evl(context, expr.fun),
+            new_expr = Expr.apply(Expr.evl(context, expr.fun),
                               Expr.evl(context, expr.arg), 
                               context)
         elif expr.expr_type == "list":
-            return Expr.lst([Expr.evl(context, e) for e in expr.expr_list])
-        raise TypeError(f'Unknown type {expr.expr_type} of expression')
+            new_expr = Expr.lst([Expr.evl(context, e) for e in expr.expr_list])
+        else:
+            raise TypeError(f'Unknown type {expr.expr_type} of expression')
+        new_expr.head = head
+        return new_expr
 
     @staticmethod
     def apply(fun, arg, context=None, reduce=True, head=None):
