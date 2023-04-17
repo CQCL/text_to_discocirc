@@ -119,11 +119,15 @@ class Expr:
             if context == None:
                 context = {}
             if fun.var.expr_type == "list":
-                for var, val in zip(fun.var.expr_list, arg.expr_list):
-                    context[var] = val
+                if var_list_matches_arg_list(fun, arg):
+                    for var, val in zip(fun.var.expr_list, arg.expr_list):
+                        context[var] = val
+                    new_expr = Expr.evl(context, fun.expr)
+                else:
+                    new_expr = Expr.application(fun, arg)
             else:
                 context[fun.var] = arg
-            new_expr = Expr.evl(context, fun.expr)
+                new_expr = Expr.evl(context, fun.expr)
         else:
             new_expr = Expr.application(fun, arg)
         new_expr.head = head
@@ -188,6 +192,15 @@ def if_interchange_list_type(expr_list):
         for e_inputs in e.typ.input:
             if isinstance(e_inputs, Func):
                 return False
+    return True
+
+def var_list_matches_arg_list(fun, arg):
+    if fun.var.expr_type != "list" or arg.expr_type != "list" or \
+        len(fun.var.expr_list) != len(arg.expr_list):
+        return False
+    for var, val in zip(fun.var.expr_list, arg.expr_list):
+        if var.typ != val.typ:
+            return False
     return True
 
 def get_literal_string(expr):
