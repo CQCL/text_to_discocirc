@@ -49,24 +49,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse):
         diag = (Frame.get_decompose_functor())(diag)
         diag.draw()
 
-    # ------- Step 3: S-type expansion -----------
-    expr = s_type_expand(expr)
-
-    if config["type_check_ccg"]:
-        unittest.assertTrue(expr_type_check(expr),
-                            msg="Typechecking s_type expanded expr")
-
-    if config["compare_type_expansions"]:
-        compare_type_expansions(unittest, expr)
-    # TODO: write test to check that all types have been expanded
-    #  correctly (Issue #14)
-
-    if config["draw_steps"]:
-        diag = expr_to_diag(expr)
-        diag = (Frame.get_decompose_functor())(diag)
-        diag.draw()
-
-    # ------- Step 4: Coordination expansion -----------
+    # ------- Step 3: Coordination expansion -----------
     expr = coordination_expand(expr)
 
     if config["type_check_ccg"]:
@@ -78,7 +61,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse):
         diag = (Frame.get_decompose_functor())(diag)
         diag.draw()
         
-    # ------- Step 5: Pulling out again -----------
+    # ------- Step 4: Pulling out again -----------
     expr = inverse_beta(expr)
     expr = pull_out(expr)
     if config["type_check_ccg"]:
@@ -90,12 +73,29 @@ def ccg_to_diag_test(unittest, config, ccg_parse):
         diag = (Frame.get_decompose_functor())(diag)
         diag.draw()
 
-    # ------- Step 6: N-type expansion -----------
+    # ------- Step 5: N-type expansion -----------
     expr = n_type_expand(expr)
 
     if config["type_check_ccg"]:
         unittest.assertTrue(expr_type_check(expr),
                             msg="Typechecking n_type expanded expr")
+
+    if config["draw_steps"]:
+        diag = expr_to_diag(expr)
+        diag = (Frame.get_decompose_functor())(diag)
+        diag.draw()
+
+    # ------- Step 6: S-type expansion -----------
+    expr = s_type_expand(expr)
+
+    if config["type_check_ccg"]:
+        unittest.assertTrue(expr_type_check(expr),
+                            msg="Typechecking s_type expanded expr")
+
+    if config["compare_type_expansions"]:
+        compare_type_expansions(unittest, expr)
+    # TODO: write test to check that all types have been expanded
+    #  correctly (Issue #14)
 
     if config["draw_steps"]:
         diag = expr_to_diag(expr)

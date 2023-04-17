@@ -20,11 +20,11 @@ def sentence2circ(parser, sentence, semantic_rewrites=True):
     # second round of pull out
     expr = inverse_beta(expr)
     expr = pull_out(expr)
-    # s expand
-    expr = s_type_expand(expr)
     # then n expand
     expr = n_type_expand(expr)
     # convert expr to diagram
+    # s expand
+    expr = s_type_expand(expr)
     diag = expr_to_diag(expr)
     # apply semantic rewrites
     if semantic_rewrites:

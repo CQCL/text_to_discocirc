@@ -10,9 +10,19 @@ def expand_closed_type(typ, expand_which_type):
     while isinstance(typ, Func):
         args.append(typ.input)
         typ = typ.output
+    n_nouns = sum([1 for i in Ty().tensor(*args) if Ty(i) == Ty('n')])
     if typ == expand_which_type:
-        n_nouns = sum([1 for i in Ty().tensor(*args) if Ty(i) == Ty('n')])
         typ = Ty().tensor(*([Ty('n')] * n_nouns))
+    elif len(typ) > 1 and expand_which_type != Ty('n'):
+        num_output_nouns = sum([1 for t in typ if Ty(t) == Ty('n')])
+        new_typ = Ty()
+        for t in typ:
+            if Ty(t) == expand_which_type:
+                new_typ = new_typ @ Ty().tensor(*([Ty('n')] * (n_nouns - num_output_nouns)))
+            else:
+                t = Ty(t) if not isinstance(t, Func) else t
+                new_typ = new_typ @ t
+        typ = new_typ
     for arg in reversed(args):
         typ = expand_closed_type(arg, expand_which_type) >> typ
     return typ
