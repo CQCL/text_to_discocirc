@@ -1,9 +1,10 @@
-from discocirc.semantics.rules import remove_is, remove_the
+from discocirc.semantics.rules import remove_relative_pronouns, remove_to_be, remove_the
 
 
 rules_dict = {
     "remove_the": remove_the,
-    "remove_is": remove_is,
+    "remove_to_be": remove_to_be,
+    "remove_relative_pronouns": remove_relative_pronouns,
 }
 
 
