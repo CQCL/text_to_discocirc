@@ -1,5 +1,3 @@
-import traceback
-from build.lib.discocirc.semantics.rewrite import rewrite
 
 from discocirc.diag import Frame
 from discocirc.expr import expr_to_diag, s_type_expand, pull_out
@@ -10,6 +8,7 @@ from discocirc.expr.expr_uncurry import expr_uncurry
 from discocirc.expr.inverse_beta import inverse_beta
 from discocirc.expr.n_type_expand import n_type_expand
 from discocirc.expr.s_type_expand import p_type_expand
+from discocirc.semantics.rewrite import rewrite
 from outdated_code.expand_s_types import expand_s_types
 
 
