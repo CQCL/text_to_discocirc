@@ -13,7 +13,7 @@ def expr_uncurry(expr):
         new_body = expr_uncurry(expr.expr)
         if isinstance(new_body.typ, Func):
             var2 = create_random_variable(new_body.typ.input)
-            product_var = Expr.lst([new_var, var2], interchange=False)
+            product_var = Expr.lst([var2, new_var], interchange=False)
             new_expr = Expr.lmbda(product_var, new_body(var2))
         else:
             new_expr = Expr.lmbda(new_var, new_body)
@@ -28,7 +28,7 @@ def expr_uncurry(expr):
                 new_expr = c(a_b)
             except TypeError:
                 a_b = Expr.lst([a, b], interchange=True)
-                new_expr = c(a)(b)
+                new_expr = c(a_b)
             new_expr = expr_uncurry(new_expr)
         else:
             arg = expr_uncurry(expr.arg)
