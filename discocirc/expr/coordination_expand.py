@@ -6,9 +6,10 @@ from discocirc.helpers.discocirc_utils import apply_at_root, change_expr_typ, co
 
 def coordination_expand(expr):
     if expr.expr_type == "application":
-        head = expr.head
+        original_head = expr.head
         fun = coordination_expand(expr.fun)
         expr = fun(expr.arg)
+        expr.head = original_head
         for n in range(count_applications(expr, branch='arg'), 0, -1):
             nth_arg = expr
             funs = []
@@ -28,7 +29,7 @@ def coordination_expand(expr):
                 composition = Expr.lmbda(var, body)
                 nth_arg = change_expr_typ(nth_arg, composition.typ >> nth_arg.typ)
                 nth_arg = apply_at_root(nth_arg, composition)
-                expr = change_expr_typ(nth_arg, expr.typ)
-                break
-        expr.head = head
+                new_expr = change_expr_typ(nth_arg, expr.typ)
+                new_expr.head = original_head
+                return coordination_expand(new_expr)
     return expr
