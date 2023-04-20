@@ -43,9 +43,6 @@ def find_parent_in_expr(expr, child):
         return None
 
 def expand_possessive_pronouns(expr, doc, chain, mention_expr):
-    most_specific = find_word_in_expr(expr,
-                                      doc[chain[chain.most_specific_mention_index].root_index],
-                                      chain[chain.most_specific_mention_index].root_index)
     parent = find_parent_in_expr(
         expr,
         find_parent_in_expr(
@@ -55,7 +52,9 @@ def expand_possessive_pronouns(expr, doc, chain, mention_expr):
     )
 
     other_args = []
-    while parent.arg != most_specific:
+    while not find_word_in_expr(parent.arg,
+                doc[chain[chain.most_specific_mention_index].root_index],
+                chain[chain.most_specific_mention_index].root_index):
         other_args.append(expr_uncurry(parent.arg))
         parent = find_parent_in_expr(expr, parent)
 
@@ -88,15 +87,23 @@ def expand_possessive_pronouns(expr, doc, chain, mention_expr):
     return new_outside(Expr.apply(expr_uncurry(swaps), (Expr.lst(other_args + [pp], interchange=False)), reduce=False))
 
 
+def expand_personal_pronoun(expr, doc, chain, word):
+    return expr
+
+
 def expand_coref(expr, doc):
     for chain in doc._.coref_chains:
         for mention in chain:
             for token_index in mention.token_indexes:
-                child = find_word_in_expr(expr, doc[token_index], token_index)
-                if child.typ == Func(Ty('n'), Ty('n')):
+                word = find_word_in_expr(expr, doc[token_index], token_index)
+                if word.typ == Func(Ty('n'), Ty('n')):
                     print("Found a possessive pronoun!")
                     assert(len(mention.token_indexes) == 1)
-                    expr = expand_possessive_pronouns(expr, doc, chain, child)
-                print(child)
+                    expr = expand_possessive_pronouns(expr, doc, chain, word)
+
+                elif word.typ == Ty('n'):
+                    print("Found a personal pronoun!")
+                    assert(len(mention.token_indexes) == 1)
+                    expr = expand_personal_pronoun(expr, doc, chain, word)
 
     return expr

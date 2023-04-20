@@ -152,6 +152,8 @@ def _lambda_to_diag_open_wire(expr, context, expand_lambda_frames):
     context.remove(expr.var)
 
     var_instances_layer = get_instances_of_var(body, expr.var)
+    if len(var_instances_layer) == 0:
+        get_instances_of_var(body, expr.var)
 
     # remove all instances of var
     wire_no_of_removed_boxes = []
