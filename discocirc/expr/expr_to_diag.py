@@ -43,7 +43,7 @@ def _lambda_to_diag_frame(expr, context, expand_lambda_frames):
     :return: A diagram corresponding to expr.
     """
     context.add(expr.var)
-    fun = expr_to_diag(expr.expr, context, expand_lambda_frames)
+    fun = expr_to_diag(expr.body, context, expand_lambda_frames)
     context.remove(expr.var)
     if expr.var.expr_type == "list":
         var_name = str(list(reversed([str(v).splitlines()[0] for v in expr.var.expr_list])))
@@ -142,7 +142,7 @@ def _lambda_to_diag_open_wire(expr, context, expand_lambda_frames):
     assert(not isinstance(expr.var.typ, Func))
 
     context.add(expr.var)
-    body = expr_to_diag(expr.expr, context, expand_lambda_frames)
+    body = expr_to_diag(expr.body, context, expand_lambda_frames)
     context.remove(expr.var)
 
     var_instances_layer = get_instances_of_var(body, expr.var)
