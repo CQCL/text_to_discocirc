@@ -1,9 +1,11 @@
 from argparse import ArgumentError
 from copy import deepcopy
+import random
 from discopy.rigid import Ty, Box
 from discopy.monoidal import Functor
 
 from discocirc.expr.expr import Expr
+from discocirc.helpers.closed import Func
 
 
 def get_last_initial_noun(circ):
@@ -38,6 +40,8 @@ def change_expr_typ(expr, new_type):
         new_expr = fun(expr.arg)
         return new_expr
     elif expr.expr_type == 'lambda':
+        # TODO: below is not quite correct - all instances of the bound variable
+        # inside the lambda 'body' also need to have their types changed 
         new_var = change_expr_typ(expr.var, new_type.input)
         new_expr = change_expr_typ(expr.body, new_type.output)
         return Expr.lmbda(new_var, new_expr)
@@ -116,8 +120,7 @@ def expr_type_recursion(expr, function):
     if expr.expr_type == "literal":
         new_expr = function(expr)
     elif expr.expr_type == "list":
-        new_list = [function(e) for e in expr.expr_list]
-        new_expr = Expr.lst(new_list)
+        new_expr = Expr.lst([function(e) for e in expr.expr_list])
     elif expr.expr_type == "lambda":
         new_body = function(expr.body)
         new_var = function(expr.var)
@@ -131,3 +134,6 @@ def expr_type_recursion(expr, function):
     if hasattr(expr, 'head'):
         new_expr.head = expr.head
     return new_expr
+
+def create_random_variable(typ, head=None):
+    return Expr.literal(f"x_{random.randint(1000,9999)}", typ=typ, head=head)

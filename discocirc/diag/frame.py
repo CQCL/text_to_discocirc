@@ -1,5 +1,7 @@
 from discopy import rigid
 
+from discocirc.helpers.closed import Ty
+
 
 def logical_form(diagram):
     if isinstance(diagram, Frame):
@@ -16,7 +18,7 @@ def logical_form(diagram):
 class Frame(rigid.Box):
     def __init__(self, name, dom, cod, insides):
         self._insides = insides
-        super().__init__(name, dom, cod)
+        super().__init__(str(name), dom, cod)
         self.drawing_name = logical_form(self)
 
     def insert(self, position, inside):
@@ -54,3 +56,18 @@ class Frame(rigid.Box):
     @property
     def insides(self):
         return self._insides
+
+
+class Diagram(rigid.Diagram):
+    pass
+
+class Functor(rigid.Functor):
+    def __init__(self, ob, ar, frame, ob_factory=Ty, ar_factory=Diagram):
+        super().__init__(ob, ar, ob_factory, ar_factory)
+        self._frame = frame
+
+    def __call__(self, diagram):
+        if isinstance(diagram, Frame):
+            return self._frame(Frame(diagram.name, self(diagram.dom), self(diagram.cod),
+                               [self(i) for i in diagram.insides]))
+        return super().__call__(diagram)
