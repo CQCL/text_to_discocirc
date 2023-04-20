@@ -95,12 +95,12 @@ def remove_state_at_layer(diag, layer_no):
     wire_no = len(removed_left)
 
     for left, box, right in reversed(diag.layers[:layer_no]):
-        if wire_no < len(left):
+        if wire_no <= len(left):
             new_left = left[:wire_no] @ typ @ left[wire_no:]
             new_right = right
         else:
             new_left = left
-            no = wire_no - len(left) - len(typ)
+            no = wire_no - len(left) - len(box.cod)
             new_right = right[:no] @ typ @ right[no:]
             wire_no += len(box.dom) - len(box.cod)
 
@@ -122,7 +122,9 @@ def swap_wire_to_left(dom, original_pos, expected_pos):
     assert(original_pos >= expected_pos)
     swaps = rigid.Id(dom)
     for i in range(expected_pos, original_pos):
-        swaps = rigid.Id(dom[:i]) @ rigid.Swap(rigid.Ty(dom[i + 1]), rigid.Ty(dom[i])) @ rigid.Id(dom[i + 2:])
+        swaps = rigid.Id(swaps.dom[:i]) @ \
+                rigid.Swap(rigid.Ty(swaps.dom[i + 1]), rigid.Ty(swaps.dom[i])) @ \
+                rigid.Id(swaps.dom[i + 2:]) >> swaps
     return swaps
 
 
@@ -146,6 +148,7 @@ def _lambda_to_diag_open_wire(expr, context, expand_lambda_frames):
     var_instances_layer = get_instances_of_var(body, expr.var)
 
     # remove all instances of var
+    # keep track of the position of the wires corresponding to the removed boxes
     wire_no_of_removed_boxes = []
     for var_layer in var_instances_layer:
         body, wire_no = remove_state_at_layer(body, var_layer)
@@ -155,15 +158,18 @@ def _lambda_to_diag_open_wire(expr, context, expand_lambda_frames):
                 wire_no_of_removed_boxes[i] > wire_no:
             i += 1
 
-        wire_no_of_removed_boxes.insert(i, wire_no)
+        for j in range(len(expr.var.typ)):
+            wire_no_of_removed_boxes.insert(i, wire_no + j)
 
-        for j in range(i + 1, len(wire_no_of_removed_boxes)):
-            wire_no_of_removed_boxes[j] += 1
+        for j in range(i + len(expr.var.typ), len(wire_no_of_removed_boxes)):
+            wire_no_of_removed_boxes[j] += len(expr.var.typ)
+
+    print(wire_no_of_removed_boxes)
 
     # move all instances of var to right
     swaps = rigid.Id(body.dom)
     for i, wire_no in enumerate(wire_no_of_removed_boxes):
-        swaps = swap_wire_to_left(body.dom, len(body.dom) - i - 1, wire_no) >> swaps
+        swaps = swap_wire_to_left(swaps.dom, len(swaps.dom) - i - 1, wire_no) >> swaps
 
 
     # make copy box

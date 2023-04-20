@@ -14,4 +14,4 @@ from discocirc.expr.pull_out import pull_out
 from discocirc.expr.s_type_expand import s_type_expand
 from discocirc.expr.n_type_expand import n_type_expand
 from discocirc.expr.coordination_expand import coordination_expand
-from discocirc.expr.inverse_beta import inverse_beta\
+from discocirc.expr.inverse_beta import inverse_beta
