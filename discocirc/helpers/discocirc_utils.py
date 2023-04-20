@@ -43,7 +43,7 @@ def change_expr_typ(expr, new_type):
         # TODO: below is not quite correct - all instances of the bound variable
         # inside the lambda 'body' also need to have their types changed 
         new_var = change_expr_typ(expr.var, new_type.input)
-        new_expr = change_expr_typ(expr.expr, new_type.output)
+        new_expr = change_expr_typ(expr.body, new_type.output)
         return Expr.lmbda(new_var, new_expr)
     elif expr.expr_type == 'list':
         raise NotImplementedError("List type changing")
@@ -122,7 +122,7 @@ def expr_type_recursion(expr, function):
     elif expr.expr_type == "list":
         new_expr = Expr.lst([function(e) for e in expr.expr_list])
     elif expr.expr_type == "lambda":
-        new_expr = function(expr.expr)
+        new_expr = function(expr.body)
         new_var = function(expr.var)
         new_expr = Expr.lmbda(new_var, new_expr)
     elif expr.expr_type == "application":

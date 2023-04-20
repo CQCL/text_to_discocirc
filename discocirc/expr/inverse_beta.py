@@ -11,7 +11,7 @@ def expr_has_variable(expr, variable):
     elif expr.expr_type == "list":
         return any([expr_has_variable(e, variable) for e in expr.expr_list])
     elif expr.expr_type == "lambda":
-        return any([expr_has_variable(expr.expr, variable),
+        return any([expr_has_variable(expr.body, variable),
                     expr_has_variable(expr.var, variable)])
     elif expr.expr_type == "application":
         return any([expr_has_variable(expr.arg, variable),
@@ -47,7 +47,7 @@ def remove_free_vars(expr, variables):
             exprs.append(result[2])
         return free_vars, bound_vars, Expr.lst(exprs, interchange=False, head=expr.head)
     elif expr.expr_type == "lambda":
-        new_body = remove_free_vars(expr.expr, variables + [expr.var])
+        new_body = remove_free_vars(expr.body, variables + [expr.var])
         return new_body[0], new_body[1], Expr.lmbda(expr.var, new_body[2], head=expr.head)
     elif expr.expr_type == "application":
         arg_result = remove_free_vars(expr.arg, variables)
@@ -62,12 +62,12 @@ def inverse_beta(expr):
     if expr.expr_type == 'literal':
         return expr
     if expr.expr_type == 'lambda':
-        new_body = inverse_beta(expr.expr)
+        new_body = inverse_beta(expr.body)
         expr = Expr.lmbda(expr.var, new_body, head=expr.head)
         variables = []
         while expr.expr_type == 'lambda':
             variables.append(expr.var)
-            expr = expr.expr
+            expr = expr.body
         free_vars, bound_vars, expr = remove_free_vars(expr, variables)
         for variable in list(reversed(variables)) + bound_vars:
             expr = Expr.lmbda(variable, expr)

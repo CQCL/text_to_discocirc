@@ -34,7 +34,7 @@ class Expr:
         if self.expr_type == "literal":
             return (self.expr_type, self.typ, self.name, str(self.head))
         elif self.expr_type == "lambda":
-            return (self.expr_type, self.typ, self.name, str(self.head), self.var, self.expr)
+            return (self.expr_type, self.typ, self.name, str(self.head), self.var, self.body)
         elif self.expr_type == "application":
             return (self.expr_type, self.typ, self.name, str(self.head), self.arg, self.fun)
         elif self.expr_type == "list":
@@ -57,11 +57,10 @@ class Expr:
         return Expr(name, "literal", typ, head)
 
     @staticmethod
-    def lmbda(var, expr, head=None):
-        lambda_expr = Expr(expr.name, "lambda", var.typ >> expr.typ, head)
+    def lmbda(var, body, head=None):
+        lambda_expr = Expr(body.name, "lambda", var.typ >> body.typ, head)
         lambda_expr.var = var
-        #TODO: rename .expr to something else. possible option: "body"
-        lambda_expr.expr = expr
+        lambda_expr.body = body
         return lambda_expr
     
     @staticmethod
@@ -100,7 +99,7 @@ class Expr:
                 return context[expr]
             return expr
         elif expr.expr_type == "lambda":
-            new_expr = Expr.lmbda(expr.var, Expr.evl(context, expr.expr)) 
+            new_expr = Expr.lmbda(expr.var, Expr.evl(context, expr.body))
         elif expr.expr_type == "application":
             new_expr = Expr.apply(Expr.evl(context, expr.fun),
                               Expr.evl(context, expr.arg), 
@@ -126,12 +125,12 @@ class Expr:
                 if var_list_matches_arg_list(fun, arg):
                     for var, val in zip(fun.var.expr_list, arg.expr_list):
                         context[var] = val
-                    new_expr = Expr.evl(context, fun.expr)
+                    new_expr = Expr.evl(context, fun.body)
                 else:
                     new_expr = Expr.application(fun, arg)
             else:
                 context[fun.var] = arg
-                new_expr = Expr.evl(context, fun.expr)
+                new_expr = Expr.evl(context, fun.body)
         else:
             new_expr = Expr.application(fun, arg)
         new_expr.head = head
@@ -223,7 +222,7 @@ def get_lambda_string(expr):
         var = str(var_temp)
     else:
         var = 'λ ' + str(var_temp)
-    body = str(expr.expr)
+    body = str(expr.body)
     typ = str(expr.typ)
     var_lines = var.split('\n')
     expr_lines = body.split('\n')
