@@ -10,7 +10,7 @@ def expr_uncurry(expr):
                             uncurry_types(expr.typ, uncurry_everything=True))
     elif expr.expr_type == "lambda":
         new_var = expr_uncurry(expr.var)
-        new_body = expr_uncurry(expr.expr)
+        new_body = expr_uncurry(expr.body)
         if isinstance(new_body.typ, Func):
             var2 = create_random_variable(new_body.typ.input)
             product_var = Expr.lst([var2, new_var], interchange=False)
