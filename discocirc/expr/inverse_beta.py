@@ -26,10 +26,10 @@ def expr_has_variables(expr, variables):
 
 def remove_free_vars(expr, variables):
     """
-    takes in an expr, and replaces all non-function-type exprs with dummy variables
-    (unless the non-function-type expr contains variables from 'variables' input)
+    takes in an expr, and replaces all non-function-type subexprs with dummy variables
+    (unless the non-function-type subexpr contains variables from 'variables' input)
 
-    importantly, this procedure preserves the type and structure of the expr
+    importantly, this procedure preserves the type and structure of the main expr
     """
     if expr in variables:
         return [], [], expr
