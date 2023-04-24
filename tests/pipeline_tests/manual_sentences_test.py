@@ -71,6 +71,7 @@ config = {
     "draw_steps": False,
     "type_check_ccg": True,
     "compare_type_expansions": True,
+    "semantic_rewrites": True,
 }
 
 class CCGToDiagTests(UnitTestBaseClass):
