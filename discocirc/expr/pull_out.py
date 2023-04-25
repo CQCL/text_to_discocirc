@@ -22,8 +22,8 @@ def b_combinator(expr):
     f = expr.fun
     g = expr.arg.fun
     h = expr.arg.arg
-    new_type = (h.typ >> f.typ.input) >> \
-                 (h.typ >> f.typ.output)
+    # Below we choose to set the inner index to expr.typ.index. Previously had it as g.typ.index
+    new_type = Func(g.typ, Func(h.typ, f.typ.output, expr.typ.index), f.typ.index) 
     bf = change_expr_typ(f, new_type)
     return (bf(g))(h)
 
@@ -37,6 +37,7 @@ def pull_out_application(expr):
 
 def pull_out(expr):
     head = expr.head if hasattr(expr, 'head') else None
+    typ_index = expr.typ.index
     if expr.expr_type == 'literal':
         return expr
     elif expr.expr_type == 'application':
@@ -48,6 +49,7 @@ def pull_out(expr):
                 expr = pull_out(n_c_combi_expr_pulled)
                 break
         new_expr = expr
+        new_expr.typ.index = typ_index
         if head:
             new_expr.head = head
         return new_expr        
