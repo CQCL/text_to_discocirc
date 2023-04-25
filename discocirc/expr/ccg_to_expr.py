@@ -4,8 +4,9 @@ import time
 from lambeq import CCGAtomicType, CCGRule
 
 from discocirc.expr import Expr
-from discocirc.helpers.closed import biclosed_to_closed
-from discocirc.helpers.discocirc_utils import apply_at_root, change_expr_typ, create_random_variable
+from discocirc.expr.expr import create_index_mapping_dict, map_expr_indices
+from discocirc.helpers.closed import biclosed_to_closed, ccg_cat_to_closed
+from discocirc.helpers.discocirc_utils import change_expr_typ, create_random_variable
 
 
 def ccg_to_expr(ccg_parse):
@@ -14,17 +15,21 @@ def ccg_to_expr(ccg_parse):
     result = None
     # Rules with 0 children
     if ccg_parse.rule == CCGRule.LEXICAL:
-        closed_type = biclosed_to_closed(ccg_parse.biclosed_type)
+        word_index = ccg_parse.original.variable.fillers[0].index
+        closed_type = ccg_cat_to_closed(ccg_parse.original.cat, word_index)
         result = Expr.literal(ccg_parse.text, closed_type)
 
     # Rules with 1 child
     elif ccg_parse.rule == CCGRule.FORWARD_TYPE_RAISING \
             or ccg_parse.rule == CCGRule.BACKWARD_TYPE_RAISING:
-        x = create_random_variable(biclosed_to_closed(ccg_parse.biclosed_type).input)
-        result = Expr.lmbda(x, x(children[0]))
+        word_index = ccg_parse.children[0].original.variable.fillers[0].index
+        tr_type = ccg_cat_to_closed(ccg_parse.original.cat, word_index)
+        x = create_random_variable(tr_type.input)
+        result = Expr.lmbda(x, x(children[0]), tr_type.index)
     elif ccg_parse.rule == CCGRule.UNARY:
-        result = change_expr_typ(children[0],
-                                 biclosed_to_closed(ccg_parse.biclosed_type))
+        word_index = ccg_parse.original.variable.fillers[0].index
+        closed_type = ccg_cat_to_closed(ccg_parse.original.cat, word_index)
+        result = change_expr_typ(children[0], closed_type)
 
     # Rules with 2 children
     elif ccg_parse.rule == CCGRule.FORWARD_APPLICATION:
@@ -33,14 +38,11 @@ def ccg_to_expr(ccg_parse):
         result = children[1](children[0])
     elif ccg_parse.rule == CCGRule.FORWARD_COMPOSITION \
             or ccg_parse.rule == CCGRule.FORWARD_CROSSED_COMPOSITION:
-        x = create_random_variable(biclosed_to_closed(
-            ccg_parse.children[1].biclosed_type).input)
-        result = Expr.lmbda(x, children[0](children[1](x)))
+        result = composition(ccg_parse, children[0], children[1])
     elif ccg_parse.rule == CCGRule.BACKWARD_COMPOSITION \
             or ccg_parse.rule == CCGRule.BACKWARD_CROSSED_COMPOSITION:
-        x = create_random_variable(biclosed_to_closed(
-            ccg_parse.children[0].biclosed_type).input)
-        result = Expr.lmbda(x, children[1](children[0](x)))
+        result = composition(ccg_parse, children[1], children[0])
+    # up to here
     elif ccg_parse.rule == CCGRule.CONJUNCTION:
         left, right = children[0].typ, children[1].typ
         if CCGAtomicType.conjoinable(left):
@@ -73,4 +75,12 @@ def ccg_to_expr(ccg_parse):
         else:
             result.head = None
 
+    return result
+
+def composition(ccg_parse, f, g):
+    x = create_random_variable(g.typ.input)
+    result = Expr.lmbda(x, f(g(x)))
+    original_typ = ccg_cat_to_closed(ccg_parse.original.cat, random.randint(100, 999))
+    index_mapping = create_index_mapping_dict(original_typ, result.typ)
+    result = map_expr_indices(result, index_mapping)
     return result
