@@ -1,4 +1,4 @@
-from discopy import rigid
+from discopy import monoidal
 
 from discocirc.diag.frame import Frame
 from discocirc.helpers.closed import Func, Ty
@@ -19,6 +19,12 @@ def _literal_to_diag(expr, context, expand_lambda_frames):
     if expr in context:
         name = f"context: {expr.name}: {expr.typ}"
 
+        if expand_lambda_frames:
+            # If we expand the lambda frames, we use wires to draw how the
+            # variables of the lambda expression will be manipulated.
+            # Therefore, in that case, each var must be drawn as a state.
+            return monoidal.Box(name, Ty(), expr.typ)
+
     output = expr.typ
     if isinstance(output, Func):
         input = Ty()
@@ -26,9 +32,9 @@ def _literal_to_diag(expr, context, expand_lambda_frames):
             input = output.input @ input
             output = output.output
 
-        return rigid.Box(name, input, output)
+        return monoidal.Box(name, input, output)
     else:
-        return rigid.Box(name, Ty(), output)
+        return monoidal.Box(name, Ty(), output)
 
 
 def _lambda_to_diag_frame(expr, context, expand_lambda_frames):
@@ -86,9 +92,9 @@ def remove_state_at_layer(diag, layer_no):
     removed_left, removed_box, _ = diag.layers[layer_no]
     assert(removed_box.dom == Ty())
 
-    new_diag = rigid.Id(diag.cod)
+    new_diag = monoidal.Id(diag.cod)
     for left, box, right in reversed(diag.layers[layer_no + 1:]):
-        new_diag = rigid.Id(left) @ box @ rigid.Id(right) >> new_diag
+        new_diag = monoidal.Id(left) @ box @ monoidal.Id(right) >> new_diag
 
     typ = removed_box.cod
     # position of the new wire that has to be introduced.
@@ -104,7 +110,7 @@ def remove_state_at_layer(diag, layer_no):
             new_right = right[:no] @ typ @ right[no:]
             wire_no += len(box.dom) - len(box.cod)
 
-        new_diag = rigid.Id(new_left) @ box @ rigid.Id(new_right) >> new_diag
+        new_diag = monoidal.Id(new_left) @ box @ monoidal.Id(new_right) >> new_diag
 
     return new_diag, wire_no
 
@@ -120,11 +126,11 @@ def swap_wire_to_left(dom, original_pos, expected_pos):
     :return: The diag with swaps such that the wire at end_pos is swaped
     """
     assert(original_pos >= expected_pos)
-    swaps = rigid.Id(dom)
+    swaps = monoidal.Id(dom)
     for i in range(expected_pos, original_pos):
-        swaps = rigid.Id(swaps.dom[:i]) @ \
-                rigid.Swap(rigid.Ty(swaps.dom[i + 1]), rigid.Ty(swaps.dom[i])) @ \
-                rigid.Id(swaps.dom[i + 2:]) >> swaps
+        swaps = monoidal.Id(swaps.dom[:i]) @ \
+                monoidal.Swap(monoidal.Ty(swaps.dom[i + 1]), monoidal.Ty(swaps.dom[i])) @ \
+                monoidal.Id(swaps.dom[i + 2:]) >> swaps
     return swaps
 
 
@@ -139,8 +145,6 @@ def _lambda_to_diag_open_wire(expr, context, expand_lambda_frames):
         as variables should be drawn as wires.
     :return: A diagram corresponding to expr.
     """
-    assert(not isinstance(expr.var.typ, Func))
-
     if expr.var.expr_type == 'list':
         from expr import Expr
         # Curry list to be able to use normal draw function
@@ -177,21 +181,21 @@ def _lambda_to_diag_open_wire(expr, context, expand_lambda_frames):
     print(wire_no_of_removed_boxes)
 
     # move all instances of var to right
-    swaps = rigid.Id(body.dom)
+    swaps = monoidal.Id(body.dom)
     for i, wire_no in enumerate(wire_no_of_removed_boxes):
         swaps = swap_wire_to_left(swaps.dom, len(swaps.dom) - i - 1, wire_no) >> swaps
 
 
     # make copy box
     if len(var_instances_layer) == 0:
-        copy_box = rigid.Box("lambda", expr.var.typ, Ty())
+        copy_box = monoidal.Box("lambda", expr.var.typ, Ty())
     elif len(var_instances_layer) == 1:
-        copy_box = rigid.Id(expr.var.typ)
+        copy_box = monoidal.Id(expr.var.typ)
     else:
-        copy_box = rigid.Box("lambda", expr.var.typ, rigid.Ty().tensor(
+        copy_box = monoidal.Box("lambda", expr.var.typ, Ty().tensor(
             *[expr.var.typ for _ in var_instances_layer]))
 
-    return (rigid.Id(swaps.dom[:-len(copy_box.cod)]) @ copy_box) >> swaps >> body
+    return (monoidal.Id(swaps.dom[:-len(copy_box.cod)]) @ copy_box) >> swaps >> body
 
 
 def _application_to_diag(expr, context, expand_lambda_frames):
@@ -208,8 +212,31 @@ def _application_to_diag(expr, context, expand_lambda_frames):
     if expr.arg.expr_type == "list":
         fun = expr_to_diag(expr.fun, context, expand_lambda_frames)
         for arg_expr in reversed(expr.arg.expr_list):
-            arg = expr_to_diag(arg_expr, context, expand_lambda_frames)
-            fun = _compose_diags(arg, fun)
+
+            try:
+                arg = expr_to_diag(arg_expr, context, expand_lambda_frames)
+                fun = _compose_diags(arg, fun)
+            except:
+                # TODO: This is a rather hacky solution.
+                # The current code is written under the assumption that the
+                # drawing of an indiviudal lambda expression is independent
+                # of the context in which it is being used.
+                # However, this is not the case.
+                # Let's condider 'Alice likes her work but she prefers Bob.'
+                # If we do pronoun expansion for 'her work', we get a series of
+                # swaps, where one of the arguments that has
+                # to be swapped is the word 'likes' (type: n @ n >> n @ n)
+                # To draw these swaps, we thus have to draw a wire of that type.
+                # But then 'likes' should not be drawn as a function with n @ n
+                # as input and n @ n as output. Rather it should be drawn as a
+                # single state with no inputs and the only output being
+                # (n @ n >> n @ n).
+                # Suddendly, how likes is being drawn depends on the larger
+                # context in which it is being used. This makes the entire
+                # underlying assumption for this code invalid.
+                assert(arg_expr.expr_type == 'literal')  # if this doesn't hold, life gets challenging
+                arg = monoidal.Box(arg_expr.name, Ty(), arg_expr.typ)
+                fun = _compose_diags(arg, fun)
         return fun
 
     arg = expr_to_diag(expr.arg, context, expand_lambda_frames)
@@ -227,8 +254,7 @@ def _compose_diags(arg, fun):
     :return: The composed diag of fun(arg).
     """
     if arg.dom == Ty():
-        new_args = rigid.Id(fun.dom[:-len(arg.cod)]) @ arg
-        assert(arg.cod == fun.dom[-len(arg.cod):])
+        new_args = monoidal.Id(fun.dom[:-len(arg.cod)]) @ arg
         return new_args >> fun
 
     else:
@@ -236,13 +262,13 @@ def _compose_diags(arg, fun):
         new_dom = fun.dom[:-1]
 
         # TODO: this assumes that the thing we apply to is on the last layer (Issue #13)
-        inputs = rigid.Id(new_dom)
+        inputs = monoidal.Id(new_dom)
         for left, box, right in fun.layers[:-1]:
             assert(len(right) == 0)
             if box.dom == Ty():
                 inputs = inputs @ box
             else:
-                inputs = inputs >> (rigid.Id(inputs.cod[:-len(box.dom)]) @ box)
+                inputs = inputs >> (monoidal.Id(inputs.cod[:-len(box.dom)]) @ box)
 
         if isinstance(fun.boxes[-1], Frame):
             frame = Frame(fun.boxes[-1], inputs.cod, fun.cod,
@@ -264,7 +290,7 @@ def _list_to_diag(expr, context, expand_lambda_frames):
         as variables should be drawn as wires.
     :return: A diagram corresponding to expr.
     """
-    output = rigid.Id(Ty())
+    output = monoidal.Id(Ty())
     for val in expr.expr_list:
         diag = expr_to_diag(val, context, expand_lambda_frames)
         output = output @ diag
@@ -288,8 +314,11 @@ def expr_to_diag(expr, context=None, expand_lambda_frames=True):
     if expr.expr_type == "literal":
         return _literal_to_diag(expr, context, expand_lambda_frames)
     elif expr.expr_type == "lambda":
-        if expand_lambda_frames and not isinstance(expr.var.typ, Func):
-            return _lambda_to_diag_open_wire(expr, context, expand_lambda_frames)
+        if expand_lambda_frames:
+            # try:
+                return _lambda_to_diag_open_wire(expr, context, expand_lambda_frames)
+            # except:
+            #     return _lambda_to_diag_frame(expr, context, False)
         else:
             return _lambda_to_diag_frame(expr, context, expand_lambda_frames)
     elif expr.expr_type == "application":

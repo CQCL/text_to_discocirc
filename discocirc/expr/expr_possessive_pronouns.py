@@ -1,7 +1,9 @@
 from random import randint
 
+from diag import Frame
 from discocirc.helpers.closed import Ty, Func
-from expr import Expr
+from expr import Expr, expr_to_diag
+from expr.ccg_type_check import expr_type_check
 from expr.expr_uncurry import expr_uncurry
 
 
@@ -70,7 +72,6 @@ def expand_possessive_pronouns(expr, doc, chain, mention_expr):
 
     new_outside = expr_uncurry(new_arg.fun)
     pp = new_pp(new_arg.arg.arg)(parent.arg)
-    print(pp)
 
     if len(other_args) == 0:
         return new_outside(pp)
