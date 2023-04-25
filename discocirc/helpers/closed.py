@@ -5,6 +5,7 @@ Implements the free closed monoidal category.
 """
 
 from discopy import monoidal, biclosed
+from lambeq import BobcatParser
 
 
 class Ty(monoidal.Ty):
@@ -23,12 +24,16 @@ class Ty(monoidal.Ty):
     ((y → x) → y) @ x
     """
 
-    def __init__(self, *objects, input=None, output=None):
-        self.input, self.output = input, output
+    def __init__(self, *objects, input=None, output=None, index=None):
+        self.input, self.output, self.index = input, output, index
         super().__init__(*objects)
 
     def __rshift__(self, other):
         return Func(self, other)
+    
+    def __str__(self):
+        return super().__str__() + f'[{self.index}]'
+        
 
     @staticmethod
     def upgrade(old):
@@ -39,15 +44,14 @@ class Ty(monoidal.Ty):
 
 class Func(Ty):
     """ Function types. """
-    def __init__(self, input=None, output=None):
-        Ty.__init__(self, self)
-        self.input, self.output = input, output
+    def __init__(self, input=None, output=None, index=None):
+        Ty.__init__(self, self, input=input, output=output, index=index)
 
     def __repr__(self):
         return "({} → {})".format(repr(self.input), repr(self.output))
 
     def __str__(self):
-        return "({} → {})".format(self.input, self.output)
+        return "({} → {})[{}]".format(self.input, self.output, self.index)
 
     def __eq__(self, other):
         if not isinstance(other, Func):
@@ -69,6 +73,15 @@ def biclosed_to_closed(x):
     else:
         return x
 
+def ccg_cat_to_closed(cat, word_index=None):
+    if cat.atomic:
+        typ = biclosed_to_closed(BobcatParser._to_biclosed(cat))
+    else:
+        result_typ = ccg_cat_to_closed(cat.result, word_index)
+        argument_typ = ccg_cat_to_closed(cat.argument, word_index)
+        typ = argument_typ >> result_typ
+    typ.index = str(word_index) + '_' + str(cat.var) if word_index else str(cat.var)
+    return typ
 
 def uncurry_types(typ, uncurry_everything=False):
     if isinstance(typ, Func) and isinstance(typ.output, Func):
