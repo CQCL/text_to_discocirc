@@ -57,8 +57,8 @@ class Expr:
         return Expr(name, "literal", typ, head)
 
     @staticmethod
-    def lmbda(var, body, head=None):
-        lambda_expr = Expr(body.name, "lambda", var.typ >> body.typ, head)
+    def lmbda(var, body, head=None, index=None):
+        lambda_expr = Expr(body.name, "lambda", Func(var.typ, body.typ, index), head)
         lambda_expr.var = var
         lambda_expr.body = body
         return lambda_expr
@@ -112,7 +112,7 @@ class Expr:
         return new_expr
 
     @staticmethod
-    def apply(fun, arg, context=None, reduce=True, head=None):
+    def apply(fun, arg, context=None, reduce=True, head=None, match_indices=True):
         """
         apply expr to arg
         """
@@ -133,6 +133,9 @@ class Expr:
                 new_expr = Expr.evl(context, fun.body)
         else:
             new_expr = Expr.application(fun, arg)
+        if match_indices:
+            index_mapping = create_index_mapping_dict(fun.typ.input, arg.typ)
+            new_expr = map_expr_indices(new_expr, index_mapping, reduce)
         new_expr.head = head
         return new_expr
 
@@ -205,6 +208,41 @@ def var_list_matches_arg_list(fun, arg):
         if var.typ != val.typ:
             return False
     return True
+
+def create_index_mapping_dict(fun_inp_typ, arg_typ):
+    mapping = {}
+    if isinstance(arg_typ, Func):
+        mapping |= create_index_mapping_dict(fun_inp_typ.input, arg_typ.input)
+        mapping |= create_index_mapping_dict(fun_inp_typ.output, arg_typ.output)
+    mapping[arg_typ.index] = fun_inp_typ.index
+    return mapping
+
+def map_typ_indices(typ, mapping):
+    if isinstance(typ, Func):
+        input_typ = map_typ_indices(typ.input, mapping)
+        output_typ = map_typ_indices(typ.output, mapping)
+        typ = Func(input_typ, output_typ, typ.index)
+    if typ.index in mapping.keys():
+        typ.index = mapping[typ.index]
+    return typ
+
+def map_expr_indices(expr, mapping, reduce=True):
+    if expr.expr_type == "literal":
+        new_expr = deepcopy(expr)
+        new_expr.typ = map_typ_indices(expr.typ, mapping)
+    elif expr.expr_type == "lambda" or expr.expr_type == "list":
+        new_expr = expr_type_recursion(expr, map_expr_indices, mapping, reduce)
+        if expr.typ.index in mapping.keys():
+            new_expr.typ.index = mapping[expr.typ.index]
+        else:
+            new_expr.typ.index = expr.typ.index
+    elif expr.expr_type == "application":
+        arg = map_expr_indices(expr.arg, mapping, reduce)
+        fun = map_expr_indices(expr.fun, mapping, reduce)
+        new_expr = Expr.apply(fun, arg, reduce=reduce, match_indices=False)
+    if hasattr(expr, 'head'):
+        new_expr.head = expr.head
+    return new_expr
 
 def get_literal_string(expr):
     name = str(expr.name)
