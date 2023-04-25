@@ -1,11 +1,10 @@
 
 import random
-from discocirc.expr.expr import Expr
+from discocirc.expr.expr import Expr, expr_type_recursion
 from discocirc.expr.expr_uncurry import expr_uncurry
 from discocirc.expr.s_type_expand import expand_closed_type
 from discocirc.helpers.closed import Func, Ty
-from discocirc.helpers.discocirc_utils import change_expr_typ, create_random_variable, expr_type_recursion
-
+from discocirc.helpers.discocirc_utils import change_expr_typ, create_random_variable
 
 def n_type_expand(expr):
     if expr.expr_type == "literal":

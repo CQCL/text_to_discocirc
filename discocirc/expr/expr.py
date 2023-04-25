@@ -274,3 +274,25 @@ def get_list_string(expr):
     string += '\n' + '─' * length + '\n'
     string += f'{str(expr.typ):^{length}}'
     return string
+
+def expr_type_recursion(expr, function, *args, **kwargs):
+    if expr.expr_type == "literal":
+        new_expr = function(expr, *args, **kwargs)
+    elif expr.expr_type == "list":
+        new_expr = Expr.lst([function(e, *args, **kwargs)\
+                             for e in expr.expr_list])
+    elif expr.expr_type == "lambda":
+        new_expr = function(expr.body, *args, **kwargs)
+        new_var = function(expr.var, *args, **kwargs)
+        new_expr = Expr.lmbda(new_var, new_expr)
+    elif expr.expr_type == "application":
+        arg = function(expr.arg, *args, **kwargs)
+        fun = function(expr.fun, *args, **kwargs)
+        new_expr = fun(arg)
+    else:
+        raise TypeError(f'Unknown type {expr.expr_type} of expression')
+    if expr.typ.index != None:
+        new_expr.typ.index = expr.typ.index
+    if hasattr(expr, 'head'):
+        new_expr.head = expr.head
+    return new_expr

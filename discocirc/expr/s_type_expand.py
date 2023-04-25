@@ -1,6 +1,5 @@
-from discocirc.expr.expr import Expr
+from discocirc.expr.expr import Expr, expr_type_recursion
 from discocirc.helpers.closed import Func, Ty
-from discocirc.helpers.discocirc_utils import expr_type_recursion
 
 
 def expand_closed_type(typ, expand_which_type):

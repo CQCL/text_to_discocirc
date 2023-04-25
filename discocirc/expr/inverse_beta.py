@@ -1,7 +1,6 @@
 from random import randint
-from discocirc.expr.expr import Expr
+from discocirc.expr.expr import Expr, expr_type_recursion
 from discocirc.helpers.closed import Func
-from discocirc.helpers.discocirc_utils import expr_type_recursion
 
 def expr_has_variable(expr, variable):
     if expr == variable:
