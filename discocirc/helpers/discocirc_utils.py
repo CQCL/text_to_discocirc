@@ -1,11 +1,12 @@
 from argparse import ArgumentError
 from copy import deepcopy
 import random
-from discopy.rigid import Ty, Box
+from discopy import rigid
 from discopy.monoidal import Functor
+from discopy import Ob
 
-from discocirc.expr.expr import Expr
-from discocirc.helpers.closed import Func
+from discocirc.expr.expr import Expr, expr_type_recursion
+from discocirc.helpers.closed import Func, Ty
 
 
 def get_last_initial_noun(circ):
@@ -13,9 +14,9 @@ def get_last_initial_noun(circ):
     takes in a circuit with some number of states as the initial boxes
     returns the index of the last of these initial states
     """
-    assert(circ.boxes[0].dom == Ty())   # check that the first box is a noun
+    assert(circ.boxes[0].dom == rigid.Ty())   # check that the first box is a noun
     for i in range(len(circ.boxes) - 1):
-        if circ.boxes[i].dom == Ty() and circ.boxes[i + 1].dom != Ty():
+        if circ.boxes[i].dom == rigid.Ty() and circ.boxes[i + 1].dom != rigid.Ty():
             return i
     # I think we only reach here if the entire circuit consists of nouns
     return len(circ.boxes)-1
@@ -23,9 +24,9 @@ def get_last_initial_noun(circ):
 
 def get_star_removal_functor():
     def star_removal_ob(ty):
-        return Ty() if ty.name == "*" else ty
+        return rigid.Ty() if ty.name == "*" else ty
     def star_removal_ar(box):
-        return Box(box.name, f(box.dom), f(box.cod))
+        return rigid.Box(box.name, f(box.dom), f(box.cod))
     f = Functor(ob=star_removal_ob, ar=star_removal_ar)
     return f
 
@@ -118,3 +119,17 @@ def apply_at_root(fun, arg):
 
 def create_random_variable(typ, head=None):
     return Expr.literal(f"x_{random.randint(1000,9999)}", typ=typ, head=head)
+
+def add_indices_to_types(typ):
+    if isinstance(typ, Func):
+        return Func(add_indices_to_types(typ.input),
+                    add_indices_to_types(typ.output),
+                    typ.index)
+    return Ty(*[Ob(f"{x.name}[{typ.index}]") for x in typ.objects], index=typ.index)
+
+def expr_add_indices_to_types(expr):
+    if expr.expr_type == 'literal':
+        new_expr = deepcopy(expr)
+        new_expr.typ = add_indices_to_types(expr.typ)
+        return new_expr
+    return expr_type_recursion(expr, expr_add_indices_to_types)
