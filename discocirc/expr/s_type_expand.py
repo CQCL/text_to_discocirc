@@ -9,11 +9,12 @@ def expand_closed_type(typ, expand_which_type):
     while isinstance(typ, Func):
         args.append(typ.input)
         typ = typ.output
-    n_nouns = sum([1 for i in Ty().tensor(*args) if Ty(i) == Ty('n')])
+    n_nouns = sum([1 for i in Ty().tensor(*args) if i == Ty('n')])
+    noun_args = reversed([i for i in args if i == Ty('n')])
     if typ == expand_which_type:
-        typ = Ty().tensor(*([Ty('n')] * n_nouns))
-    elif len(typ) > 1 and expand_which_type != Ty('n'):
-        num_output_nouns = sum([1 for t in typ if Ty(t) == Ty('n')])
+        typ = Ty().tensor(*noun_args)
+    elif len(typ) > 1 and expand_which_type != Ty('n'): #TODO coindexing in this case
+        num_output_nouns = sum([1 for t in typ if t == Ty('n')])
         new_typ = Ty()
         for t in typ:
             if Ty(t) == expand_which_type:
