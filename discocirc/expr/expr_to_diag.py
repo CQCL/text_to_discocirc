@@ -89,7 +89,7 @@ def remove_state_at_layer(diag, layer_no):
     :param layer_no: The layer on which the state to be removed is.
     :return: Tuple: (The new diag, the number of the new wire).
     """
-    removed_left, removed_box, _ = diag.layers[layer_no]
+    removed_left, removed_box, removed_right = diag.layers[layer_no]
     assert(removed_box.dom == Ty())
 
     new_diag = monoidal.Id(diag.cod)
@@ -102,12 +102,21 @@ def remove_state_at_layer(diag, layer_no):
 
     for left, box, right in reversed(diag.layers[:layer_no]):
         if wire_no <= len(left):
-            new_left = left[:wire_no] @ typ @ left[wire_no:]
+            new_left = left[:wire_no] @ \
+                       typ @ left[wire_no:]
             new_right = right
         else:
-            new_left = left
+            while wire_no < len(left) + len(box.cod):
+                 # The wire is underneath the box we are adding.
+                 new_diag = monoidal.Id(new_diag.dom[:wire_no]) @ \
+                            monoidal.Swap(
+                                Ty(new_diag.dom[wire_no + 1]),
+                                typ) @ \
+                            monoidal.Id(new_diag.dom[wire_no + 2:]) >> new_diag
+                 wire_no += 1
             no = wire_no - len(left) - len(box.cod)
             new_right = right[:no] @ typ @ right[no:]
+            new_left = left
             wire_no += len(box.dom) - len(box.cod)
 
         new_diag = monoidal.Id(new_left) @ box @ monoidal.Id(new_right) >> new_diag
@@ -158,8 +167,7 @@ def _lambda_to_diag_open_wire(expr, context, expand_lambda_frames):
     context.remove(expr.var)
 
     var_instances_layer = get_instances_of_var(body, expr.var)
-    if len(var_instances_layer) == 0:
-        get_instances_of_var(body, expr.var)
+    assert(len(var_instances_layer) == 1)
 
     # remove all instances of var
     # keep track of the position of the wires corresponding to the removed boxes
@@ -177,8 +185,6 @@ def _lambda_to_diag_open_wire(expr, context, expand_lambda_frames):
 
         for j in range(i + len(expr.var.typ), len(wire_no_of_removed_boxes)):
             wire_no_of_removed_boxes[j] += len(expr.var.typ)
-
-    print(wire_no_of_removed_boxes)
 
     # move all instances of var to right
     swaps = monoidal.Id(body.dom)

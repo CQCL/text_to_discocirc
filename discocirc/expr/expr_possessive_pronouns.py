@@ -77,15 +77,20 @@ def expand_possessive_pronouns(expr, doc, chain, mention_expr):
         return new_outside(pp)
 
     swap_args = []
-    for arg in other_args + [new_arg.arg.arg, parent.arg]:
+    for arg in list(reversed(other_args)) + [parent.arg, new_arg.arg.arg]:
+        print(arg.name)
         swap_args.append(Expr.literal(f"x_{randint(1000,9999)}", expr_uncurry(arg).typ))
 
     swaps = Expr.lmbda(swap_args[-1],
-                       Expr.lst([swap_args[-2]] + swap_args[:-2] + [swap_args[-1]], interchange=False))
+                       Expr.lst([swap_args[-1]] + swap_args[:-2] + [swap_args[-2]], interchange=False))
     for arg in reversed(swap_args[:-1]):
         swaps = Expr.lmbda(arg, swaps)
 
-    return new_outside(Expr.apply(expr_uncurry(swaps), (Expr.lst(other_args + [pp], interchange=False)), reduce=False))
+    applied_swap = swaps
+    for arg in reversed(other_args):
+        applied_swap = applied_swap(arg)
+
+    return new_outside(Expr.apply(expr_uncurry(applied_swap), pp, reduce=False))
 
 
 def expand_personal_pronoun(expr, doc, chain, word):
