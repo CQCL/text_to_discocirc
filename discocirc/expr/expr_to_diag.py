@@ -1,8 +1,29 @@
-from discopy import rigid
+from discopy import rigid, monoidal
 
 from discocirc.diag.frame import Frame
 from discocirc.helpers.closed import Func, Ty
 
+
+def downgrade_types(typ):
+    if isinstance(typ, monoidal.Ob) and not isinstance(typ, monoidal.Ty):
+        return typ
+    elif isinstance(typ, Func):
+        return Func(downgrade_types(typ.input),
+                    downgrade_types(typ.output),
+                    index=typ.index)
+    elif len(typ) == 1 and isinstance(typ, Ty):
+        return Ty.downgrade(typ)
+    elif len(typ) > 1:
+        objects = []
+        for t in typ.objects:
+            if isinstance(t, monoidal.Ty) and not isinstance(t, Func):
+                objects.extend(t.objects)
+            else:
+                objects.append(downgrade_types(t))
+        typ = monoidal.Ty(*objects)
+        return typ
+    else:
+        return typ
 
 def _literal_to_diag(expr, context, expand_lambda_frames):
     """
@@ -25,10 +46,9 @@ def _literal_to_diag(expr, context, expand_lambda_frames):
         while isinstance(output, Func):
             input = output.input @ input
             output = output.output
-
-        return rigid.Box(name, input, output)
+        return rigid.Box(name, downgrade_types(input), downgrade_types(output))
     else:
-        return rigid.Box(name, Ty(), output)
+        return rigid.Box(name, monoidal.Ty(), downgrade_types(output))
 
 
 def _lambda_to_diag_frame(expr, context, expand_lambda_frames):

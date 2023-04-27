@@ -4,7 +4,7 @@
 Implements the free closed monoidal category.
 """
 
-from discopy import monoidal, biclosed
+from discopy import monoidal, biclosed, messages
 from lambeq import BobcatParser
 
 
@@ -25,15 +25,35 @@ class Ty(monoidal.Ty):
     """
 
     def __init__(self, *objects, input=None, output=None, index=None):
+        super().__init__()
         self.input, self.output, self.index = input, output, index
-        super().__init__(*objects)
+        if len(objects) > 1:
+            self._objects = tuple(x if isinstance(x, Ty) else Ty(x) for x in objects)
+        elif len(objects) == 1:
+            if isinstance(objects[0], monoidal.Ty):
+                self._objects = objects[0]
+            else:
+                self._objects = monoidal.Ty(objects[0])
 
     def __rshift__(self, other):
         return Func(self, other)
-    
+
     def __str__(self):
+        if len(self._objects) > 1:
+            return f'({super().__str__()})[{self.index}]'
         return super().__str__() + f'[{self.index}]'
-        
+
+    def tensor(self, *others):
+        for other in others:
+            if not isinstance(other, monoidal.Ty):
+                raise TypeError(messages.type_err(monoidal.Ty, other))
+        objects = []
+        for t in (self,) + others:
+            if len(t.objects) > 1:
+                objects += t.objects
+            elif len(t.objects) == 1:
+                objects.append(t)
+        return Ty(*objects)
 
     @staticmethod
     def upgrade(old):
@@ -41,11 +61,17 @@ class Ty(monoidal.Ty):
             return old[0]
         return Ty(*old.objects)
 
+    def downgrade(self):
+        if isinstance(self, Func):
+            return self
+        return super().downgrade()
+
 
 class Func(Ty):
     """ Function types. """
     def __init__(self, input=None, output=None, index=None):
-        Ty.__init__(self, self, input=input, output=output, index=index)
+        name = f'({repr(input)} → {repr(output)})'
+        super().__init__(name, input=input, output=output, index=index)
 
     def __repr__(self):
         return "({} → {})".format(repr(self.input), repr(self.output))
