@@ -86,6 +86,7 @@ class Expr:
                     infer_list_type(flattened_list, interchange),
                     head)
         expr.expr_list = tuple(flattened_list)
+        expr.interchange = interchange
         return expr
 
     @staticmethod
