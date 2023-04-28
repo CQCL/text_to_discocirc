@@ -1,6 +1,6 @@
 from expr import Expr
-from helpers.closed import Func
-from helpers.discocirc_utils import change_expr_typ
+from discocirc.helpers.closed import Func
+from discocirc.helpers.discocirc_utils import change_expr_typ
 
 
 def expr_normal_form(expr):
@@ -24,12 +24,13 @@ def expr_normal_form(expr):
         body = expr
         state_vars = []
         function_vars = []
+
         while body.expr_type == "application":
-            if isinstance(expr.var.typ, Func):
-                function_vars.append(expr.var)
+            if isinstance(body.arg.typ, Func):
+                function_vars.append(body.arg)
             else:
-                state_vars.append(expr.var)
-            body = expr.body
+                state_vars.append(body.arg)
+            body = body.fun
 
         body = expr_normal_form(body)
 
@@ -37,12 +38,12 @@ def expr_normal_form(expr):
         for _ in function_vars + state_vars:
             new_type = new_type.output
 
-        for var in function_vars + state_vars:
+        for var in state_vars + function_vars:
             new_type = var.typ >> new_type
 
         new_expr = change_expr_typ(body, new_type)
 
-        for var in function_vars + state_vars:
+        for var in reversed(state_vars + function_vars):
             new_expr = new_expr(var)
 
         return new_expr
