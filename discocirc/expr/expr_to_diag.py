@@ -265,6 +265,7 @@ def _compose_diags(arg, fun):
 
     else:
         # Arg is of type Func and should therefore be placed inside fun.
+        # TODO: figure out how much of the dom to remove
         new_dom = fun.dom[:-1]
 
         # TODO: this assumes that the thing we apply to is on the last layer (Issue #13)
