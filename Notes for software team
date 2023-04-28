@@ -1,0 +1,10 @@
+In this file, we will compile some observations that should be considered, if this code is being reimplemented more professionally. 
+
+For expr_to_diag:
+expr_to_diag is in charge of creating a discopy diag for lambda expressions. The current code is written under the assumption that the drawing of a particular expr is independent of how it is being used, meaning that any expr can be drawn without having to know to what it is being applied. 
+However, when introducing swaps, this may not be the case. For example, if we draw the diagram for the sentence 'Alice likes her work but she prefers Bob.' after we have done the pronoun expansion of 'her work', we get a series of swaps that, amongst others, affects the work 'likes'.
+Given that we draw the swaps as wires, the wire that swaps 'likes' around is of type n @ n >> n @ n. However, for 'likes' to compose with these swaps, it has to be drawn as a state with output n @ n >> n @ n instead of as a function with input n @ n and output n @ n. 
+Therefore, the way 'likes' is being drawn suddenly depends on the expr in which it is being used. I am currently not sure how this can be avoided.
+
+
+TODO: write about the convention regarding composing from the left vs composing from the right.
