@@ -63,6 +63,19 @@ def find_word_in_expr(expr, word, pos):
 
 
 def create_pp_block(most_specific, pps):
+    """
+    Given a list of the most specific mentions and a list of exprs corresponding
+    to states with possessive pronouns for a single coreference, create an expr
+    representing a state that combines the exprs of the pps with the most specific
+    mentions.
+
+    :param most_specific: A list of the arguments corresponding to the most
+            specific mentions.
+    :param pps: A list of arguments corresponding to the possessive pronouns.
+    :return: A new expr representing the state that combines the pps with the
+            most specific mentions.
+    """
+    # Create the new possessive pronouns (which have a different type).
     new_type = Ty.tensor(*[Ty('n') for _ in range(len(most_specific) + 1)])
     for _ in range(len(most_specific) + 1):
         new_type = Ty('n') >> new_type
@@ -70,16 +83,20 @@ def create_pp_block(most_specific, pps):
     new_pps = []
     for pp in pps:
         new_pps.append(Expr.literal(
-            pp.fun.name,
+            pp.fun.name, # requires the pp.fun to be the possessive pronoun.
+                         # Checked in expand_possessive_pronoun_chain().
             new_type,
             head=pp.fun.head
         ))
 
+    # Put pronouns and arguments back together.
+    # First possessive pronouns.
     pp_block = new_pps[0](pps[0].arg)
 
     for mention in reversed(most_specific):
         pp_block = pp_block(mention)
 
+    # All other possessive pronouns.
     ids = []
     for i in range(((len(pps) - 1))):
         lst = []
@@ -101,6 +118,7 @@ def create_pp_block(most_specific, pps):
         next_layer = Expr.lst([ids[i - 1], new_pps[i]])
         pp_block = next_layer(new_args)
 
+    # Bring the wires back in order.
     # The second to last wires are the most specific mentions, which have to be
     # moved back to the beginning.
     no_wires = len(most_specific) + len(pps)
@@ -137,6 +155,22 @@ def find_arg_in_arg_list(args, word, word_pos):
 
 
 def expand_possessive_pronoun_chain(args, most_specific_indices, pp_mentions):
+    """
+    Given a list of arguments, a list of the most specific mentions and a list
+    of the possessive pronouns in one coreference, recombine the arguments to
+    express the possessive pronouns.
+
+    :param args: A list of arguments which contains the most specific mentions
+            and the possessive pronouns.
+    :param most_specific_indices: A list of indices of the most specific
+            mentions, each of the form (word, position of word in sentence).
+    :param pp_mentions: A list of indices of the possessive pronouns, each of
+            the form (word, position of word in sentence).
+    :return: An adapted list of the arguments and a list representing the
+            swaps required to put the arguments back into their original wire
+            order.
+    """
+    # ================ ASSERTION ================
     # I am currently assuming some properties of the mentions, which I am
     # asserting below. So far, I have not found counter examples. I think
     # these assertions are true for corefs within a single sentence, however,
@@ -154,6 +188,7 @@ def expand_possessive_pronoun_chain(args, most_specific_indices, pp_mentions):
     for i in range(len(pp_mentions) - 1):
         assert(pp_mentions[i] < pp_mentions[i + 1])
 
+    # ================ ASSERTION ================
 
     # Identify all args that are relevant for this coref.
     other_args = [[]]
@@ -195,9 +230,24 @@ def expand_possessive_pronoun_chain(args, most_specific_indices, pp_mentions):
            [arg for other_arg in other_args for arg in other_arg], lst
 
 
-def expand_possessive_pronouns(expr, all_pronoun_mentions):
-    # Unpack all args
+def expand_possessive_pronouns(expr, all_pp_chains):
+    """
+    Given an expr and a list of all possessive pronouns chains, create an expr
+    where the possessive pronouns are expanded.
+
+    :param expr: The expr to be expanded.
+    :param all_pp_chains: A list of all possessive pronoun chains where
+         each chain is a tuple of the form (most_specific, pronoun_mentions)
+    :return: The expanded expr.
+    """
+    # Extract all arguments that are passed to the outermost expr.
+    # We assume all relevant arguments for the coref are in there.
     remainder = expr
+    # The current implementation extracts all arguments given to the outermost
+    # application and combines them for all the corefs before putting them back
+    # into one expr. Through this, the difference of exprs with arguments and
+    # exprs with lists does not have to be taken into account (where lists are
+    # created for the coref expansion).
     args = []
     while remainder.expr_type == "application" and \
             remainder.arg.typ == Ty('n'):
@@ -207,15 +257,14 @@ def expand_possessive_pronouns(expr, all_pronoun_mentions):
     new_outside = expr_uncurry(remainder)
 
     # Expand possessive pronouns
-    swaps = []
-    for most_specific, pronoun_mentions in reversed(all_pronoun_mentions):
+    combined_swaps = None
+    for most_specific, pps in reversed(all_pp_chains):
         args, swap = expand_possessive_pronoun_chain(
-            args, most_specific, pronoun_mentions)
-        swaps.append(swap)
-
-    combined_swaps = range(len(swaps[0]))
-    for swap in swaps:
-        combined_swaps = [swap[i] for i in combined_swaps]
+            args, most_specific, pps)
+        if combined_swaps is None:
+            combined_swaps = swap
+        else:
+            combined_swaps = [swap[i] for i in combined_swaps]
 
     # Build swaps
     swapped_args = create_lambda_swap(combined_swaps)
@@ -235,6 +284,14 @@ def expand_possessive_pronouns(expr, all_pronoun_mentions):
 
 
 def expand_coref(expr, doc):
+    """
+    Given an expr and a doc containing corefs, create a new expr which expands
+    the possessive pronouns.
+
+    :param expr: The expr to be expanded.
+    :param doc: The doc containing the corefs.
+    :return: The new expr.
+    """
     all_pps = []
     for chain in doc._.coref_chains:
         pps_in_chain = []
