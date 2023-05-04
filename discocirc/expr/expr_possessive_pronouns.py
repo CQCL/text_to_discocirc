@@ -6,10 +6,19 @@ from expr import Expr, expr_to_diag
 from expr.ccg_type_check import expr_type_check
 from expr.expr_uncurry import expr_uncurry
 
+
 def create_lambda_swap(new_order):
+    """
+    Given a list of integers, create a lambda expression that swaps the wires
+    as specified by the list where the ith wire is swapped to all wires j where
+    new_order[j] = i.
+
+    :param new_order: The list of integers specifying the new order of the wires.
+    :return: The lambda expression that swaps the wires.
+    """
     temp_vars = []
     for num in range(max(new_order) + 1):
-        temp_vars.append(Expr.literal(f"x_{randint(1000, 9999)}", Ty('n')))
+        temp_vars.append(Expr.literal(f"x_{randint(10000, 99999)}", Ty('n')))
 
     lst = []
     for i in new_order:
@@ -21,20 +30,28 @@ def create_lambda_swap(new_order):
 
     return output
 
-def literal_equal_to(literal, word, pos):
-    return literal.expr_type == "literal" and \
-        literal.name == str(word) and \
-        len(literal.head) == 1 and \
-        literal.head[0].index == pos + 1
 
 def find_word_in_expr(expr, word, pos):
+    """
+    Given an expr, return the expr of the literal representing
+    the word specified by the tuple (word, pos). Return None if this literal
+    is not present.
+
+    :param expr: The expr in which the literal is searched for.
+    :param word: The string representation of the word to be searched for.
+    :param pos: The position in the sentence of the word to be searched for.
+    :return: The literal representing the word, or None if it is not present.
+    """
     if expr.expr_type == "literal":
-        if literal_equal_to(expr, word, pos):
+        if expr.name == str(word) and \
+                len(expr.head) == 1 and \
+                expr.head[0].index == pos + 1:
             return expr
         else:
             return None
     elif expr.expr_type == "application":
-        return find_word_in_expr(expr.fun, word, pos) or find_word_in_expr(expr.arg, word, pos)
+        return find_word_in_expr(expr.fun, word, pos) or \
+               find_word_in_expr(expr.arg, word, pos)
     elif expr.expr_type == "lambda":
         return find_word_in_expr(expr.body, word, pos)
     elif expr.expr_type == "list":
@@ -45,44 +62,26 @@ def find_word_in_expr(expr, word, pos):
         return None
 
 
-def find_parent_in_expr(expr, child):
-    if expr.expr_type == "literal":
-        return None
-    elif expr.expr_type == "application":
-        if expr.arg == child or expr.fun == child:
-            return expr
-        return find_parent_in_expr(expr.fun, child) or find_parent_in_expr(
-            expr.arg, child)
-    elif expr.expr_type == "lambda":
-        return find_parent_in_expr(expr.body, child)
-    elif expr.expr_type == "list":
-        for e in expr.expr_list:
-            result = find_parent_in_expr(e, child)
-            if result:
-                return result
-        return None
-
-
-def create_pp_block(pp_mentions, expr, most_specific):
+def create_pp_block(most_specific, pps):
     new_type = Ty.tensor(*[Ty('n') for _ in range(len(most_specific) + 1)])
     for _ in range(len(most_specific) + 1):
         new_type = Ty('n') >> new_type
 
     new_pps = []
-    for mention_expr in pp_mentions:
+    for pp in pps:
         new_pps.append(Expr.literal(
-            mention_expr[1].name,
+            pp.fun.name,
             new_type,
-            head=mention_expr[1].head
+            head=pp.fun.head
         ))
 
-    pp_block = new_pps[0](find_parent_in_expr(expr, pp_mentions[0][1]).arg)
+    pp_block = new_pps[0](pps[0].arg)
 
     for mention in reversed(most_specific):
         pp_block = pp_block(mention)
 
     ids = []
-    for i in range(((len(pp_mentions) - 1))):
+    for i in range(((len(pps) - 1))):
         lst = []
         for j in range(i + 1):
             temp = Expr.literal(f"x_{randint(1000, 9999)}", Ty('n'))
@@ -97,110 +96,163 @@ def create_pp_block(pp_mentions, expr, most_specific):
                 list(range(i - 1, i + len(most_specific) - 1)) +
                 [i + len(most_specific)]))
         new_args = Expr.apply(swap, Expr.lst(
-            [pp_block, find_parent_in_expr(expr, pp_mentions[i][1]).arg]),
+            [pp_block, pps[i].arg]),
                               reduce=False)
         next_layer = Expr.lst([ids[i - 1], new_pps[i]])
         pp_block = next_layer(new_args)
 
-    # The second to last wire is the most specific mention, which has to be
+    # The second to last wires are the most specific mentions, which have to be
     # moved back to the beginning.
-    no_wires = len(most_specific) + len(pp_mentions)
+    no_wires = len(most_specific) + len(pps)
     unswap = expr_uncurry(create_lambda_swap(
         list(range(no_wires - len(most_specific) - 1, no_wires - 1)) +
-        list(range(len(pp_mentions) - 1)) +
+        list(range(len(pps) - 1)) +
         [no_wires - 1]
     ))
 
     return unswap(pp_block)
 
-def unroll_expr_to_arg(expr, word, id):
-    other_args = []
-    while not find_word_in_expr(expr.arg,
-                                word,
-                                id):
-        other_args.append(expr.arg)
-        expr = expr.fun
 
-    return expr.fun, expr.arg, other_args
+def find_arg_in_arg_list(args, word, word_pos):
+    """
+    Given a list of args, find the argument that contains the word specified
+    by the tuple word and word_pos. This argument may contain other words.
+    Return the args before the found argument, the found argument and the
+    remaining arguments.
 
-def expand_possessive_pronouns(expr, doc, chain, pp_mentions):
+    :param args: A list of arguments in which the specified word is to be found.
+    :param word: The string representation of the word to be found.
+    :param word_pos: The position in the sentence of the word to be found.
+    :return: A tuple of the form
+        (args_before_found_arg, found_arg, remaining_args) where
+        - args_before_found_arg is a list of arguments before the found argument,
+        - found_arg is the argument which countains the specified word,
+        - remaining_args is a list of arguments after the found argument.
+    """
+    arg_pos = 0
+    while not find_word_in_expr(args[arg_pos], word, word_pos):
+        arg_pos += 1
+
+    return args[:arg_pos], args[arg_pos], args[arg_pos + 1:]
+
+
+def expand_possessive_pronoun_chain(args, most_specific_indices, pp_mentions):
     # I am currently assuming some properties of the mentions, which I am
     # asserting below. So far, I have not found counter examples. I think
     # these assertions are true for corefs within a single sentence, however,
     # might not hold for multiple sentences (which is not relevant here).
 
-    # Assertion 1: the most specific index is the first mention in the chain.
-    assert(chain.most_specific_mention_index == 0)
+    # Assertion 1: the most specific mentions are sorted in ascending order.
+    for i in range(len(most_specific_indices) - 1):
+        assert(most_specific_indices[i] <
+               most_specific_indices[i + 1])
 
-    # Assertion 2: the most specific mentions are sorted in ascending order.
-    for i in range(len(chain[chain.most_specific_mention_index]) - 1):
-        assert(chain[chain.most_specific_mention_index][i] <
-               chain[chain.most_specific_mention_index][i + 1])
+    # Assertion 2: the most specific mentions are before the others
+    assert(most_specific_indices[-1] < pp_mentions[0])
 
-    # Assertion 3: the most specific mentions are before the others
-    assert(chain[chain.most_specific_mention_index][-1] < pp_mentions[0][0])
-
-    # Assertion 4: the pp_mentions are sorted in ascending order.
+    # Assertion 3: the pp_mentions are sorted in ascending order.
     for i in range(len(pp_mentions) - 1):
-        assert(pp_mentions[i][0] < pp_mentions[i + 1][0])
+        assert(pp_mentions[i] < pp_mentions[i + 1])
 
 
-    # Unroll expr and extract all parts that are affected.
+    # Identify all args that are relevant for this coref.
     other_args = [[]]
-    remaining_expr = expr
-    most_specific = []
-    for id in chain[chain.most_specific_mention_index]:
-        remaining_expr, arg, prior_args = unroll_expr_to_arg(remaining_expr, doc[id], id)
+    most_specific_args = []
+    remaining_args = args
+    for word, id in most_specific_indices:
+        prior_args, arg, remaining_args = find_arg_in_arg_list(remaining_args, word, id)
         other_args[0] += prior_args
-        most_specific.append(arg)
+        most_specific_args.append(arg)
 
-    for (id, _) in pp_mentions:
-        remaining_expr, _, prior_args = unroll_expr_to_arg(remaining_expr, doc[id], id)
+    pps = []
+    for word, id in pp_mentions:
+        prior_args, arg, remaining_args = find_arg_in_arg_list(remaining_args, word, id)
         other_args.append(prior_args)
+        pps.append(arg)
+
+        # Assertion currently made create_pp_block()
+        assert(find_word_in_expr(arg.fun, word, id) is not None)
+
+    other_args.append(remaining_args)
 
     # Create the personal pronoun block
-    pp_block = create_pp_block(pp_mentions, expr, most_specific)
+    pp_block = create_pp_block(most_specific_args, pps)
 
-    new_outside = expr_uncurry(remaining_expr)
-
-    # Reassemble the expr
-    if sum([len(arg) for arg in other_args]) == 0:
-        return new_outside(pp_block)
-
+    # Create the list of indices for the lambda swap
     lst = []
-    other_arg_counter = len(pp_mentions) + len(most_specific)
+    other_arg_counter = len(pp_mentions) + len(most_specific_args)
     for i in range(0, len(other_args)):
+        other_args_len = sum([len(arg.typ) for arg in other_args[i]])
         lst += list(range(other_arg_counter,
-                          other_arg_counter + len(other_args[i])))
+                          other_arg_counter + other_args_len))
         if i == 0:
-            lst += list(range(0, len(most_specific)))
-        else:
-            lst += [i + len(most_specific) - 1]
-        other_arg_counter += len(other_args[i])
+            lst += list(range(0, len(most_specific_args)))
+        elif i != len(other_args) - 1:
+            lst += [i + len(most_specific_args) - 1]
+        other_arg_counter += other_args_len
 
-    swaps = create_lambda_swap(lst)
+    return [pp_block] + \
+           [arg for other_arg in other_args for arg in other_arg], lst
 
-    for args in reversed(other_args):
-        for arg in reversed(args):
-            swaps = swaps(arg)
 
-    return new_outside(Expr.apply(expr_uncurry(swaps),
-                                  pp_block, reduce=False))
+def expand_possessive_pronouns(expr, all_pronoun_mentions):
+    # Unpack all args
+    remainder = expr
+    args = []
+    while remainder.expr_type == "application" and \
+            remainder.arg.typ == Ty('n'):
+        args.append(remainder.arg)
+        remainder = remainder.fun
+
+    new_outside = expr_uncurry(remainder)
+
+    # Expand possessive pronouns
+    swaps = []
+    for most_specific, pronoun_mentions in reversed(all_pronoun_mentions):
+        args, swap = expand_possessive_pronoun_chain(
+            args, most_specific, pronoun_mentions)
+        swaps.append(swap)
+
+    combined_swaps = range(len(swaps[0]))
+    for swap in swaps:
+        combined_swaps = [swap[i] for i in combined_swaps]
+
+    # Build swaps
+    swapped_args = create_lambda_swap(combined_swaps)
+    arg_counter = 1
+    while args[-arg_counter].typ == Ty('n'):
+        swapped_args = swapped_args(args[-arg_counter])
+        arg_counter += 1
+
+    arg_list = args
+    if arg_counter > 1:
+        arg_list = args[:-arg_counter + 1]
+    swapped_args = Expr.apply(expr_uncurry(swapped_args), Expr.lst(arg_list),
+                              reduce=False)
+
+    # Combine
+    return new_outside(swapped_args)
 
 
 def expand_coref(expr, doc):
+    all_pps = []
     for chain in doc._.coref_chains:
-        pronoun_mentions = []
+        pps_in_chain = []
         for mention in chain:
             for token_index in mention.token_indexes:
                 word_expr = find_word_in_expr(expr, doc[token_index], token_index)
                 if word_expr.typ == Func(Ty('n'), Ty('n')):
                     print("Found a possessive pronoun!")
                     assert(len(mention.token_indexes) == 1)
-                    pronoun_mentions.append((mention[0], word_expr))
+                    pps_in_chain.append((doc[mention[0]], mention[0]))
 
-        if len(pronoun_mentions) > 0:
-            expr = expand_possessive_pronouns(
-                expr, doc, chain, pronoun_mentions)
+        if len(pps_in_chain) > 0:
+            most_specific = []
+            for mention in chain[chain.most_specific_mention_index]:
+                most_specific.append((doc[mention], mention))
+            all_pps.append((most_specific, pps_in_chain))
 
-    return expr
+    if len(all_pps) == 0:
+        return expr
+
+    return expand_possessive_pronouns(expr, all_pps)
