@@ -1,10 +1,8 @@
 from random import randint
 
-from diag import Frame
 from discocirc.helpers.closed import Ty, Func
-from expr import Expr, expr_to_diag
-from expr.ccg_type_check import expr_type_check
-from expr.expr_uncurry import expr_uncurry
+from discocirc.expr import Expr
+from discocirc.expr.expr_uncurry import expr_uncurry
 
 
 def find_word_in_expr(expr, word, pos):
