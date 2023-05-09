@@ -61,7 +61,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse):
         diag = expr_to_diag(expr)
         diag = (Frame.get_decompose_functor())(diag)
         diag.draw()
-        
+
     # ------- Step 4: Pulling out again -----------
     expr = inverse_beta(expr)
     expr = pull_out(expr)
@@ -106,7 +106,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse):
 
     # ------- Step 7: Expr to Diag -----------
     diag = expr_to_diag(expr)
-    
+
     # ------- Step 8: Semantic rewrites -----------
     if config["semantic_rewrites"]:
         diag = rewrite(diag, rules='all')

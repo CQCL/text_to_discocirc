@@ -1,4 +1,4 @@
-from discopy import rigid
+from discopy import monoidal
 
 from discocirc.helpers.closed import Ty
 
@@ -7,15 +7,15 @@ def logical_form(diagram):
     if isinstance(diagram, Frame):
         insides = [logical_form(d) for d in diagram._insides]
         return f'{diagram.name}({", ".join(insides)})'
-    if isinstance(diagram, rigid.Box):
+    if isinstance(diagram, monoidal.Box):
         return diagram.name
-    if isinstance(diagram, rigid.Diagram) and len(diagram) == 1:
+    if isinstance(diagram, monoidal.Diagram) and len(diagram) == 1:
         return logical_form(diagram.boxes[0])
     return logical_form(diagram.boxes[-1]) + '(' + logical_form(
         diagram[:-1]) + ')'
 
 
-class Frame(rigid.Box):
+class Frame(monoidal.Box):
     def __init__(self, name, dom, cod, insides):
         self._insides = insides
         super().__init__(str(name), dom, cod)
@@ -32,23 +32,23 @@ class Frame(rigid.Box):
         self._insides[position] = inside
 
     def _decompose(self):
-        s = rigid.Ty('*')
-        inside_dom = rigid.Ty().tensor(
+        s = monoidal.Ty('*')
+        inside_dom = monoidal.Ty().tensor(
             *[s @ b.dom for b in self._insides]) @ s
-        inside_cod = rigid.Ty().tensor(
+        inside_cod = monoidal.Ty().tensor(
             *[s @ b.cod for b in self._insides]) @ s
-        w = rigid.Id(s)
+        w = monoidal.Id(s)
         inside = [w @ (Frame.get_decompose_functor())(b)
                   for b in self._insides]
-        top = rigid.Box(f'[{self.name}]', self.dom, inside_dom)
-        bot = rigid.Box(f'[\\{self.name}]', inside_cod, self.cod)
-        mid = rigid.Id().tensor(*inside) @ w
+        top = monoidal.Box(f'[{self.name}]', self.dom, inside_dom)
+        bot = monoidal.Box(f'[\\{self.name}]', inside_cod, self.cod)
+        mid = monoidal.Id().tensor(*inside) @ w
         # equation(top, mid, bot)
         return top >> mid >> bot
 
     @staticmethod
     def get_decompose_functor():
-        decomp = rigid.Functor(
+        decomp = monoidal.Functor(
             ob=lambda x: x,
             ar=lambda b: b._decompose() if hasattr(b, '_decompose') else b)
         return decomp
@@ -58,10 +58,10 @@ class Frame(rigid.Box):
         return self._insides
 
 
-class Diagram(rigid.Diagram):
+class Diagram(monoidal.Diagram):
     pass
 
-class Functor(rigid.Functor):
+class Functor(monoidal.Functor):
     def __init__(self, ob, ar, frame, ob_factory=Ty, ar_factory=Diagram):
         super().__init__(ob, ar, ob_factory, ar_factory)
         self._frame = frame

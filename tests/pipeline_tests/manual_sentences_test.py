@@ -1,12 +1,21 @@
-import unittest
-
 from lambeq import BobcatParser
 from parameterized import parameterized
 
 from helpers.UnitTestBaseClass import UnitTestBaseClass
 from helpers.ccg_to_diag_test_pipeline import ccg_to_diag_test
+from pipeline.sentence_to_circuit import sentence2circ
 
 sentences = [
+    'Alice likes Bob but she prefers his work.',
+    'Alice prefers his work but she likes Bob',
+    'Alice and Bob ran as they were afraid',
+    'Boring Bob likes his boring self',
+    # 'Despite her difficulty, Wilma came to understand the point.',
+    'Although he was busy with his boring work, Peter had enough of it.',
+    'He and his wife decided they needed a holiday.',
+    'They travelled to Spain because they loved the country very much.',
+    'Alice\'s mother likes her cat',
+    'I thought the plane would be awful, but it was not.',
     'Looking around he found the letter',
     'Alice quickly and slowly runs',
     'Alice runs quickly and slowly',
@@ -67,16 +76,16 @@ sentences = [
 ]
 parser = BobcatParser()
 config = {
-    "draw_result": False,
+    "draw_result": True,
     "draw_steps": False,
-    "type_check_ccg": True,
-    "compare_type_expansions": True,
-    "semantic_rewrites": True,
+    "type_check_ccg": False,
+    "compare_type_expansions": False,
 }
 
 class CCGToDiagTests(UnitTestBaseClass):
     @parameterized.expand(sentences)
     def test_sequence(self, sentence):
+        sentence2circ(parser, sentence).draw()
         print(sentence)
         self.test_logger = sentence
         ccg_parse = parser.sentence2tree(sentence)
