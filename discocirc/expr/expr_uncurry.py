@@ -13,7 +13,7 @@ def expr_uncurry(expr):
         new_body = expr_uncurry(expr.body)
         if isinstance(new_body.typ, Func):
             if new_body.var.expr_type == "list":
-                new_var_list = Expr.lst((new_var,) + new_body.var.expr_list,
+                new_var_list = Expr.lst(new_body.var.expr_list + (new_var,),
                                         False,
                                         new_body.var.head)
                 new_expr = Expr.lmbda(new_var_list, new_body.body)

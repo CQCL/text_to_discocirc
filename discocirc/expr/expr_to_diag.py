@@ -89,7 +89,7 @@ def remove_state_at_layer(diag, layer_no):
     :param layer_no: The layer on which the state to be removed is.
     :return: Tuple: (The new diag, the number of the new wire).
     """
-    removed_left, removed_box, _ = diag.layers[layer_no]
+    removed_left, removed_box, removed_right = diag.layers[layer_no]
     assert(removed_box.dom == Ty())
 
     new_diag = monoidal.Id(diag.cod)
@@ -102,12 +102,21 @@ def remove_state_at_layer(diag, layer_no):
 
     for left, box, right in reversed(diag.layers[:layer_no]):
         if wire_no <= len(left):
-            new_left = left[:wire_no] @ typ @ left[wire_no:]
+            new_left = left[:wire_no] @ \
+                       typ @ left[wire_no:]
             new_right = right
         else:
-            new_left = left
+            while wire_no < len(left) + len(box.cod):
+                 # The wire is underneath the box we are adding.
+                 new_diag = monoidal.Id(new_diag.dom[:wire_no]) @ \
+                            monoidal.Swap(
+                                Ty(new_diag.dom[wire_no + 1]),
+                                typ) @ \
+                            monoidal.Id(new_diag.dom[wire_no + 2:]) >> new_diag
+                 wire_no += 1
             no = wire_no - len(left) - len(box.cod)
             new_right = right[:no] @ typ @ right[no:]
+            new_left = left
             wire_no += len(box.dom) - len(box.cod)
 
         new_diag = monoidal.Id(new_left) @ box @ monoidal.Id(new_right) >> new_diag
@@ -158,8 +167,7 @@ def _lambda_to_diag_open_wire(expr, context, expand_lambda_frames):
     context.remove(expr.var)
 
     var_instances_layer = get_instances_of_var(body, expr.var)
-    if len(var_instances_layer) == 0:
-        get_instances_of_var(body, expr.var)
+    assert(len(var_instances_layer) == 1)
 
     # remove all instances of var
     # keep track of the position of the wires corresponding to the removed boxes
@@ -177,8 +185,6 @@ def _lambda_to_diag_open_wire(expr, context, expand_lambda_frames):
 
         for j in range(i + len(expr.var.typ), len(wire_no_of_removed_boxes)):
             wire_no_of_removed_boxes[j] += len(expr.var.typ)
-
-    print(wire_no_of_removed_boxes)
 
     # move all instances of var to right
     swaps = monoidal.Id(body.dom)
@@ -212,31 +218,8 @@ def _application_to_diag(expr, context, expand_lambda_frames):
     if expr.arg.expr_type == "list":
         fun = expr_to_diag(expr.fun, context, expand_lambda_frames)
         for arg_expr in reversed(expr.arg.expr_list):
-
-            try:
-                arg = expr_to_diag(arg_expr, context, expand_lambda_frames)
-                fun = _compose_diags(arg, fun)
-            except:
-                # TODO: This is a rather hacky solution.
-                # The current code is written under the assumption that the
-                # drawing of an indiviudal lambda expression is independent
-                # of the context in which it is being used.
-                # However, this is not the case.
-                # Let's condider 'Alice likes her work but she prefers Bob.'
-                # If we do pronoun expansion for 'her work', we get a series of
-                # swaps, where one of the arguments that has
-                # to be swapped is the word 'likes' (type: n @ n >> n @ n)
-                # To draw these swaps, we thus have to draw a wire of that type.
-                # But then 'likes' should not be drawn as a function with n @ n
-                # as input and n @ n as output. Rather it should be drawn as a
-                # single state with no inputs and the only output being
-                # (n @ n >> n @ n).
-                # Suddendly, how likes is being drawn depends on the larger
-                # context in which it is being used. This makes the entire
-                # underlying assumption for this code invalid.
-                assert(arg_expr.expr_type == 'literal')  # if this doesn't hold, life gets challenging
-                arg = monoidal.Box(arg_expr.name, Ty(), arg_expr.typ)
-                fun = _compose_diags(arg, fun)
+            arg = expr_to_diag(arg_expr, context, expand_lambda_frames)
+            fun = _compose_diags(arg, fun)
         return fun
 
     arg = expr_to_diag(expr.arg, context, expand_lambda_frames)
@@ -259,6 +242,7 @@ def _compose_diags(arg, fun):
 
     else:
         # Arg is of type Func and should therefore be placed inside fun.
+        # TODO: figure out how much of the dom to remove
         new_dom = fun.dom[:-1]
 
         # TODO: this assumes that the thing we apply to is on the last layer (Issue #13)
@@ -315,10 +299,7 @@ def expr_to_diag(expr, context=None, expand_lambda_frames=True):
         return _literal_to_diag(expr, context, expand_lambda_frames)
     elif expr.expr_type == "lambda":
         if expand_lambda_frames:
-            # try:
-                return _lambda_to_diag_open_wire(expr, context, expand_lambda_frames)
-            # except:
-            #     return _lambda_to_diag_frame(expr, context, False)
+            return _lambda_to_diag_open_wire(expr, context, expand_lambda_frames)
         else:
             return _lambda_to_diag_frame(expr, context, expand_lambda_frames)
     elif expr.expr_type == "application":
