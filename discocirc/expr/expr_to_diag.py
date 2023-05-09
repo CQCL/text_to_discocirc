@@ -218,31 +218,8 @@ def _application_to_diag(expr, context, expand_lambda_frames):
     if expr.arg.expr_type == "list":
         fun = expr_to_diag(expr.fun, context, expand_lambda_frames)
         for arg_expr in reversed(expr.arg.expr_list):
-
-            try:
-                arg = expr_to_diag(arg_expr, context, expand_lambda_frames)
-                fun = _compose_diags(arg, fun)
-            except:
-                # TODO: This is a rather hacky solution.
-                # The current code is written under the assumption that the
-                # drawing of an indiviudal lambda expression is independent
-                # of the context in which it is being used.
-                # However, this is not the case.
-                # Let's condider 'Alice likes her work but she prefers Bob.'
-                # If we do pronoun expansion for 'her work', we get a series of
-                # swaps, where one of the arguments that has
-                # to be swapped is the word 'likes' (type: n @ n >> n @ n)
-                # To draw these swaps, we thus have to draw a wire of that type.
-                # But then 'likes' should not be drawn as a function with n @ n
-                # as input and n @ n as output. Rather it should be drawn as a
-                # single state with no inputs and the only output being
-                # (n @ n >> n @ n).
-                # Suddendly, how likes is being drawn depends on the larger
-                # context in which it is being used. This makes the entire
-                # underlying assumption for this code invalid.
-                assert(arg_expr.expr_type == 'literal')  # if this doesn't hold, life gets challenging
-                arg = monoidal.Box(arg_expr.name, Ty(), arg_expr.typ)
-                fun = _compose_diags(arg, fun)
+            arg = expr_to_diag(arg_expr, context, expand_lambda_frames)
+            fun = _compose_diags(arg, fun)
         return fun
 
     arg = expr_to_diag(expr.arg, context, expand_lambda_frames)
@@ -322,10 +299,7 @@ def expr_to_diag(expr, context=None, expand_lambda_frames=True):
         return _literal_to_diag(expr, context, expand_lambda_frames)
     elif expr.expr_type == "lambda":
         if expand_lambda_frames:
-            # try:
-                return _lambda_to_diag_open_wire(expr, context, expand_lambda_frames)
-            # except:
-            #     return _lambda_to_diag_frame(expr, context, False)
+            return _lambda_to_diag_open_wire(expr, context, expand_lambda_frames)
         else:
             return _lambda_to_diag_frame(expr, context, expand_lambda_frames)
     elif expr.expr_type == "application":
