@@ -29,9 +29,9 @@ def sentence2circ(parser, sentence, semantic_rewrites=True, spacy_model=None):
     # convert expr to diagram
     # s expand
     expr = s_type_expand(expr)
-    if spacy_model:
-        doc = spacy_model(sentence)
-        expr = expand_coref(expr, doc)
+    # if spacy_model:
+    #     doc = spacy_model(sentence)
+    #     expr = expand_coref(expr, doc)
     diag = expr_to_diag(expr)
     # apply semantic rewrites
     if semantic_rewrites:

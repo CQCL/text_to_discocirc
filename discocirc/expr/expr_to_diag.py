@@ -308,3 +308,8 @@ def expr_to_diag(expr, context=None, expand_lambda_frames=True):
         return _list_to_diag(expr, context, expand_lambda_frames)
     else:
         raise NotImplementedError(expr.expr_type)
+
+def draw_expr(expr, **kwargs):
+    diag = expr_to_diag(expr)
+    diag = (Frame.get_decompose_functor())(diag)
+    diag.draw(**kwargs)
