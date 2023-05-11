@@ -1,5 +1,6 @@
 from discopy import monoidal
 
+from discocirc.expr import Expr
 from discocirc.diag.frame import Frame
 from discocirc.helpers.closed import Func, Ty
 
@@ -155,7 +156,6 @@ def _lambda_to_diag_open_wire(expr, context, expand_lambda_frames):
     :return: A diagram corresponding to expr.
     """
     if expr.var.expr_type == 'list':
-        from expr import Expr
         # Curry list to be able to use normal draw function
         output = Expr.lmbda(expr.var.expr_list[0], expr.body)
         for var in (expr.var.expr_list[1:]):
