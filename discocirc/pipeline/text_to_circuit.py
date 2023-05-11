@@ -40,7 +40,7 @@ def noun_sort(circ):
     return circ
 
 
-def sentence_list_to_circuit(context, simplify_swaps=False, wire_order='intro_order', spacy_model=spacy_model):
+def sentence_list_to_circuit(context, simplify_swaps=True, wire_order='intro_order', spacy_model=spacy_model):
     """
     Parameters:
     -----------
@@ -59,6 +59,7 @@ def sentence_list_to_circuit(context, simplify_swaps=False, wire_order='intro_or
     """
     sentence_circuits = []
     for sentence in context:
+        # sentence_diag = sentence2circ(parser, sentence)
         sentence_diag = sentence2circ(parser, sentence, spacy_model=spacy_model)
         sentence_circuits.append(sentence_diag)
     context_circ = sentence_circuits[0]

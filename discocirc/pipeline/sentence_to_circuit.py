@@ -19,12 +19,10 @@ def sentence2circ(parser, sentence, semantic_rewrites=True, spacy_model=None):
     ccg = parser.sentence2tree(tokenized_sentence, tokenised=True)
     expr = ccg_to_expr(ccg)
     # first round of pull out
-    expr = inverse_beta(expr)
     expr = pull_out(expr)
     # expand noun-noun coordination
     expr = coordination_expand(expr)
     # second round of pull out
-    expr = inverse_beta(expr)
     expr = pull_out(expr)
     # then n expand
     expr = n_type_expand(expr)
