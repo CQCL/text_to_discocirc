@@ -1,4 +1,5 @@
 from random import randint
+from discocirc.expr.expr_normal_form import expr_normal_form
 
 from discocirc.helpers.closed import Ty, Func
 from discocirc.expr import Expr
@@ -281,7 +282,7 @@ def expand_possessive_pronouns(expr, all_pp_chains):
     return new_outside(swapped_args)
 
 
-def expand_coref(expr, doc):
+def _expand_coref(expr, doc):
     """
     Given an expr and a doc containing corefs, create a new expr which expands
     the possessive pronouns.
@@ -310,3 +311,7 @@ def expand_coref(expr, doc):
         return expr
 
     return expand_possessive_pronouns(expr, all_pps)
+
+def expand_coref(expr, doc):
+    expr_normal = expr_normal_form(expr)
+    return _expand_coref(expr_normal, doc)

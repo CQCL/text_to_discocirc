@@ -29,7 +29,7 @@ def sentence2circ(parser, sentence, semantic_rewrites=True, spacy_model=None):
     expr = s_type_expand(expr)
     if spacy_model:
         doc = spacy_model(sentence)
-        expr = expand_coref(expr_normal_form(expr), doc)
+        expr = expand_coref(expr, doc)
     diag = expr_to_diag(expr)
     # apply semantic rewrites
     if semantic_rewrites:
