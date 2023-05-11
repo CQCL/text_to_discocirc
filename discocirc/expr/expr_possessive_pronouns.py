@@ -297,7 +297,6 @@ def expand_coref(expr, doc):
             for token_index in mention.token_indexes:
                 word_expr = find_word_in_expr(expr, doc[token_index], token_index)
                 if word_expr.typ == Func(Ty('n'), Ty('n')):
-                    print("Found a possessive pronoun!")
                     assert(len(mention.token_indexes) == 1)
                     pps_in_chain.append((doc[mention[0]], mention[0]))
 

@@ -1,3 +1,5 @@
+from discocirc.expr.expr_normal_form import expr_normal_form
+from discocirc.expr.expr_possessive_pronouns import expand_coref
 from discocirc.expr.inverse_beta import inverse_beta
 from discocirc.expr.n_type_expand import n_type_expand
 from discocirc.expr.s_type_expand import s_type_expand
@@ -9,7 +11,7 @@ from discocirc.expr.pull_out import pull_out
 from discocirc.semantics.rewrite import rewrite
 
 
-def sentence2circ(parser, sentence, semantic_rewrites=True):
+def sentence2circ(parser, sentence, semantic_rewrites=True, spacy_model=None):
     ccg = parser.sentence2tree(sentence)
     expr = ccg_to_expr(ccg)
     # first round of pull out
@@ -25,6 +27,9 @@ def sentence2circ(parser, sentence, semantic_rewrites=True):
     # convert expr to diagram
     # s expand
     expr = s_type_expand(expr)
+    if spacy_model:
+        doc = spacy_model(sentence)
+        expr = expand_coref(expr_normal_form(expr), doc)
     diag = expr_to_diag(expr)
     # apply semantic rewrites
     if semantic_rewrites:
