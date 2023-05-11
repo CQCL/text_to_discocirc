@@ -67,8 +67,12 @@ def sentence_list_to_circuit(context, simplify_swaps=False, wire_order='intro_or
 
     # attempt to remove some redundant swaps
     if simplify_swaps:
+        context_circ = noun_normal_form(context_circ)
+        num_nouns = get_last_initial_noun(context_circ) + 1
+        nouns = context_circ[:num_nouns]
         back_n_forth = lambda f: hypergraph.Diagram.upgrade(f).downgrade()
-        context_circ = back_n_forth(context_circ)
+        context_circ = back_n_forth(context_circ[num_nouns:])
+        context_circ = nouns >> context_circ
 
     return context_circ
 
