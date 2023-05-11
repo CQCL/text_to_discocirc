@@ -77,9 +77,8 @@ def text_to_circuit(text, **kwargs):
     sentences = []
     for sent in doc.sents:
         s = sent.text
-        s = s.translate(str.maketrans('', '', string.punctuation))
         sentences.append(s)
-    return sentence_list_to_circuit(sentences, spacy_model, **kwargs)
+    return sentence_list_to_circuit(sentences, spacy_model=spacy_model, **kwargs)
     
 def noun_normal_form(circuit):
     """

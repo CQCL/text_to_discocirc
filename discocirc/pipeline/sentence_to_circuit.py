@@ -1,3 +1,5 @@
+from lambeq import SpacyTokeniser
+
 from discocirc.expr.expr_normal_form import expr_normal_form
 from discocirc.expr.expr_possessive_pronouns import expand_coref
 from discocirc.expr.inverse_beta import inverse_beta
@@ -10,9 +12,11 @@ from discocirc.diag.frame import Frame
 from discocirc.expr.pull_out import pull_out
 from discocirc.semantics.rewrite import rewrite
 
+tokenizer = SpacyTokeniser()
 
 def sentence2circ(parser, sentence, semantic_rewrites=True, spacy_model=None):
-    ccg = parser.sentence2tree(sentence)
+    tokenized_sentence = tokenizer.tokenise_sentence(sentence)
+    ccg = parser.sentence2tree(tokenized_sentence, tokenised=True)
     expr = ccg_to_expr(ccg)
     # first round of pull out
     expr = inverse_beta(expr)
