@@ -1,6 +1,3 @@
-import random
-import time
-
 from lambeq import CCGAtomicType, CCGRule
 
 from discocirc.expr import Expr

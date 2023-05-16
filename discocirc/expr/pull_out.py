@@ -1,5 +1,3 @@
-from random import randint
-
 from discocirc.expr.expr import Expr
 from discocirc.helpers.closed import Func, Ty
 from discocirc.helpers.discocirc_utils import change_expr_typ, count_applications, expr_type_recursion, n_fold_c_combinator

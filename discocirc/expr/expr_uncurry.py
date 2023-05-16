@@ -1,4 +1,3 @@
-import random
 from discocirc.expr import Expr
 from discocirc.helpers.closed import Func, uncurry_types
 from discocirc.helpers.discocirc_utils import create_random_variable
