@@ -121,9 +121,9 @@ def expr_type_recursion(expr, function):
     elif expr.expr_type == "list":
         new_expr = Expr.lst([function(e) for e in expr.expr_list])
     elif expr.expr_type == "lambda":
-        new_expr = function(expr.body)
+        new_body = function(expr.body)
         new_var = function(expr.var)
-        new_expr = Expr.lmbda(new_var, new_expr)
+        new_expr = Expr.lmbda(new_var, new_body)
     elif expr.expr_type == "application":
         arg = function(expr.arg)
         fun = function(expr.fun)

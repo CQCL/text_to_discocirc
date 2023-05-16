@@ -12,7 +12,7 @@ config = {
     "compare_type_expansions": True,
 }
 
-ccgbankparser = CCGBankParser("../ccgbank")
+ccgbankparser = CCGBankParser("../data/ccgbank")
 trees = ccgbankparser.section2trees(0) # there is a total of 25 sections
 
 

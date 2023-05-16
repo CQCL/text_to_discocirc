@@ -86,6 +86,7 @@ class Expr:
                     infer_list_type(flattened_list, interchange),
                     head)
         expr.expr_list = tuple(flattened_list)
+        expr.interchange = interchange
         return expr
 
     @staticmethod
@@ -96,6 +97,7 @@ class Expr:
         head = expr.head
         if expr.expr_type == "literal":
             if expr in context.keys():
+                assert(context[expr].typ == expr.typ)
                 return context[expr]
             return expr
         elif expr.expr_type == "lambda":
@@ -189,7 +191,7 @@ def infer_list_type(expr_list, interchange):
 def if_interchange_list_type(expr_list):
     for e in expr_list:
         # do not interchange if expr_list has a state
-        if not isinstance(e.typ, Func): 
+        if not isinstance(e.typ, Func):
             return False
         # do not interchange if expr_list has a higher order map
         for e_inputs in e.typ.input:
