@@ -134,6 +134,7 @@ def expr_type_recursion(expr, function):
         new_expr.head = expr.head
     return new_expr
 
+
 random_variable_counter = 0
 def create_random_variable(typ, head=None):
     global random_variable_counter
