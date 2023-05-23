@@ -148,7 +148,7 @@ class Expr:
             raise TypeError(f"Type of:\n{arg}\n is not compatible "
                             + f"with the input type of:\n{expr}")
 
-        from helpers.discocirc_utils import create_random_variable
+        from discocirc.helpers.discocirc_utils import create_random_variable
         var1 = create_random_variable(expr.typ.input[-i:])
         var2 = create_random_variable(expr.typ.input[:-num_inputs])
         var2_var1 = Expr.lst([var2, var1], interchange=False)
