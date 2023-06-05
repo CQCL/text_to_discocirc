@@ -6,10 +6,12 @@ def expand_closed_type(typ, expand_which_type):
     if not isinstance(typ, Func):
         return typ
     args = []
+    indices = []
     while isinstance(typ, Func):
         args.append(typ.input)
+        indices.append(typ.index)
         typ = typ.output
-    n_nouns = sum([1 for i in Ty().tensor(*args) if i == Ty('n')])
+    n_nouns = sum([1 for i in Ty('').tensor(*args) if i == Ty('n')])
     noun_args = reversed([i for i in args if i == Ty('n')])
     if typ == expand_which_type:
         typ = Ty().tensor(*noun_args)
@@ -23,8 +25,9 @@ def expand_closed_type(typ, expand_which_type):
                 t = Ty(t) if not isinstance(t, Func) else t
                 new_typ = new_typ @ t
         typ = new_typ
-    for arg in reversed(args):
+    for arg, index in zip(reversed(args), reversed(indices)):
         typ = expand_closed_type(arg, expand_which_type) >> typ
+        typ.index = index
     return typ
 
 def s_type_expand(expr):
