@@ -329,8 +329,6 @@ def expr_type_recursion(expr, function, *args, **kwargs):
         new_expr = fun(arg)
     else:
         raise TypeError(f'Unknown type {expr.expr_type} of expression')
-    if expr.typ.index != None:
-        new_expr.typ.index = expr.typ.index
     if hasattr(expr, 'head'):
         new_expr.head = expr.head
     return new_expr
