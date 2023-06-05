@@ -30,7 +30,11 @@ class Ty(monoidal.Ty):
         if len(objects) > 1:
             self._objects = tuple(x if isinstance(x, Ty) else Ty(x) for x in objects)
         elif len(objects) == 1:
-            if isinstance(objects[0], monoidal.Ty):
+            if isinstance(objects[0], Ty):
+                if self.index != None:
+                    self.index = objects[0].index
+                self._objects = objects[0].downgrade()
+            elif isinstance(objects[0], monoidal.Ty):
                 self._objects = objects[0]
             else:
                 self._objects = monoidal.Ty(objects[0])
