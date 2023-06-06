@@ -15,7 +15,7 @@ def ccg_to_expr(ccg_parse):
     result = None
     # Rules with 0 children
     if ccg_parse.rule == CCGRule.LEXICAL:
-        word_index = ccg_parse.original.variable.fillers[0].index
+        word_index = ccg_parse.text + '_' + str(ccg_parse.original.variable.fillers[0].index)
         closed_type = ccg_cat_to_closed(ccg_parse.original.cat, word_index)
         result = Expr.literal(ccg_parse.text, closed_type)
 

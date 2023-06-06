@@ -44,8 +44,8 @@ class Ty(monoidal.Ty):
 
     def __str__(self):
         if len(self._objects) > 1:
-            return f'({super().__str__()})[{self.index}]'
-        return super().__str__() + f'[{self.index}]'
+            return f'({super().__str__()}){self.index}'
+        return super().__str__() + f'{self.index}'
 
     def tensor(self, *others):
         for other in others:
@@ -81,7 +81,7 @@ class Func(Ty):
         return "({} → {})".format(repr(self.input), repr(self.output))
 
     def __str__(self):
-        return "({} → {})[{}]".format(self.input, self.output, self.index)
+        return "({} → {}){}".format(self.input, self.output, self.index)
 
     def __eq__(self, other):
         if not isinstance(other, Func):
@@ -103,14 +103,15 @@ def biclosed_to_closed(x):
     else:
         return x
 
-def ccg_cat_to_closed(cat, word_index=None):
+def ccg_cat_to_closed(cat, word_str=None):
     if cat.atomic:
         typ = biclosed_to_closed(BobcatParser._to_biclosed(cat))
     else:
-        result_typ = ccg_cat_to_closed(cat.result, word_index)
-        argument_typ = ccg_cat_to_closed(cat.argument, word_index)
+        result_typ = ccg_cat_to_closed(cat.result, word_str)
+        argument_typ = ccg_cat_to_closed(cat.argument, word_str)
         typ = argument_typ >> result_typ
-    typ.index = str(word_index) + '_' + str(cat.var) if word_index else str(cat.var)
+    idx = word_str + '_' + str(cat.var) if word_str else str(cat.var)
+    typ.index = set([idx])
     return typ
 
 def uncurry_types(typ, uncurry_everything=False):

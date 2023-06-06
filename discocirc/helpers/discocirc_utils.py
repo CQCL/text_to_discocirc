@@ -127,7 +127,7 @@ def add_indices_to_types(typ):
                     typ.index)
     if len(typ.objects) == 1:
         obj = typ.objects[0]
-        return Ty(f"{obj.name}[{typ.index}]", index=typ.index)
+        return Ty(f"{obj.name}{typ.index}", index=typ.index)
     return Ty(*[add_indices_to_types(x) for x in typ.objects], index=typ.index)
 
 def expr_add_indices_to_types(expr):
