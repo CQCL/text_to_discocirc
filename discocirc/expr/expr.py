@@ -209,12 +209,16 @@ def var_list_matches_arg_list(fun, arg):
             return False
     return True
 
-def create_index_mapping_dict(fun_inp_typ, arg_typ):
+def create_index_mapping_dict(key_typ, value_typ):
     mapping = {}
-    if isinstance(arg_typ, Func):
-        mapping |= create_index_mapping_dict(fun_inp_typ.input, arg_typ.input)
-        mapping |= create_index_mapping_dict(fun_inp_typ.output, arg_typ.output)
-    mapping[arg_typ.index] = fun_inp_typ.index
+    if isinstance(key_typ, Func):
+        mapping |= create_index_mapping_dict(key_typ.input, value_typ.input)
+        mapping |= create_index_mapping_dict(key_typ.output, value_typ.output)
+    if key_typ.index != None \
+        and value_typ.index != None \
+        and key_typ.index != value_typ.index:
+        for k in key_typ.index:
+            mapping[k] = value_typ.index
     return mapping
 
 def map_typ_indices(typ, mapping):
@@ -222,8 +226,14 @@ def map_typ_indices(typ, mapping):
         input_typ = map_typ_indices(typ.input, mapping)
         output_typ = map_typ_indices(typ.output, mapping)
         typ = Func(input_typ, output_typ, typ.index)
-    if typ.index in mapping.keys():
-        typ.index = mapping[typ.index]
+    if typ.index != None:
+        new_index = set()
+        for idx in typ.index:
+            if idx in mapping.keys() and mapping[idx] != None:
+                new_index = set.union(new_index, mapping[idx])
+            else:
+                new_index.add(idx)
+        typ.index = new_index
     return typ
 
 def map_expr_indices(expr, mapping, reduce=True):

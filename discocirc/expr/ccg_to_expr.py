@@ -5,7 +5,7 @@ from lambeq import CCGAtomicType, CCGRule
 
 from discocirc.expr import Expr
 from discocirc.expr.expr import create_index_mapping_dict, map_expr_indices
-from discocirc.helpers.closed import biclosed_to_closed, ccg_cat_to_closed
+from discocirc.helpers.closed import biclosed_to_closed, ccg_cat_to_closed, Ty
 from discocirc.helpers.discocirc_utils import change_expr_typ, create_random_variable
 
 
@@ -29,7 +29,10 @@ def ccg_to_expr(ccg_parse):
     elif ccg_parse.rule == CCGRule.UNARY:
         word_index = ccg_parse.original.variable.fillers[0].index
         closed_type = ccg_cat_to_closed(ccg_parse.original.cat, word_index)
-        result = change_expr_typ(children[0], closed_type)
+        if children[0].typ != closed_type:
+            result = change_expr_typ(children[0], closed_type)
+        else:
+            result = children[0]
 
     # Rules with 2 children
     elif ccg_parse.rule == CCGRule.FORWARD_APPLICATION:
@@ -42,17 +45,23 @@ def ccg_to_expr(ccg_parse):
     elif ccg_parse.rule == CCGRule.BACKWARD_COMPOSITION \
             or ccg_parse.rule == CCGRule.BACKWARD_CROSSED_COMPOSITION:
         result = composition(ccg_parse, children[1], children[0])
-    # up to here
     elif ccg_parse.rule == CCGRule.CONJUNCTION:
-        left, right = children[0].typ, children[1].typ
-        if CCGAtomicType.conjoinable(left):
-            type = right >> biclosed_to_closed(ccg_parse.biclosed_type)
-            children[0].typ = type
-            result = children[0](children[1])
-        elif CCGAtomicType.conjoinable(right):
-            type = left >> biclosed_to_closed(ccg_parse.biclosed_type)
-            children[1].typ = type
-            result = children[1](children[0])
+        first_word = ccg_parse.children[0].biclosed_type
+        w0, w1 = 0, 1 if CCGAtomicType.conjoinable(first_word) else 1, 0
+        conjunction = children[w0]
+        conjunct = children[w1]
+        word_index = ccg_parse.children[w0].original.variable.fillers[0].index
+        if conjunct.typ == Ty('n'):
+            second_conjunct_typ = Ty('n', index=set([str(word_index) + '_x']))
+            final_idx = set.union(conjunct.typ.index, second_conjunct_typ.index)
+            final_conjunction_type = Ty('n', index=final_idx)
+            conjunction_type = conjunct.typ >> (second_conjunct_typ >> final_conjunction_type)
+        else:
+            conjunction_type = conjunct.typ >> (conjunct.typ >> conjunct.typ)
+        conjunction_type.index = conjunction.typ.index
+        conjunction = change_expr_typ(conjunction, conjunction_type)
+        result = conjunction(conjunct)
+    # up to here
     elif ccg_parse.rule == CCGRule.REMOVE_PUNCTUATION_RIGHT:
         if children[0].typ != biclosed_to_closed(ccg_parse.biclosed_type):
             punctuation = Expr.literal(children[1].name, children[0].typ >> biclosed_to_closed(ccg_parse.biclosed_type))
