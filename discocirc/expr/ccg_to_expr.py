@@ -23,12 +23,12 @@ def ccg_to_expr(ccg_parse):
     elif ccg_parse.rule == CCGRule.FORWARD_TYPE_RAISING \
             or ccg_parse.rule == CCGRule.BACKWARD_TYPE_RAISING:
         word_index = ccg_parse.children[0].original.variable.fillers[0].index
-        tr_type = ccg_cat_to_closed(ccg_parse.original.cat, word_index)
+        tr_type = ccg_cat_to_closed(ccg_parse.original.cat, str(word_index))
         x = create_random_variable(tr_type.input)
         result = Expr.lmbda(x, x(children[0]), tr_type.index)
     elif ccg_parse.rule == CCGRule.UNARY:
         word_index = ccg_parse.original.variable.fillers[0].index
-        closed_type = ccg_cat_to_closed(ccg_parse.original.cat, word_index)
+        closed_type = ccg_cat_to_closed(ccg_parse.original.cat, str(word_index))
         if children[0].typ != closed_type:
             result = change_expr_typ(children[0], closed_type)
         else:

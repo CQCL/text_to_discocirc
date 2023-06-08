@@ -104,13 +104,15 @@ def biclosed_to_closed(x):
         return x
 
 def ccg_cat_to_closed(cat, word_str=None):
+    if word_str:
+        assert(type(word_str)==str)
     if cat.atomic:
         typ = biclosed_to_closed(BobcatParser._to_biclosed(cat))
     else:
         result_typ = ccg_cat_to_closed(cat.result, word_str)
         argument_typ = ccg_cat_to_closed(cat.argument, word_str)
         typ = argument_typ >> result_typ
-    idx = str(word_str) + '_' + str(cat.var) if word_str else str(cat.var)
+    idx = word_str + '_' + str(cat.var) if word_str else str(cat.var)
     typ.index = set([idx])
     return typ
 
