@@ -110,7 +110,7 @@ def ccg_cat_to_closed(cat, word_str=None):
         result_typ = ccg_cat_to_closed(cat.result, word_str)
         argument_typ = ccg_cat_to_closed(cat.argument, word_str)
         typ = argument_typ >> result_typ
-    idx = word_str + '_' + str(cat.var) if word_str else str(cat.var)
+    idx = str(word_str) + '_' + str(cat.var) if word_str else str(cat.var)
     typ.index = set([idx])
     return typ
 

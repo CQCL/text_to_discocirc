@@ -47,7 +47,11 @@ def ccg_to_expr(ccg_parse):
         result = composition(ccg_parse, children[1], children[0])
     elif ccg_parse.rule == CCGRule.CONJUNCTION:
         first_word = ccg_parse.children[0].biclosed_type
-        w0, w1 = 0, 1 if CCGAtomicType.conjoinable(first_word) else 1, 0
+        if CCGAtomicType.conjoinable(first_word):
+            w0, w1 = 0, 1
+        else:
+            w0, w1 = 1, 0
+        # w0, w1 = 0, 1 if CCGAtomicType.conjoinable(first_word) else 1, 0
         conjunction = children[w0]
         conjunct = children[w1]
         word_index = ccg_parse.children[w0].original.variable.fillers[0].index
