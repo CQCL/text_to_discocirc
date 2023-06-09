@@ -10,8 +10,9 @@ from discocirc.diag.drag_up import drag_all
 from discocirc.pipeline.sentence_to_circuit import sentence2circ
 
 parser = BobcatParser(verbose='suppress')
-# Loadone of SpaCy English models
-spacy_nlp = spacy.load('en_core_web_md')
+# Load a SpaCy English model
+spacy_model = spacy.load('en_core_web_trf')
+spacy_model.add_pipe('coreferee')
 
 # NOTE: this function may become redundant
 def noun_sort(circ):
@@ -39,7 +40,7 @@ def noun_sort(circ):
     return circ
 
 
-def sentence_list_to_circuit(context, simplify_swaps=False, wire_order='intro_order'):
+def sentence_list_to_circuit(context, simplify_swaps=True, wire_order='intro_order', spacy_model=spacy_model):
     """
     Parameters:
     -----------
@@ -58,7 +59,8 @@ def sentence_list_to_circuit(context, simplify_swaps=False, wire_order='intro_or
     """
     sentence_circuits = []
     for sentence in context:
-        sentence_diag = sentence2circ(parser, sentence)
+        # sentence_diag = sentence2circ(parser, sentence)
+        sentence_diag = sentence2circ(parser, sentence, spacy_model=spacy_model)
         sentence_circuits.append(sentence_diag)
     context_circ = sentence_circuits[0]
     for circ in sentence_circuits[1:]:
@@ -66,19 +68,22 @@ def sentence_list_to_circuit(context, simplify_swaps=False, wire_order='intro_or
 
     # attempt to remove some redundant swaps
     if simplify_swaps:
+        context_circ = noun_normal_form(context_circ)
+        num_nouns = get_last_initial_noun(context_circ) + 1
+        nouns = context_circ[:num_nouns]
         back_n_forth = lambda f: hypergraph.Diagram.upgrade(f).downgrade()
-        context_circ = back_n_forth(context_circ)
+        context_circ = back_n_forth(context_circ[num_nouns:])
+        context_circ = nouns >> context_circ
 
     return context_circ
 
 def text_to_circuit(text, **kwargs):
-    doc = spacy_nlp(text)
+    doc = spacy_model(text)
     sentences = []
     for sent in doc.sents:
         s = sent.text
-        s = s.translate(str.maketrans('', '', string.punctuation))
         sentences.append(s)
-    return sentence_list_to_circuit(sentences, **kwargs)
+    return sentence_list_to_circuit(sentences, spacy_model=spacy_model, **kwargs)
     
 def noun_normal_form(circuit):
     """

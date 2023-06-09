@@ -7,8 +7,8 @@ def expr_type_check(expr):
 
     elif expr.expr_type == "list":
         expected_type = Ty()
-        for expr in expr.expr_list:
-            element_type = expr_type_check(expr)
+        for e in expr.expr_list:
+            element_type = expr_type_check(e)
             if element_type is None:
                 return None
             expected_type = expected_type @ element_type

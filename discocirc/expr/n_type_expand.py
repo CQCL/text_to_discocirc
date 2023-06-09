@@ -1,5 +1,4 @@
 
-import random
 from discocirc.expr.expr import Expr, expr_type_recursion
 from discocirc.expr.expr_uncurry import expr_uncurry
 from discocirc.expr.s_type_expand import expand_closed_type

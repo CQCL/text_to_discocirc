@@ -1,10 +1,11 @@
-from discocirc.semantics.rules import remove_relative_pronouns, remove_to_be, remove_articles
+from discocirc.semantics.rules import passive_to_active_voice, remove_relative_pronouns, remove_to_be, remove_articles
 
 
 rules_dict = {
     "remove_articles": remove_articles,
     "remove_to_be": remove_to_be,
     "remove_relative_pronouns": remove_relative_pronouns,
+    "passive_to_active_voice": passive_to_active_voice,
 }
 
 

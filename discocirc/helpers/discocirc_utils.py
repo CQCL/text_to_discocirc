@@ -1,7 +1,7 @@
 from argparse import ArgumentError
 from copy import deepcopy
-import random
 from discopy import rigid
+from discopy.rigid import Ty, Box
 from discopy.monoidal import Functor
 from discopy import Ob
 
@@ -117,9 +117,6 @@ def inv_n_fold_c_combinator(expr, n):
 def apply_at_root(fun, arg):
     return inv_n_fold_c_combinator(fun(arg), count_applications(fun))
 
-def create_random_variable(typ, head=None):
-    return Expr.literal(f"x_{random.randint(1000,9999)}", typ=typ, head=head)
-
 def add_indices_to_types(typ):
     if isinstance(typ, Func):
         return Func(add_indices_to_types(typ.input),
@@ -136,3 +133,9 @@ def expr_add_indices_to_types(expr):
         new_expr.typ = add_indices_to_types(expr.typ)
         return new_expr
     return expr_type_recursion(expr, expr_add_indices_to_types)
+
+random_variable_counter = 0
+def create_random_variable(typ, head=None):
+    global random_variable_counter
+    random_variable_counter += 1
+    return Expr.literal(f"x_{random_variable_counter}", typ=typ, head=head)

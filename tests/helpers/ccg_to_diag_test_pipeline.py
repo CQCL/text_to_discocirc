@@ -62,7 +62,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse):
         diag = expr_to_diag(expr_add_indices_to_types(expr))
         diag = (Frame.get_decompose_functor())(diag)
         diag.draw()
-        
+
     # ------- Step 4: Pulling out again -----------
     expr = inverse_beta(expr)
     expr = pull_out(expr)

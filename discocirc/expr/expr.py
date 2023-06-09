@@ -1,6 +1,5 @@
 from __future__ import annotations
 from copy import deepcopy
-import random
 from prettytable import PrettyTable
 
 from discocirc.helpers.closed import Func, uncurry_types, Ty
@@ -86,6 +85,7 @@ class Expr:
                     infer_list_type(flattened_list, interchange),
                     head)
         expr.expr_list = tuple(flattened_list)
+        expr.interchange = interchange
         return expr
 
     @staticmethod
@@ -96,6 +96,7 @@ class Expr:
         head = expr.head
         if expr.expr_type == "literal":
             if expr in context.keys():
+                assert(context[expr].typ == expr.typ)
                 return context[expr]
             return expr
         elif expr.expr_type == "lambda":
@@ -149,8 +150,10 @@ class Expr:
         if num_inputs == 0:
             raise TypeError(f"Type of:\n{arg}\n is not compatible "
                             + f"with the input type of:\n{expr}")
-        var1 = Expr.literal(f"x_{random.randint(1000,9999)}", expr.typ.input[-i:])
-        var2 = Expr.literal(f"x_{random.randint(1000,9999)}", expr.typ.input[:-num_inputs])
+
+        from discocirc.helpers.discocirc_utils import create_random_variable
+        var1 = create_random_variable(expr.typ.input[-i:])
+        var2 = create_random_variable(expr.typ.input[:-num_inputs])
         var2_var1 = Expr.lst([var2, var1], interchange=False)
         expr = Expr.lmbda(var1, Expr.lmbda(var2, expr(var2_var1)))
         return Expr.apply(expr, arg, context, reduce=True)
@@ -192,7 +195,7 @@ def infer_list_type(expr_list, interchange):
 def if_interchange_list_type(expr_list):
     for e in expr_list:
         # do not interchange if expr_list has a state
-        if not isinstance(e.typ, Func): 
+        if not isinstance(e.typ, Func):
             return False
         # do not interchange if expr_list has a higher order map
         for e_inputs in e.typ.input:

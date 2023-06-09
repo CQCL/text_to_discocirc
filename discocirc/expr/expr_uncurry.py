@@ -1,4 +1,3 @@
-import random
 from discocirc.expr import Expr
 from discocirc.helpers.closed import Func, uncurry_types
 from discocirc.helpers.discocirc_utils import create_random_variable
@@ -12,9 +11,15 @@ def expr_uncurry(expr):
         new_var = expr_uncurry(expr.var)
         new_body = expr_uncurry(expr.body)
         if isinstance(new_body.typ, Func):
-            var2 = create_random_variable(new_body.typ.input)
-            product_var = Expr.lst([var2, new_var], interchange=False)
-            new_expr = Expr.lmbda(product_var, new_body(var2))
+            if new_body.var.expr_type == "list":
+                new_var_list = Expr.lst(new_body.var.expr_list + (new_var,),
+                                        False,
+                                        new_body.var.head)
+                new_expr = Expr.lmbda(new_var_list, new_body.body)
+            else:
+                var2 = create_random_variable(new_body.typ.input)
+                product_var = Expr.lst([var2, new_var], interchange=False) # TODO: is the order of the variables correct?
+                new_expr = Expr.lmbda(product_var, new_body(var2))
         else:
             new_expr = Expr.lmbda(new_var, new_body)
     elif expr.expr_type == "application":

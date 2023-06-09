@@ -1,6 +1,7 @@
-from random import randint
+
 from discocirc.expr.expr import Expr, expr_type_recursion
 from discocirc.helpers.closed import Func
+from discocirc.helpers.discocirc_utils import create_random_variable
 
 def expr_has_variable(expr, variable):
     if expr == variable:
@@ -33,7 +34,7 @@ def remove_free_vars(expr, variables):
     if expr in variables:
         return [], [], expr
     elif not isinstance(expr.typ, Func) and not expr_has_variables(expr, variables):
-        temp_var = Expr.literal(f"x_{randint(1000,9999)}", expr.typ, head=expr.head)
+        temp_var = create_random_variable(expr.typ, head=expr.head)
         return [expr], [temp_var], temp_var
     elif expr.expr_type == "list":
         free_vars = []
