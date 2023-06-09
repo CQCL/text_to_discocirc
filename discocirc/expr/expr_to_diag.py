@@ -274,7 +274,7 @@ def _list_to_diag(expr, context, expand_lambda_frames):
         as variables should be drawn as wires.
     :return: A diagram corresponding to expr.
     """
-    output = rigid.Id(Ty())
+    output = rigid.Id(monoidal.Ty())
     for val in expr.expr_list:
         diag = expr_to_diag(val, context, expand_lambda_frames)
         output = output @ diag
