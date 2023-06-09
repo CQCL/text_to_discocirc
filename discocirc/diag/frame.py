@@ -1,7 +1,5 @@
 from discopy import rigid
 
-from discocirc.helpers.closed import Ty
-
 
 def logical_form(diagram):
     if isinstance(diagram, Frame):
@@ -62,7 +60,7 @@ class Diagram(rigid.Diagram):
     pass
 
 class Functor(rigid.Functor):
-    def __init__(self, ob, ar, frame, ob_factory=Ty, ar_factory=Diagram):
+    def __init__(self, ob, ar, frame, ob_factory=rigid.Ty, ar_factory=Diagram):
         super().__init__(ob, ar, ob_factory, ar_factory)
         self._frame = frame
 
