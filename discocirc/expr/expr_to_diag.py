@@ -1,9 +1,31 @@
+
 from discopy import monoidal
 
 from discocirc.expr import Expr
 from discocirc.diag.frame import Frame
 from discocirc.helpers.closed import Func, Ty
 
+
+def downgrade_types(typ):
+    if isinstance(typ, monoidal.Ob) and not isinstance(typ, monoidal.Ty):
+        return typ
+    elif isinstance(typ, Func):
+        return Func(downgrade_types(typ.input),
+                    downgrade_types(typ.output),
+                    index=typ.index)
+    elif len(typ) == 1 and isinstance(typ, Ty):
+        return Ty.downgrade(typ)
+    elif len(typ) > 1:
+        objects = []
+        for t in typ.objects:
+            if isinstance(t, monoidal.Ty) and not isinstance(t, Func):
+                objects.extend(t.objects)
+            else:
+                objects.append(downgrade_types(t))
+        typ = monoidal.Ty(*objects)
+        return typ
+    else:
+        return typ
 
 def _literal_to_diag(expr, context, expand_lambda_frames):
     """
@@ -32,11 +54,9 @@ def _literal_to_diag(expr, context, expand_lambda_frames):
         while isinstance(output, Func):
             input = output.input @ input
             output = output.output
-
-        return monoidal.Box(name, input, output)
+        return monoidal.Box(name, downgrade_types(input), downgrade_types(output))
     else:
-        return monoidal.Box(name, Ty(), output)
-
+        return monoidal.Box(name, monoidal.Ty(), downgrade_types(output))
 
 def _lambda_to_diag_frame(expr, context, expand_lambda_frames):
     """
@@ -274,7 +294,7 @@ def _list_to_diag(expr, context, expand_lambda_frames):
         as variables should be drawn as wires.
     :return: A diagram corresponding to expr.
     """
-    output = monoidal.Id(Ty())
+    output = monoidal.Id(monoidal.Ty())
     for val in expr.expr_list:
         diag = expr_to_diag(val, context, expand_lambda_frames)
         output = output @ diag

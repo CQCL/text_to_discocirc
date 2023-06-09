@@ -56,8 +56,8 @@ class Expr:
         return Expr(name, "literal", typ, head)
 
     @staticmethod
-    def lmbda(var, body, head=None):
-        lambda_expr = Expr(body.name, "lambda", var.typ >> body.typ, head)
+    def lmbda(var, body, head=None, index=None):
+        lambda_expr = Expr(body.name, "lambda", Func(var.typ, body.typ, index), head)
         lambda_expr.var = var
         lambda_expr.body = body
         return lambda_expr
@@ -113,7 +113,7 @@ class Expr:
         return new_expr
 
     @staticmethod
-    def apply(fun, arg, context=None, reduce=True, head=None):
+    def apply(fun, arg, context=None, reduce=True, head=None, match_indices=True):
         """
         apply expr to arg
         """
@@ -134,6 +134,9 @@ class Expr:
                 new_expr = Expr.evl(context, fun.body)
         else:
             new_expr = Expr.application(fun, arg)
+        if match_indices:
+            index_mapping = create_index_mapping_dict(fun.typ.input, arg.typ)
+            new_expr = map_expr_indices(new_expr, index_mapping, reduce)
         new_expr.head = head
         return new_expr
 
@@ -209,6 +212,51 @@ def var_list_matches_arg_list(fun, arg):
             return False
     return True
 
+def create_index_mapping_dict(key_typ, value_typ):
+    mapping = {}
+    if isinstance(key_typ, Func):
+        mapping |= create_index_mapping_dict(key_typ.input, value_typ.input)
+        mapping |= create_index_mapping_dict(key_typ.output, value_typ.output)
+    if key_typ.index != None \
+        and value_typ.index != None \
+        and key_typ.index != value_typ.index:
+        for k in key_typ.index:
+            mapping[k] = value_typ.index
+    return mapping
+
+def map_typ_indices(typ, mapping):
+    if isinstance(typ, Func):
+        input_typ = map_typ_indices(typ.input, mapping)
+        output_typ = map_typ_indices(typ.output, mapping)
+        typ = Func(input_typ, output_typ, typ.index)
+    if typ.index != None:
+        new_index = set()
+        for idx in typ.index:
+            if idx in mapping.keys() and mapping[idx] != None:
+                new_index = set.union(new_index, mapping[idx])
+            else:
+                new_index.add(idx)
+        typ.index = new_index
+    return typ
+
+def map_expr_indices(expr, mapping, reduce=True):
+    if expr.expr_type == "literal":
+        new_expr = deepcopy(expr)
+        new_expr.typ = map_typ_indices(expr.typ, mapping)
+    elif expr.expr_type == "lambda" or expr.expr_type == "list":
+        new_expr = expr_type_recursion(expr, map_expr_indices, mapping, reduce)
+        if expr.typ.index in mapping.keys():
+            new_expr.typ.index = mapping[expr.typ.index]
+        else:
+            new_expr.typ.index = expr.typ.index
+    elif expr.expr_type == "application":
+        arg = map_expr_indices(expr.arg, mapping, reduce)
+        fun = map_expr_indices(expr.fun, mapping, reduce)
+        new_expr = Expr.apply(fun, arg, reduce=reduce, match_indices=False)
+    if hasattr(expr, 'head'):
+        new_expr.head = expr.head
+    return new_expr
+
 def get_literal_string(expr):
     name = str(expr.name)
     typ = str(expr.typ)
@@ -277,3 +325,23 @@ def get_list_string(expr):
     string += '\n' + '─' * length + '\n'
     string += f'{str(expr.typ):^{length}}'
     return string
+
+def expr_type_recursion(expr, function, *args, **kwargs):
+    if expr.expr_type == "literal":
+        new_expr = function(expr, *args, **kwargs)
+    elif expr.expr_type == "list":
+        new_expr = Expr.lst([function(e, *args, **kwargs)\
+                             for e in expr.expr_list])
+    elif expr.expr_type == "lambda":
+        new_expr = function(expr.body, *args, **kwargs)
+        new_var = function(expr.var, *args, **kwargs)
+        new_expr = Expr.lmbda(new_var, new_expr)
+    elif expr.expr_type == "application":
+        arg = function(expr.arg, *args, **kwargs)
+        fun = function(expr.fun, *args, **kwargs)
+        new_expr = fun(arg)
+    else:
+        raise TypeError(f'Unknown type {expr.expr_type} of expression')
+    if hasattr(expr, 'head'):
+        new_expr.head = expr.head
+    return new_expr

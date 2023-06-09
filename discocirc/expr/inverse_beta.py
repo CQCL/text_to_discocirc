@@ -1,8 +1,7 @@
-from discocirc.expr.expr import Expr
-from discocirc.helpers.closed import Func
-from discocirc.helpers.discocirc_utils import expr_type_recursion, \
-    create_random_variable
 
+from discocirc.expr.expr import Expr, expr_type_recursion
+from discocirc.helpers.closed import Func
+from discocirc.helpers.discocirc_utils import create_random_variable
 
 def expr_has_variable(expr, variable):
     if expr == variable:
@@ -62,17 +61,27 @@ def remove_free_vars(expr, variables):
 def inverse_beta(expr):
     if expr.expr_type == 'literal':
         return expr
-    if expr.expr_type == 'lambda':
+    elif expr.expr_type == 'lambda':
         new_body = inverse_beta(expr.body)
-        expr = Expr.lmbda(expr.var, new_body, head=expr.head)
+        expr = Expr.lmbda(expr.var, new_body, head=expr.head, index=expr.typ.index)
         variables = []
+        indices = []
         while expr.expr_type == 'lambda':
             variables.append(expr.var)
+            indices.append(expr.typ.index)
             expr = expr.body
         free_vars, bound_vars, expr = remove_free_vars(expr, variables)
-        for variable in list(reversed(variables)) + bound_vars:
-            expr = Expr.lmbda(variable, expr)
+
+        for variable, index in zip(list(reversed(variables)) + bound_vars, list(reversed(indices)) + [None]*len(bound_vars)):
+            expr = Expr.lmbda(variable, expr, index=index)
         for arg in reversed(free_vars):
             expr = Expr.apply(expr, arg, reduce=False)
         return expr
+    elif expr.expr_type == "application":
+        arg = inverse_beta(expr.arg)
+        fun = inverse_beta(expr.fun)
+        new_expr = Expr.apply(fun, arg, reduce=False)
+        if hasattr(expr, 'head'):
+            new_expr.head = expr.head
+        return new_expr
     return expr_type_recursion(expr, inverse_beta)

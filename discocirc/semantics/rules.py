@@ -3,7 +3,6 @@ from discopy.rigid import Id, Box, Swap
 from discopy import rigid
 
 from discocirc.diag.frame import Functor
-from discocirc.helpers.closed import Ty
 
 spacy_model = spacy.load('en_core_web_trf')
 
@@ -12,7 +11,7 @@ def remove_articles(diagram):
     def f_box(box):
         str = box.name.lower()
         if (str == "the" or str == "a" or str == "an") and \
-            box.dom == box.cod == Ty('n'):
+            box.dom == box.cod and len(box.dom) == 1:
             return Id(box.dom)
         return box
     f = Functor(ob=lambda x: x, ar=f_box, frame=lambda x: x)

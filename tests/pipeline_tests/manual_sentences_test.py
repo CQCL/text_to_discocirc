@@ -59,6 +59,7 @@ sentences = [
     'Alice quickly and hastily eats',
     'The son of a physicist , Mr. Hahn skipped first grade because his reading ability was so far above his classmates .',
     'Alice , Bob and Claire',
+    'Alice , Bob and Claire drank',
     'Alice likes what she knows',
     'Focus on what company knows best',
     "We did n't have much of a choice , Cray Computer 's chief financial officer , Gregory Barnum , said in an interview .",
