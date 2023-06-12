@@ -19,16 +19,10 @@ def sentence2circ(parser, sentence, semantic_rewrites=True, spacy_model=None, ad
     tokenized_sentence = tokenizer.tokenise_sentence(sentence)
     ccg = parser.sentence2tree(tokenized_sentence, tokenised=True)
     expr = ccg_to_expr(ccg)
-    # first round of pull out
     expr = pull_out(expr)
-    # expand noun-noun coordination
     expr = coordination_expand(expr)
-    # second round of pull out
     expr = pull_out(expr)
-    # then n expand
     expr = n_type_expand(expr)
-    # convert expr to diagram
-    # s expand
     expr = s_type_expand(expr)
     # if spacy_model:
     #     doc = spacy_model(sentence)
@@ -36,10 +30,8 @@ def sentence2circ(parser, sentence, semantic_rewrites=True, spacy_model=None, ad
     if add_indices_to_types:
         expr = expr_add_indices_to_types(expr)
     diag = expr_to_diag(expr)
-    # apply semantic rewrites
     if semantic_rewrites:
         diag = rewrite(diag, rules='all')
-    # decompose diagram
     diag = (Frame.get_decompose_functor())(diag)
 
     return diag
