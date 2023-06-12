@@ -43,9 +43,14 @@ class Ty(monoidal.Ty):
         return Func(self, other)
 
     def __str__(self):
-        if len(self._objects) > 1:
-            return f'({super().__str__()}){self.index}'
-        return super().__str__() + f'{self.index}'
+        return self.to_string()
+    
+    def to_string(self, index=True):
+        if index:
+            if len(self._objects) > 1:
+                return f'({super().__str__()}){self.index}'
+            return super().__str__() + f'{self.index}'
+        return super().__str__()
 
     def tensor(self, *others):
         for other in others:
@@ -81,7 +86,13 @@ class Func(Ty):
         return "({} → {})".format(repr(self.input), repr(self.output))
 
     def __str__(self):
-        return "({} → {}){}".format(self.input, self.output, self.index)
+        return self.to_string()
+    
+    def to_string(self, index=True):
+        fun_str = f'({self.input.to_string(index)} → {self.output.to_string(index)})'
+        if index:
+            return f'{fun_str}{self.index}'
+        return f'{fun_str}'
 
     def __eq__(self, other):
         if not isinstance(other, Func):
