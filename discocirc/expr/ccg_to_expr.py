@@ -90,7 +90,7 @@ def ccg_to_expr(ccg_parse):
 def composition(ccg_parse, f, g):
     x = create_random_variable(g.typ.input)
     result = Expr.lmbda(x, f(g(x)))
-    original_typ = ccg_cat_to_closed(ccg_parse.original.cat, str(random.randint(100, 999)))
+    original_typ = ccg_cat_to_closed(ccg_parse.original.cat, 'dummy')
     index_mapping = create_index_mapping_dict(original_typ, result.typ)
     result = map_expr_indices(result, index_mapping)
     return result
