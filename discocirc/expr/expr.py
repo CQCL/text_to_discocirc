@@ -15,14 +15,17 @@ class Expr:
         self.head = head
     
     def __repr__(self):
+        return self.to_string()
+    
+    def to_string(self, index=True):
         if self.expr_type == "literal":
-            return get_literal_string(self)
+            return get_literal_string(self, index)
         elif self.expr_type == "lambda":
-            return get_lambda_string(self)
+            return get_lambda_string(self, index)
         elif self.expr_type == "application":
-            return get_application_string(self)
+            return get_application_string(self, index)
         elif self.expr_type == "list":
-            return get_list_string(self)
+            return get_list_string(self, index)
         else:
             raise NotImplementedError(self.expr_type)
 
@@ -257,24 +260,24 @@ def map_expr_indices(expr, mapping, reduce=True):
         new_expr.head = expr.head
     return new_expr
 
-def get_literal_string(expr):
+def get_literal_string(expr, index):
     name = str(expr.name)
-    typ = str(expr.typ)
+    typ = expr.typ.to_string(index)
     length = max(len(name), len(typ))
     string = f'{name:^{length}}' + '\n'
     string += '═' * length + '\n'
     string += f'{typ:^{length}}'
     return string
 
-def get_lambda_string(expr):
+def get_lambda_string(expr, index):
     var_temp = deepcopy(expr.var)
     if hasattr(var_temp, "name"):
         var_temp.name = 'λ ' + var_temp.name
-        var = str(var_temp)
+        var = var_temp.to_string(index)
     else:
-        var = 'λ ' + str(var_temp)
-    body = str(expr.body)
-    typ = str(expr.typ)
+        var = 'λ ' + var_temp.to_string(index)
+    body = expr.body.to_string(index)
+    typ = expr.typ.to_string(index)
     var_lines = var.split('\n')
     expr_lines = body.split('\n')
     empty_expr_lines = [' ' * len(max(expr_lines))] * (len(var_lines) - len(expr_lines))
@@ -286,10 +289,10 @@ def get_lambda_string(expr):
     string.append(f'{typ:^{len(string[0])}}')
     return '\n'.join(string)
 
-def get_application_string(expr):
-    fun = str(expr.fun)
-    arg = str(expr.arg)
-    typ = str(expr.typ)
+def get_application_string(expr, index):
+    fun = expr.fun.to_string(index)
+    arg = expr.arg.to_string(index)
+    typ = expr.typ.to_string(index)
     expr_lines = fun.split('\n')
     arg_lines = arg.split('\n')
     empty_arg_lines = [' ' * len(max(arg_lines))] * (len(expr_lines) - len(arg_lines))
@@ -301,8 +304,8 @@ def get_application_string(expr):
     string.append(f'{typ:^{len(string[0])}}')
     return '\n'.join(string)
 
-def get_list_string(expr):
-    max_lines = max([len(str(expr).splitlines()) for expr in expr.expr_list])
+def get_list_string(expr, index):
+    max_lines = max([len(expr.to_string(index).splitlines()) for expr in expr.expr_list])
     tb = PrettyTable()
     tb.border=False
     tb.preserve_internal_border = False
@@ -312,7 +315,7 @@ def get_list_string(expr):
     tb.align = "l"
     tb_list = []
     for i, ex in enumerate(expr.expr_list):
-        expr_lines = str(ex).splitlines()
+        expr_lines = ex.to_string(index).splitlines()
         if i != len(expr.expr_list) - 1:
             expr_lines[-2] += ' x '
         if max_lines - len(expr_lines) > 0:
@@ -323,7 +326,8 @@ def get_list_string(expr):
     string = tb.get_string()
     length = len(string.splitlines()[-1])
     string += '\n' + '─' * length + '\n'
-    string += f'{str(expr.typ):^{length}}'
+    typ = expr.typ.to_string(index)
+    string += f'{typ:^{length}}'
     return string
 
 def expr_type_recursion(expr, function, *args, **kwargs):

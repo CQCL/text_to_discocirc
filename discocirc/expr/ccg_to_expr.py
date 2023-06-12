@@ -1,3 +1,4 @@
+import random
 from lambeq import CCGAtomicType, CCGRule
 
 from discocirc.expr import Expr
@@ -86,6 +87,7 @@ def ccg_to_expr(ccg_parse):
             result.head = None
 
     return result
+
 
 def composition(ccg_parse, f, g):
     x = create_random_variable(g.typ.input)
