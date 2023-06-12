@@ -25,7 +25,8 @@ def b_combinator(expr):
     # Below we choose to set the inner index to expr.typ.index. Previously had it as g.typ.index
     new_type = Func(g.typ, Func(h.typ, f.typ.output, expr.typ.index), f.typ.index) 
     bf = change_expr_typ(f, new_type)
-    return (bf(g))(h)
+    bf_g = Expr.apply(bf, g, reduce=False)
+    return Expr.apply(bf_g, h, reduce=False)
 
 def pull_out_application(expr):
     f = _pull_out(expr.fun)
