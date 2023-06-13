@@ -1,8 +1,31 @@
+
 from discopy import monoidal
 
+from discocirc.expr import Expr
 from discocirc.diag.frame import Frame
 from discocirc.helpers.closed import Func, Ty
 
+
+def downgrade_types(typ):
+    if isinstance(typ, monoidal.Ob) and not isinstance(typ, monoidal.Ty):
+        return typ
+    elif isinstance(typ, Func):
+        return Func(downgrade_types(typ.input),
+                    downgrade_types(typ.output),
+                    index=typ.index)
+    elif len(typ) == 1 and isinstance(typ, Ty):
+        return Ty.downgrade(typ)
+    elif len(typ) > 1:
+        objects = []
+        for t in typ.objects:
+            if isinstance(t, monoidal.Ty) and not isinstance(t, Func):
+                objects.extend(t.objects)
+            else:
+                objects.append(downgrade_types(t))
+        typ = monoidal.Ty(*objects)
+        return typ
+    else:
+        return typ
 
 def _literal_to_diag(expr, context, expand_lambda_frames):
     """
@@ -31,11 +54,9 @@ def _literal_to_diag(expr, context, expand_lambda_frames):
         while isinstance(output, Func):
             input = output.input @ input
             output = output.output
-
-        return monoidal.Box(name, input, output)
+        return monoidal.Box(name, downgrade_types(input), downgrade_types(output))
     else:
-        return monoidal.Box(name, Ty(), output)
-
+        return monoidal.Box(name, monoidal.Ty(), downgrade_types(output))
 
 def _lambda_to_diag_frame(expr, context, expand_lambda_frames):
     """
@@ -155,7 +176,6 @@ def _lambda_to_diag_open_wire(expr, context, expand_lambda_frames):
     :return: A diagram corresponding to expr.
     """
     if expr.var.expr_type == 'list':
-        from expr import Expr
         # Curry list to be able to use normal draw function
         output = Expr.lmbda(expr.var.expr_list[0], expr.body)
         for var in (expr.var.expr_list[1:]):
@@ -218,31 +238,8 @@ def _application_to_diag(expr, context, expand_lambda_frames):
     if expr.arg.expr_type == "list":
         fun = expr_to_diag(expr.fun, context, expand_lambda_frames)
         for arg_expr in reversed(expr.arg.expr_list):
-
-            try:
-                arg = expr_to_diag(arg_expr, context, expand_lambda_frames)
-                fun = _compose_diags(arg, fun)
-            except:
-                # TODO: This is a rather hacky solution.
-                # The current code is written under the assumption that the
-                # drawing of an indiviudal lambda expression is independent
-                # of the context in which it is being used.
-                # However, this is not the case.
-                # Let's condider 'Alice likes her work but she prefers Bob.'
-                # If we do pronoun expansion for 'her work', we get a series of
-                # swaps, where one of the arguments that has
-                # to be swapped is the word 'likes' (type: n @ n >> n @ n)
-                # To draw these swaps, we thus have to draw a wire of that type.
-                # But then 'likes' should not be drawn as a function with n @ n
-                # as input and n @ n as output. Rather it should be drawn as a
-                # single state with no inputs and the only output being
-                # (n @ n >> n @ n).
-                # Suddendly, how likes is being drawn depends on the larger
-                # context in which it is being used. This makes the entire
-                # underlying assumption for this code invalid.
-                assert(arg_expr.expr_type == 'literal')  # if this doesn't hold, life gets challenging
-                arg = monoidal.Box(arg_expr.name, Ty(), arg_expr.typ)
-                fun = _compose_diags(arg, fun)
+            arg = expr_to_diag(arg_expr, context, expand_lambda_frames)
+            fun = _compose_diags(arg, fun)
         return fun
 
     arg = expr_to_diag(expr.arg, context, expand_lambda_frames)
@@ -297,7 +294,7 @@ def _list_to_diag(expr, context, expand_lambda_frames):
         as variables should be drawn as wires.
     :return: A diagram corresponding to expr.
     """
-    output = monoidal.Id(Ty())
+    output = monoidal.Id(monoidal.Ty())
     for val in expr.expr_list:
         diag = expr_to_diag(val, context, expand_lambda_frames)
         output = output @ diag
@@ -322,10 +319,7 @@ def expr_to_diag(expr, context=None, expand_lambda_frames=True):
         return _literal_to_diag(expr, context, expand_lambda_frames)
     elif expr.expr_type == "lambda":
         if expand_lambda_frames:
-            # try:
-                return _lambda_to_diag_open_wire(expr, context, expand_lambda_frames)
-            # except:
-            #     return _lambda_to_diag_frame(expr, context, False)
+            return _lambda_to_diag_open_wire(expr, context, expand_lambda_frames)
         else:
             return _lambda_to_diag_frame(expr, context, expand_lambda_frames)
     elif expr.expr_type == "application":
@@ -334,3 +328,8 @@ def expr_to_diag(expr, context=None, expand_lambda_frames=True):
         return _list_to_diag(expr, context, expand_lambda_frames)
     else:
         raise NotImplementedError(expr.expr_type)
+
+def draw_expr(expr, **kwargs):
+    diag = expr_to_diag(expr)
+    diag = (Frame.get_decompose_functor())(diag)
+    diag.draw(**kwargs)

@@ -3,7 +3,6 @@ from parameterized import parameterized
 
 from helpers.UnitTestBaseClass import UnitTestBaseClass
 from helpers.ccg_to_diag_test_pipeline import ccg_to_diag_test
-from pipeline.sentence_to_circuit import sentence2circ
 
 sentences = [
     'Alice likes Bob but she prefers his work.',
@@ -59,6 +58,7 @@ sentences = [
     'Alice quickly and hastily eats',
     'The son of a physicist , Mr. Hahn skipped first grade because his reading ability was so far above his classmates .',
     'Alice , Bob and Claire',
+    'Alice , Bob and Claire drank',
     'Alice likes what she knows',
     'Focus on what company knows best',
     "We did n't have much of a choice , Cray Computer 's chief financial officer , Gregory Barnum , said in an interview .",
@@ -80,12 +80,12 @@ config = {
     "draw_steps": False,
     "type_check_ccg": False,
     "compare_type_expansions": False,
+    "semantic_rewrites": True,
 }
 
 class CCGToDiagTests(UnitTestBaseClass):
     @parameterized.expand(sentences)
     def test_sequence(self, sentence):
-        sentence2circ(parser, sentence).draw()
         print(sentence)
         self.test_logger = sentence
         ccg_parse = parser.sentence2tree(sentence)

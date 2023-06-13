@@ -1,4 +1,4 @@
-from expr import Expr
+from discocirc.expr import Expr
 from discocirc.helpers.closed import Func
 from discocirc.helpers.discocirc_utils import change_expr_typ
 

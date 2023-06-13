@@ -1,12 +1,9 @@
 from random import randint
+from discocirc.expr.expr_normal_form import expr_normal_form
 
-from discopy.cat import Ob
-
-from diag import Frame
 from discocirc.helpers.closed import Ty, Func
-from expr import Expr, expr_to_diag, pull_out, inverse_beta
-from expr.ccg_type_check import expr_type_check
-from expr.expr_uncurry import expr_uncurry
+from discocirc.expr import Expr
+from discocirc.expr.expr_uncurry import expr_uncurry
 from helpers.discocirc_utils import create_random_variable
 
 
@@ -355,7 +352,7 @@ def expand_personal_pronouns(expr, all_personal):
     return final_expr
 
 
-def expand_coref(expr, doc):
+def _expand_coref(expr, doc):
     """
     Given an expr and a doc containing corefs, create a new expr which expands
     the possessive pronouns.
@@ -376,7 +373,6 @@ def expand_coref(expr, doc):
             for token_index in mention.token_indexes:
                 word_expr = find_word_in_expr(expr, doc[token_index], token_index)
                 if word_expr.typ == Func(Ty('n'), Ty('n')):
-                    print("Found a possessive pronoun!")
                     assert(len(mention.token_indexes) == 1)
                     possessive_in_chain.append((doc[mention[0]], mention[0]))
 
@@ -405,3 +401,7 @@ def expand_coref(expr, doc):
         expr = expand_personal_pronouns(expr, all_personal)
 
     return expr
+
+def expand_coref(expr, doc):
+    expr_normal = expr_normal_form(expr)
+    return _expand_coref(expr_normal, doc)

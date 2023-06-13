@@ -1,6 +1,8 @@
-from discocirc.expr.expr import Expr
+
+from discocirc.expr.expr import Expr, expr_type_recursion
+from discocirc.expr.inverse_beta import inverse_beta
 from discocirc.helpers.closed import Func, Ty
-from discocirc.helpers.discocirc_utils import change_expr_typ, count_applications, expr_type_recursion, n_fold_c_combinator
+from discocirc.helpers.discocirc_utils import change_expr_typ, count_applications, n_fold_c_combinator
 
 
 def is_higher_order(typ):
@@ -20,21 +22,23 @@ def b_combinator(expr):
     f = expr.fun
     g = expr.arg.fun
     h = expr.arg.arg
-    new_type = (h.typ >> f.typ.input) >> \
-                 (h.typ >> f.typ.output)
+    # Below we choose to set the inner index to expr.typ.index. Previously had it as g.typ.index
+    new_type = Func(g.typ, Func(h.typ, f.typ.output, expr.typ.index), f.typ.index) 
     bf = change_expr_typ(f, new_type)
-    return (bf(g))(h)
+    bf_g = Expr.apply(bf, g, reduce=False)
+    return Expr.apply(bf_g, h, reduce=False)
 
 def pull_out_application(expr):
-    f = pull_out(expr.fun)
-    g = pull_out(expr.arg)
+    f = _pull_out(expr.fun)
+    g = _pull_out(expr.arg)
     expr = Expr.apply(f, g, reduce=False)
     if if_application_pull_out(expr):
-        expr = pull_out(b_combinator(expr))
+        expr = _pull_out(b_combinator(expr))
     return expr
 
-def pull_out(expr):
+def _pull_out(expr):
     head = expr.head if hasattr(expr, 'head') else None
+    typ_index = expr.typ.index
     if expr.expr_type == 'literal':
         return expr
     elif expr.expr_type == 'application':
@@ -43,10 +47,14 @@ def pull_out(expr):
             n_c_combi_expr = Expr.apply(expr.fun, n_fold_c_combinator(expr.arg, n), reduce=False)
             n_c_combi_expr_pulled = pull_out_application(n_c_combi_expr)
             if n_c_combi_expr_pulled != n_c_combi_expr: # check if something was pulled out
-                expr = pull_out(n_c_combi_expr_pulled)
+                expr = _pull_out(n_c_combi_expr_pulled)
                 break
         new_expr = expr
+        new_expr.typ.index = typ_index
         if head:
             new_expr.head = head
         return new_expr        
-    return expr_type_recursion(expr, pull_out)
+    return expr_type_recursion(expr, _pull_out)
+
+def pull_out(expr):
+    return _pull_out(inverse_beta(expr))
