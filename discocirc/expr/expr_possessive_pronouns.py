@@ -4,6 +4,7 @@ from discocirc.expr.expr_normal_form import expr_normal_form
 from discocirc.helpers.closed import Ty, Func
 from discocirc.expr import Expr
 from discocirc.expr.expr_uncurry import expr_uncurry
+from helpers.discocirc_utils import create_random_variable
 
 
 def create_lambda_swap(new_order):
@@ -17,7 +18,7 @@ def create_lambda_swap(new_order):
     """
     temp_vars = []
     for num in range(max(new_order) + 1):
-        temp_vars.append(Expr.literal(f"x_{randint(10000, 99999)}", Ty('n')))
+        temp_vars.append(create_random_variable(Ty('n')))
 
     lst = []
     for i in new_order:
@@ -100,7 +101,7 @@ def create_pp_block(most_specific, pps):
     for i in range(((len(pps) - 1))):
         lst = []
         for j in range(i + 1):
-            temp = Expr.literal(f"x_{randint(1000, 9999)}", Ty('n'))
+            temp = create_random_variable(Ty('n'))
             lst.append(Expr.lmbda(temp, temp))
         ids.append(Expr.lst(lst))
 
