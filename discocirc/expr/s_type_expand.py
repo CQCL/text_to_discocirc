@@ -1,5 +1,6 @@
 from discocirc.expr.expr import Expr, expr_type_recursion
-from discocirc.helpers.closed import Func, Ty
+from discocirc.helpers.closed import Func, Ty, uncurry_types
+from discocirc.helpers.discocirc_utils import add_indices_to_types, create_lambda_swap, create_random_variable
 
 
 def expand_closed_type(typ, expand_which_type):
@@ -34,6 +35,25 @@ def s_type_expand(expr):
     if expr.expr_type == "literal":
         new_type = expand_closed_type(expr.typ, Ty('s'))
         return Expr.literal(expr.name, new_type, head=expr.head)
+    elif expr.expr_type == "application":
+        arg = s_type_expand(expr.arg)
+        orig_types = arg.typ
+        new_types = expand_closed_type(expr.arg.typ,Ty('s'))
+        if add_indices_to_types(orig_types) != add_indices_to_types(new_types):
+            # if types do not match, need to compose arg w/ appropriate swap
+            orig_types = uncurry_types(orig_types, uncurry_everything=True)
+            new_types = uncurry_types(new_types, uncurry_everything=True)
+            assert orig_types.input == new_types.input
+            swap = create_lambda_swap(orig_types.output, new_types.output)
+            temp_vars = []
+            for typ in reversed(list(orig_types.input)):
+                temp_vars.append(create_random_variable(typ)) #TODO: don't hardcode type
+                arg = arg(temp_vars[-1])
+            arg = swap(arg)
+            for temp_var in reversed(temp_vars):
+                arg = Expr.lmbda(temp_var, arg)
+        fun = s_type_expand(expr.fun)
+        return fun(arg)
     else:
         return expr_type_recursion(expr, s_type_expand)
 
