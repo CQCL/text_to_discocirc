@@ -2,7 +2,8 @@ import string
 
 import numpy as np
 import spacy
-from discopy import Id, Ty, hypergraph
+from discopy import hypergraph
+from discopy.monoidal import Box, Functor, Ty
 from lambeq import BobcatParser
 
 from discocirc.helpers.discocirc_utils import get_last_initial_noun
@@ -126,16 +127,27 @@ def compose_circuits(circ1, circ2, wire_order='intro_order'):
     # record pulled up nouns
     nouns_circ1 = collect_normal_nouns(circ1)
     nouns_circ2 = collect_normal_nouns(circ2)
+    nouns_circ1_name = [x.name for x in nouns_circ1]
+    nouns_circ2_name = [x.name for x in nouns_circ2]
 
-    # NOTE: assume for now that the no. of output wires
-    # = the number of initial nouns, and that no swapping occurs
-    if (circ1.cod != Ty(*['n'] * len(nouns_circ1)) or
-            circ2.cod != Ty(*['n'] * len(nouns_circ2))):
-        print(repr(circ1))
-        print(repr(circ2))
-        raise Exception("The types do not align.")
+    ob_map = {}
+    for i in range(len(nouns_circ2)):
+        if nouns_circ2_name[i] in nouns_circ1_name:
+            ob_map[nouns_circ2[i].cod] = nouns_circ1[nouns_circ1_name.index(nouns_circ2_name[i])].cod
+    
+    def ob_map2(obj):
+        if obj in ob_map.keys():
+            return ob_map[obj]
+        return obj
 
+    def ar_map(box):
+        return Box(box.name, functor(box.dom), functor(box.cod))
+    
+    functor = Functor(ob_map2, ar_map)
+    circ2 = functor(circ2)
+    nouns_circ2 = collect_normal_nouns(circ2)
     # collect nouns in circ2 not in circ1
+    nouns_circ2[0] == nouns_circ1[1]
     new_nouns = [x for x in nouns_circ2 if x not in nouns_circ1]
     # collect nouns in circ1 not in circ2
     unused_nouns = [x for x in nouns_circ1 if x not in nouns_circ2]
