@@ -4,7 +4,7 @@ from discocirc.expr.expr_normal_form import expr_normal_form
 from discocirc.helpers.closed import Ty, Func
 from discocirc.expr import Expr
 from discocirc.expr.expr_uncurry import expr_uncurry
-from helpers.discocirc_utils import create_random_variable
+from discocirc.helpers.discocirc_utils import create_random_variable
 
 
 def create_lambda_swap(new_order):
