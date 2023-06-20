@@ -140,3 +140,18 @@ def create_random_variable(typ, head=None):
     global random_variable_counter
     random_variable_counter += 1
     return Expr.literal(f"x_{random_variable_counter}", typ=typ, head=head)
+
+def create_lambda_swap(input_types, output_types):
+    """
+    a swap from input types to output types
+    """
+    assert len(input_types) == len(output_types)
+    temp_vars = []
+    for typ in input_types:
+        temp_vars.append(create_random_variable(typ))
+    input_type_indices = [typ.index for typ in input_types]
+    output_type_indices = [typ.index for typ in output_types]
+    perm = [output_type_indices.index(idx) for idx in input_type_indices]
+    lst = [temp_vars[i] for i in perm]
+    swap = Expr.lmbda(Expr.lst(temp_vars), Expr.lst(lst))
+    return swap

@@ -4,10 +4,9 @@ from discocirc.expr import expr_to_diag, pull_out
 from discocirc.expr.ccg_to_expr import ccg_to_expr
 from discocirc.expr.ccg_type_check import expr_type_check
 from discocirc.expr.coordination_expand import coordination_expand
-from discocirc.expr.expr_uncurry import expr_uncurry
 from discocirc.expr.inverse_beta import inverse_beta
 from discocirc.expr.n_type_expand import n_type_expand
-from discocirc.expr.s_type_expand import s_type_expand
+from discocirc.expr.s_type_expand import s_type_expand, p_type_expand
 from discocirc.helpers.discocirc_utils import expr_add_indices_to_types
 from discocirc.semantics.rewrite import rewrite
 from outdated_code.expand_s_types import expand_s_types
@@ -87,9 +86,20 @@ def ccg_to_diag_test(unittest, config, ccg_parse):
         diag = (Frame.get_decompose_functor())(diag)
         diag.draw()
 
+    # ------- Step 6: P-type expansion -----------
+    expr = p_type_expand(expr)
+
+    if config["type_check_ccg"]:
+        unittest.assertTrue(expr_type_check(expr),
+                            msg="Typechecking s_type expanded expr")
+
+    if config["draw_steps"]:
+        diag = expr_to_diag(expr_add_indices_to_types(expr))
+        diag = (Frame.get_decompose_functor())(diag)
+        diag.draw()
+
     # ------- Step 6: S-type expansion -----------
     expr = s_type_expand(expr)
-    # expr = p_type_expand(expr)
 
     if config["type_check_ccg"]:
         unittest.assertTrue(expr_type_check(expr),
@@ -104,6 +114,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse):
         diag = expr_to_diag(expr_add_indices_to_types(expr))
         diag = (Frame.get_decompose_functor())(diag)
         diag.draw()
+
 
     # ------- Step 7: Expr to Diag -----------
     diag = expr_to_diag(expr_add_indices_to_types(expr))

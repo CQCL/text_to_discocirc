@@ -1,10 +1,8 @@
 from lambeq import SpacyTokeniser
 
-from discocirc.expr.expr_normal_form import expr_normal_form
 from discocirc.expr.expr_possessive_pronouns import expand_coref
-from discocirc.expr.inverse_beta import inverse_beta
 from discocirc.expr.n_type_expand import n_type_expand
-from discocirc.expr.s_type_expand import s_type_expand
+from discocirc.expr.s_type_expand import p_type_expand, s_type_expand
 from discocirc.expr.coordination_expand import coordination_expand
 from discocirc.expr.ccg_to_expr import ccg_to_expr
 from discocirc.expr.expr_to_diag import expr_to_diag
@@ -23,6 +21,7 @@ def sentence2circ(parser, sentence, semantic_rewrites=True, spacy_model=None, ad
     expr = coordination_expand(expr)
     expr = pull_out(expr)
     expr = n_type_expand(expr)
+    expr = p_type_expand(expr)
     expr = s_type_expand(expr)
     # if spacy_model:
     #     doc = spacy_model(sentence)
