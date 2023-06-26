@@ -44,12 +44,12 @@ class Ty(monoidal.Ty):
 
     def __str__(self):
         return self.to_string()
-    
+
     def to_string(self, index=True):
         if index:
             if len(self._objects) > 1:
-                return f'({super().__str__()}){self.index}'
-            return super().__str__() + f'{self.index}'
+                return f'({super().__str__()}){index_to_string(self.index)}'
+            return super().__str__() + f'{index_to_string(self.index)}'
         else:
             if len(self._objects) > 1:
                 return ' @ '.join(map(lambda x: x.to_string(index), self._objects))
@@ -98,7 +98,7 @@ class Func(Ty):
             fun_str = f'({self.input} → {self.output})'
 
         if index:
-            return f'{fun_str}{self.index}'
+            return f'{fun_str}{index_to_string(self.index)}'
         return f'{fun_str}'
 
     def __eq__(self, other):
@@ -170,3 +170,9 @@ def uncurry_types(typ, uncurry_everything=False):
 
     else:
         return typ
+
+
+def index_to_string(index):
+    if isinstance(index, set):
+        return str(sorted(list(index)))
+    return str(index)
