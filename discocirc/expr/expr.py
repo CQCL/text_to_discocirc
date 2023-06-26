@@ -190,8 +190,9 @@ def infer_list_type(expr_list, interchange):
                 final_output = final_output @ f
         list_type = final_input >> final_output
     else:
-        list_type = Ty()
-        for e in expr_list:
+        assert(len(expr_list) > 0)
+        list_type = expr_list[0].typ
+        for e in expr_list[1:]:
             list_type = list_type @ e.typ
     return list_type
 

@@ -46,7 +46,7 @@ def _literal_to_diag(expr, context, expand_lambda_frames):
             # If we expand the lambda frames, we use wires to draw how the
             # variables of the lambda expression will be manipulated.
             # Therefore, in that case, each var must be drawn as a state.
-            return monoidal.Box(name, Ty(), expr.typ)
+            return monoidal.Box(name, Ty(), downgrade_types(expr.typ))
 
     output = expr.typ
     if isinstance(output, Func):
@@ -117,7 +117,7 @@ def remove_state_at_layer(diag, layer_no):
     for left, box, right in reversed(diag.layers[layer_no + 1:]):
         new_diag = monoidal.Id(left) @ box @ monoidal.Id(right) >> new_diag
 
-    typ = removed_box.cod
+    typ = downgrade_types(removed_box.cod)
     # position of the new wire that has to be introduced.
     wire_no = len(removed_left)
 
@@ -213,13 +213,14 @@ def _lambda_to_diag_open_wire(expr, context, expand_lambda_frames):
 
 
     # make copy box
+    var_type = downgrade_types(expr.var.typ)
     if len(var_instances_layer) == 0:
-        copy_box = monoidal.Box("lambda", expr.var.typ, Ty())
+        copy_box = monoidal.Box("lambda", var_type, Ty())
     elif len(var_instances_layer) == 1:
-        copy_box = monoidal.Id(expr.var.typ)
+        copy_box = monoidal.Id(var_type)
     else:
-        copy_box = monoidal.Box("lambda", expr.var.typ, Ty().tensor(
-            *[expr.var.typ for _ in var_instances_layer]))
+        copy_box = monoidal.Box("lambda", var_type, Ty().tensor(
+            *[var_type for _ in var_instances_layer]))
 
     return (monoidal.Id(swaps.dom[:-len(copy_box.cod)]) @ copy_box) >> swaps >> body
 
