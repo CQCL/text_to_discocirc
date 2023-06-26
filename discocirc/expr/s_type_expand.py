@@ -44,7 +44,11 @@ def expr_type_expand(expr, which_type):
             orig_types = uncurry_types(orig_types, uncurry_everything=True)
             new_types = uncurry_types(new_types, uncurry_everything=True)
             assert orig_types.input == new_types.input
-            swap = create_lambda_swap(orig_types.output, new_types.output)
+            input_type_indices = [typ.index for typ in orig_types.output]
+            output_type_indices = [typ.index for typ in new_types.output]
+            perm = [output_type_indices.index(idx) for idx in
+                    input_type_indices]
+            swap = create_lambda_swap(perm, orig_types.output)
             temp_vars = []
             for typ in reversed(list(orig_types.input)):
                 temp_vars.append(create_random_variable(typ)) #TODO: don't hardcode type
