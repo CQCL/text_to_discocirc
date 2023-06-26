@@ -4,31 +4,9 @@ from discocirc.expr.expr_normal_form import expr_normal_form
 from discocirc.helpers.closed import Ty, Func
 from discocirc.expr import Expr
 from discocirc.expr.expr_uncurry import expr_uncurry
-from discocirc.helpers.discocirc_utils import create_random_variable
-
-
-def create_lambda_swap(new_order):
-    """
-    Given a list of integers, create a lambda expression that swaps the wires
-    as specified by the list where the ith wire is swapped to all wires j where
-    new_order[j] = i.
-
-    :param new_order: The list of integers specifying the new order of the wires.
-    :return: The lambda expression that swaps the wires.
-    """
-    temp_vars = []
-    for num in range(max(new_order) + 1):
-        temp_vars.append(create_random_variable(Ty('n')))
-
-    lst = []
-    for i in new_order:
-        lst.append(temp_vars[i])
-
-    output = Expr.lst(lst)
-    for temp_var in temp_vars:
-        output = Expr.lmbda(temp_var, output)
-
-    return output
+from discocirc.helpers.discocirc_utils import create_random_variable, \
+    create_lambda_swap
+from expr import pull_out, inverse_beta
 
 def literal_equivalent(expr, word, pos):
     return expr.expr_type == "literal" and \
@@ -110,15 +88,17 @@ def create_pp_block(most_specific, pps):
             most specific mentions.
     """
     # Create the new possessive pronouns (which have a different type).
-    new_type = Ty.tensor(*[Ty('n') for _ in range(len(most_specific) + 1)])
-    for _ in range(len(most_specific) + 1):
-        new_type = Ty('n') >> new_type
 
     new_pps = []
     for pp in pps:
+        assert(pp.fun.typ.input == pp.fun.typ.output) # pp.fun is the pronoun
+        assert(pp.fun.typ.input == pp.typ)
+        input_type = Ty.tensor(*[ms_expr.typ for ms_expr in most_specific]) @ pp.typ
+        new_type = input_type >> input_type
+
         new_pps.append(Expr.literal(
             pp.fun.name, # requires the pp.fun to be the possessive pronoun.
-                         # Checked in expand_possessive_pronoun_chain().
+            # Checked in expand_possessive_pronoun_chain().
             new_type,
             head=pp.fun.head
         ))
@@ -134,8 +114,10 @@ def create_pp_block(most_specific, pps):
     ids = []
     for i in range(((len(pps) - 1))):
         lst = []
-        for j in range(i + 1):
-            temp = create_random_variable(Ty('n'))
+        # for j in range(i + 1):
+        for pp in pps[:i + 1]:
+            # TODO: change type
+            temp = create_random_variable(pp.typ)
             lst.append(Expr.lmbda(temp, temp))
         ids.append(Expr.lst(lst))
 
@@ -145,7 +127,7 @@ def create_pp_block(most_specific, pps):
                 list(range(0, i - 1)) +
                 [i + len(most_specific) - 1] +
                 list(range(i - 1, i + len(most_specific) - 1)) +
-                [i + len(most_specific)]))
+                [i + len(most_specific)], Ty.tensor(*[arg.typ for arg in [pp_block, pps[i].arg]])))
         new_args = Expr.apply(swap, Expr.lst(
             [pp_block, pps[i].arg]),
                               reduce=False)
@@ -160,7 +142,7 @@ def create_pp_block(most_specific, pps):
         list(range(no_wires - len(most_specific) - 1, no_wires - 1)) +
         list(range(len(pps) - 1)) +
         [no_wires - 1]
-    ))
+    , pp_block.typ))
 
     return unswap(pp_block)
 
@@ -301,7 +283,8 @@ def expand_possessive_pronouns(expr, all_pp_chains):
             combined_swaps = [swap[i] for i in combined_swaps]
 
     # Build swaps
-    swapped_args = create_lambda_swap(combined_swaps)
+    swapped_args = create_lambda_swap(combined_swaps,
+                                      Ty.tensor(*[arg.typ for arg in args]))
     arg_counter = 1
     while args[-arg_counter].typ == Ty('n'):
         swapped_args = swapped_args(args[-arg_counter])
@@ -320,27 +303,29 @@ def expand_possessive_pronouns(expr, all_pp_chains):
 def expand_personal_pronouns(expr, all_personal):
     final_expr = expr
     for typ in expr.typ:
-        assert(typ == Ob('n'))
+        assert(typ == Ty('n'))
 
     for most_specific, personal in all_personal:
         new_expr = final_expr
         replacement_counter = 0
         most_specific_exprs = []
         for occurance in most_specific:
-            temp = create_random_variable(Ty('n'))
+            typ = find_word_in_expr(expr, occurance[0], occurance[1]).typ
+            temp = create_random_variable(typ)
             body = replace_literal_in_expr(new_expr, occurance[0], occurance[1], temp)
             new_expr = Expr.lmbda(temp, body[0])
             most_specific_exprs += body[2]
 
         for occurance in personal:
-            temp = create_random_variable(Ty('n'))
+            typ = find_word_in_expr(expr, occurance[0], occurance[1]).typ
+            temp = create_random_variable(typ)
             body = replace_literal_in_expr(new_expr, occurance[0], occurance[1], temp)
             new_expr = Expr.lmbda(temp, body[0])
             replacement_counter += body[1]
 
         new_input = final_expr.typ[:-replacement_counter]
-        for _ in most_specific_exprs:
-            new_input = Ty('n') >> new_input
+        for ms_expr in most_specific_exprs:
+            new_input = ms_expr.typ >> new_input
         new_frame = Expr.literal("coref",
                                  new_expr.typ >> new_input)
 
@@ -377,7 +362,6 @@ def _expand_coref(expr, doc):
                     possessive_in_chain.append((doc[mention[0]], mention[0]))
 
                 if word_expr.typ == Ty('n'):
-                    print("Found a personal pronoun!")
                     assert(mention == chain[chain.most_specific_mention_index] or len(mention.token_indexes) == 1)
                     personal_in_chain.append((doc[mention[0]], mention[0]))
 
