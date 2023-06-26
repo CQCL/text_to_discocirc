@@ -121,6 +121,28 @@ def biclosed_to_closed(x):
     else:
         return x
 
+def downgrade_to_monoidal(typ):
+    if isinstance(typ, monoidal.Ob) and not isinstance(typ, monoidal.Ty):
+        return typ
+    elif isinstance(typ, Func):
+        return Func(downgrade_to_monoidal(typ.input),
+                    downgrade_to_monoidal(typ.output),
+                    index=typ.index)
+    elif len(typ) == 1 and isinstance(typ, Ty):
+        return Ty.downgrade(typ)
+    elif len(typ) > 1:
+        objects = []
+        for t in typ.objects:
+            if isinstance(t, monoidal.Ty) and not isinstance(t, Func):
+                objects.extend(t.objects)
+            else:
+                objects.append(downgrade_to_monoidal(t))
+        typ = monoidal.Ty(*objects)
+        return typ
+    else:
+        return typ
+
+
 def ccg_cat_to_closed(cat, word_str=None):
     if word_str:
         assert(type(word_str)==str)
