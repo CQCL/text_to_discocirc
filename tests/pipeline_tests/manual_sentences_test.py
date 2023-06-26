@@ -1,10 +1,35 @@
+import spacy
 from lambeq import BobcatParser
 from parameterized import parameterized
 
 from helpers.UnitTestBaseClass import UnitTestBaseClass
-from helpers.ccg_to_diag_test_pipeline import ccg_to_diag_test
-
 sentences = [
+    "Charles walks and Alice likes her work , Bob and her cat",
+    "Charles walks and Alice likes her work , Bob",
+    "Alice likes her work , Bob and her cat",
+    "Charles likes cats and Alice and Bob like their work",
+    "Alice and Bob like their work and their job",
+    "Dave like food and Alice , Bob and Eve like houses , their work , cats , their job and dogs",
+    "Alice likes her work",
+    'Mary extremely and quickly runs',
+    "Alice likes Bob but she prefers her work",
+    "Bob likes dogs and Alice likes cheese , her work , human and her life and Charlie and Dave like their computer",
+    "Bob likes dogs and Alice likes cheese , her work , human , her life and her children",
+    "Alice likes her work and her life",
+    "Alice likes her boring work",
+    "Tall Alice likes her boring work",
+    "ALice think she will like Bob",
+    'Alice , Bob and Claire who like beer and wine walked',
+    'Alice likes her work and Bob also likes her work',
+    'Alice who Bob gives flowers to in bedroom , walks',
+    'Alice who Bob likes walks',
+    'Alice and Bob like their work',
+    'Alice likes her work and Bob likes his cat',
+    'Alice thinks she is funny and she is happy and Bob and Claire think they are green',
+    'Red Alice thinks she is funny',
+    'Alice thinks she is funny and Bob thinks he is green',
+    'Alice and Bob think they are funny',
+    'While the hare was busy sleeping, his friend the tortoise won the race.',
     'Alice likes Bob but she prefers his work.',
     'Alice prefers his work but she likes Bob',
     'Alice and Bob ran as they were afraid',
@@ -38,7 +63,6 @@ sentences = [
     'I know certainly of Alice quickly loving Bob',
     "Alice knows of : Bob liking Claire and Dave hating Eve",
     'Alice knows that Bob loves Claire',
-    'Alice runs',
     'Alice runs to the kitchen',
     'Alice knows that Bob loves Claire , Claire hates Bob',
     'Alice loves Bob and Claire loves Dave',
@@ -73,7 +97,10 @@ sentences = [
     'Alice , Bob and John who drank water , beer and wine walked',
     'Alice and Bob who drank water and wine walked',
     'If a farmer owns a donkey he beats it',
+
 ]
+from helpers.ccg_to_diag_test_pipeline import ccg_to_diag_test
+
 parser = BobcatParser()
 config = {
     "draw_result": True,
@@ -82,6 +109,8 @@ config = {
     "compare_type_expansions": False,
     "semantic_rewrites": True,
 }
+spacy_model = spacy.load('en_core_web_trf')
+spacy_model.add_pipe('coreferee')
 
 class CCGToDiagTests(UnitTestBaseClass):
     @parameterized.expand(sentences)
@@ -90,4 +119,4 @@ class CCGToDiagTests(UnitTestBaseClass):
         self.test_logger = sentence
         ccg_parse = parser.sentence2tree(sentence)
         print(ccg_parse.deriv())
-        ccg_to_diag_test(self, config, ccg_parse)
+        ccg_to_diag_test(self, config, ccg_parse, sentence, spacy_model)
