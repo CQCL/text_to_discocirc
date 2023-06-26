@@ -6,7 +6,7 @@ from discocirc.expr import Expr
 from discocirc.expr.expr_uncurry import expr_uncurry
 from discocirc.helpers.discocirc_utils import create_random_variable, \
     create_lambda_swap
-from expr import pull_out, inverse_beta
+from expr import pull_out
 
 def literal_equivalent(expr, word, pos):
     return expr.expr_type == "literal" and \
@@ -72,7 +72,7 @@ def replace_literal_in_expr(expr, word, pos, replacement):
          for e in expr.expr_list]
         return Expr.lst([element[0] for element in new_list]), \
                sum([element[1] for element in new_list]), \
-                  [element[2] for element in new_list]
+               [e for element in new_list for e in element[2]]
 
 def create_pp_block(most_specific, pps):
     """
@@ -114,9 +114,7 @@ def create_pp_block(most_specific, pps):
     ids = []
     for i in range(((len(pps) - 1))):
         lst = []
-        # for j in range(i + 1):
         for pp in pps[:i + 1]:
-            # TODO: change type
             temp = create_random_variable(pp.typ)
             lst.append(Expr.lmbda(temp, temp))
         ids.append(Expr.lst(lst))
@@ -333,7 +331,7 @@ def expand_personal_pronouns(expr, all_personal):
         for most_specific_expr in most_specific_exprs:
             composed = composed(most_specific_expr)
 
-        final_expr = pull_out(inverse_beta(composed))
+        final_expr = pull_out(composed)
     return final_expr
 
 
@@ -386,6 +384,9 @@ def _expand_coref(expr, doc):
 
     return expr
 
+
 def expand_coref(expr, doc):
+    if len(doc._.coref_chains) == 0:
+        return expr
     expr_normal = expr_normal_form(expr)
     return _expand_coref(expr_normal, doc)
