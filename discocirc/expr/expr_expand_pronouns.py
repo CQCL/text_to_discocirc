@@ -42,37 +42,46 @@ def find_word_in_expr(expr, word, pos):
                 return result
         return None
 
+
 def replace_literal_in_expr(expr, word, pos, replacement):
     """
     Given an expr, replace the literal representing the word specified by the
-    tuple (word, pos) with the expr replacement. Return the new expr and the
-    number of replacements made.
+    tuple (word, pos) with the expr replacement. Returns the new expr and the
+    expr which was replaced.
 
     :param expr: The expr in which the literal is replaced.
     :param word: The string representation of the word to be replaced.
     :param pos: The position in the sentence of the word to be replaced.
     :param replacement: The expr to replace the literal with.
-    :return: A tuple of the new expr with the literal replaced and the number
-            of replacements made.
+    :return: A tuple of the new expr with the literal replaced and
+            the expr which was replaced.
     """
     if expr.expr_type == "literal":
         if literal_equivalent(expr, word, pos):
-            return replacement, 1, [expr]
+            new_expr = replacement
+            replaced = [expr]
         else:
-            return expr, 0, []
+            new_expr = expr
+            replaced = []
     elif expr.expr_type == "application":
-        new_fun, fun_count, fun_exprs = replace_literal_in_expr(expr.fun, word, pos, replacement)
-        new_arg, arg_count, arg_exprs = replace_literal_in_expr(expr.arg, word, pos, replacement)
-        return new_fun(new_arg), fun_count + arg_count, fun_exprs + arg_exprs
+        new_fun, fun_exprs = replace_literal_in_expr(expr.fun, word, pos, replacement)
+        new_arg, arg_exprs = replace_literal_in_expr(expr.arg, word, pos, replacement)
+        new_expr = new_fun(new_arg)
+        replaced = fun_exprs + arg_exprs
     elif expr.expr_type == "lambda":
-        new_body, count, exprs = replace_literal_in_expr(expr.body, word, pos, replacement)
-        return Expr.lmbda(expr.var, new_body), count, exprs
+        new_body, body_exprs = replace_literal_in_expr(expr.body, word, pos, replacement)
+        new_var, var_exprs = replace_literal_in_expr(expr.var, word, pos, replacement)
+        new_expr = Expr.lmbda(new_var, new_body)
+        replaced = body_exprs + var_exprs
     elif expr.expr_type == "list":
         new_list = [replace_literal_in_expr(e, word, pos, replacement)
          for e in expr.expr_list]
-        return Expr.lst([element[0] for element in new_list]), \
-               sum([element[1] for element in new_list]), \
-               [e for element in new_list for e in element[2]]
+        new_expr = Expr.lst([element[0] for element in new_list])
+        replaced = [e for element in new_list for e in element[1]]
+
+    new_expr.head = expr.head
+    return new_expr, replaced
+
 
 def create_pp_block(most_specific, pps):
     """
@@ -312,14 +321,15 @@ def expand_personal_pronouns(expr, all_personal):
             temp = create_random_variable(typ)
             body = replace_literal_in_expr(new_expr, occurance[0], occurance[1], temp)
             new_expr = Expr.lmbda(temp, body[0])
-            most_specific_exprs += body[2]
+            most_specific_exprs += body[1]
 
         for occurance in personal:
             typ = find_word_in_expr(expr, occurance[0], occurance[1]).typ
             temp = create_random_variable(typ)
             body = replace_literal_in_expr(new_expr, occurance[0], occurance[1], temp)
             new_expr = Expr.lmbda(temp, body[0])
-            replacement_counter += body[1]
+            replacement_counter += len(body[1])
+            assert(len(body[1]) == 1)
 
         new_input = final_expr.typ[:-replacement_counter]
         for ms_expr in most_specific_exprs:
