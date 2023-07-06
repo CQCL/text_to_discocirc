@@ -386,11 +386,12 @@ def _expand_coref(expr, doc):
                 most_specific.append((doc[mention], mention))
             all_personal.append((most_specific, personal_in_chain))
 
+    if len(all_personal) > 0:
+        expr = expand_personal_pronouns(expr, all_personal)
+
     if len(all_possessive) > 0:
         expr = expand_possessive_pronouns(expr, all_possessive)
 
-    if len(all_personal) > 0:
-        expr = expand_personal_pronouns(expr, all_personal)
 
     return expr
 
