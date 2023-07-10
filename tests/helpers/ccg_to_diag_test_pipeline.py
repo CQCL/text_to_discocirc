@@ -3,13 +3,12 @@ from discocirc.expr import expr_to_diag, pull_out
 from discocirc.expr.ccg_to_expr import ccg_to_expr
 from discocirc.expr.ccg_type_check import expr_type_check
 from discocirc.expr.coordination_expand import coordination_expand
-from discocirc.expr.inverse_beta import inverse_beta
 from discocirc.expr.n_type_expand import n_type_expand
 from discocirc.expr.s_type_expand import s_type_expand, p_type_expand
 from discocirc.helpers.discocirc_utils import expr_add_indices_to_types
 from discocirc.semantics.rewrite import rewrite
-from discocirc.expr.expr_expand_pronouns import expand_coref
-from expr.expr_uncurry import expr_uncurry
+from discocirc.expr.expr_possessive_pronouns import expand_coref
+from discocirc.expr.expr_uncurry import expr_uncurry
 from outdated_code.expand_s_types import expand_s_types
 
 
