@@ -7,6 +7,8 @@ from discocirc.expr.expr_uncurry import expr_uncurry
 from discocirc.helpers.discocirc_utils import create_random_variable, \
     create_lambda_swap
 from expr import pull_out
+from expr.expr import create_index_mapping_dict, map_expr_indices
+
 
 def literal_equivalent(expr, word, pos):
     return expr.expr_type == "literal" and \
@@ -308,13 +310,13 @@ def expand_possessive_pronouns(expr, all_pp_chains):
 
 
 def expand_personal_pronouns(expr, all_personal):
-    final_expr = expr
     for typ in expr.typ:
         assert(typ == Ty('n'))
 
+    final_expr = expr
+
     for most_specific, personal in all_personal:
         new_expr = final_expr
-        replacement_counter = 0
         most_specific_exprs = []
         for occurance in most_specific:
             typ = find_word_in_expr(expr, occurance[0], occurance[1]).typ
@@ -323,29 +325,32 @@ def expand_personal_pronouns(expr, all_personal):
             new_expr = Expr.lmbda(temp, body[0])
             most_specific_exprs += body[1]
 
+        most_specific_typ = Ty('n', index=set.union(*[t.typ.index for t in most_specific_exprs]))
+        typs_to_remove = []
         for occurance in personal:
             typ = find_word_in_expr(expr, occurance[0], occurance[1]).typ
             temp = create_random_variable(typ)
             body = replace_literal_in_expr(new_expr, occurance[0], occurance[1], temp)
             new_expr = Expr.lmbda(temp, body[0])
-            replacement_counter += len(body[1])
-            assert(len(body[1]) == 1)
+            typs_to_remove.append(typ.index)
+            index_mapping = create_index_mapping_dict(typ, most_specific_typ)
+            new_expr = map_expr_indices(new_expr, index_mapping, reduce=False)
 
-        new_input = final_expr.typ[:-replacement_counter]
+        new_type = Ty().tensor(*[t for t in final_expr.typ if t.index not in typs_to_remove])
         for ms_expr in most_specific_exprs:
-            new_input = ms_expr.typ >> new_input
+            new_type = ms_expr.typ >> new_type
         new_frame = Expr.literal("coref",
-                                 new_expr.typ >> new_input)
+                                 new_expr.typ >> new_type)
 
         composed = new_frame(new_expr)
-        for most_specific_expr in most_specific_exprs:
+        for most_specific_expr in reversed(most_specific_exprs):
             composed = composed(most_specific_expr)
 
         final_expr = pull_out(composed)
     return final_expr
 
 
-def _expand_coref(expr, doc):
+def expand_coref(expr, doc):
     """
     Given an expr and a doc containing corefs, create a new expr which expands
     the possessive pronouns.
@@ -365,6 +370,8 @@ def _expand_coref(expr, doc):
 
             for token_index in mention.token_indexes:
                 word_expr = find_word_in_expr(expr, doc[token_index], token_index)
+                if word_expr is None:
+                    assert(False)
                 if word_expr.typ == Func(Ty('n'), Ty('n')):
                     assert(len(mention.token_indexes) == 1)
                     possessive_in_chain.append((doc[mention[0]], mention[0]))
@@ -373,31 +380,19 @@ def _expand_coref(expr, doc):
                     assert(mention == chain[chain.most_specific_mention_index] or len(mention.token_indexes) == 1)
                     personal_in_chain.append((doc[mention[0]], mention[0]))
 
+        most_specific = [(doc[m], m) for m in chain[chain.most_specific_mention_index]]
 
         if len(possessive_in_chain) > 0:
-            most_specific = []
-            for mention in chain[chain.most_specific_mention_index]:
-                most_specific.append((doc[mention], mention))
             all_possessive.append((most_specific, possessive_in_chain))
 
         if len(personal_in_chain) > 0:
-            most_specific = []
-            for mention in chain[chain.most_specific_mention_index]:
-                most_specific.append((doc[mention], mention))
             all_personal.append((most_specific, personal_in_chain))
+
+    if len(all_possessive) > 0:
+        expr = expr_normal_form(expr)
+        expr = expand_possessive_pronouns(expr, all_possessive)
 
     if len(all_personal) > 0:
         expr = expand_personal_pronouns(expr, all_personal)
 
-    if len(all_possessive) > 0:
-        expr = expand_possessive_pronouns(expr, all_possessive)
-
-
     return expr
-
-
-def expand_coref(expr, doc):
-    if len(doc._.coref_chains) == 0:
-        return expr
-    expr_normal = expr_normal_form(expr)
-    return _expand_coref(expr_normal, doc)
