@@ -17,6 +17,7 @@ def literal_equivalent(expr, word, pos):
         len(expr.head) == 1 and \
         expr.head[0].index == pos + 1
 
+
 def find_word_in_expr(expr, word, pos):
     """
     Given an expr, return the expr of the literal representing
@@ -62,9 +63,9 @@ def replace_literal_in_expr(expr, word, pos, replacement):
     if expr.expr_type == "literal":
         if literal_equivalent(expr, word, pos):
             new_expr = replacement
-            replaced = [expr]
+            replaced = [Expr.literal(expr.name, expr.typ)]
         else:
-            new_expr = expr
+            new_expr = Expr.literal(expr.name, expr.typ)
             replaced = []
     elif expr.expr_type == "application":
         new_fun, fun_exprs = replace_literal_in_expr(expr.fun, word, pos, replacement)
@@ -157,29 +158,6 @@ def create_pp_block(most_specific, pps):
     return unswap(pp_block)
 
 
-def find_arg_in_arg_list(args, word, word_pos):
-    """
-    Given a list of args, find the argument that contains the word specified
-    by the tuple word and word_pos. This argument may contain other words.
-    Return the args before the found argument, the found argument and the
-    remaining arguments.
-
-    :param args: A list of arguments in which the specified word is to be found.
-    :param word: The string representation of the word to be found.
-    :param word_pos: The position in the sentence of the word to be found.
-    :return: A tuple of the form
-        (args_before_found_arg, found_arg, remaining_args) where
-        - args_before_found_arg is a list of arguments before the found argument,
-        - found_arg is the argument which countains the specified word,
-        - remaining_args is a list of arguments after the found argument.
-    """
-    arg_pos = 0
-    while not find_word_in_expr(args[arg_pos], word, word_pos):
-        arg_pos += 1
-
-    return args[:arg_pos], args[arg_pos], args[arg_pos + 1:]
-
-
 def expand_possessive_pronoun_chain(args, most_specific_indices, pp_mentions):
     """
     Given a list of arguments, a list of the most specific mentions and a list
@@ -221,18 +199,27 @@ def expand_possessive_pronoun_chain(args, most_specific_indices, pp_mentions):
     most_specific_args = []
     remaining_args = args
     for word, id in most_specific_indices:
-        prior_args, arg, remaining_args = find_arg_in_arg_list(remaining_args, word, id)
-        other_args[0] += prior_args
-        most_specific_args.append(arg)
+        arg_pos = 0
+        while not find_word_in_expr(remaining_args[arg_pos], word, id):
+            arg_pos += 1
+
+        other_args[0] += remaining_args[:arg_pos]
+        most_specific_args.append(remaining_args[arg_pos])
+        remaining_args = remaining_args[arg_pos + 1:]
 
     pps = []
     for word, id in pp_mentions:
-        prior_args, arg, remaining_args = find_arg_in_arg_list(remaining_args, word, id)
-        other_args.append(prior_args)
-        pps.append(arg)
+        arg_pos = 0
+        while not find_word_in_expr(remaining_args[arg_pos], word, id):
+            arg_pos += 1
+
+        other_args.append(remaining_args[:arg_pos])
+        pps.append(remaining_args[arg_pos])
 
         # Assertion currently made create_pp_block()
-        assert(find_word_in_expr(arg.fun, word, id) is not None)
+        assert(find_word_in_expr(remaining_args[arg_pos].fun, word, id) is not None)
+
+        remaining_args = remaining_args[arg_pos + 1:]
 
     other_args.append(remaining_args)
 
