@@ -18,7 +18,7 @@ def expr_uncurry(expr):
                 new_expr = Expr.lmbda(new_var_list, new_body.body)
             else:
                 var2 = create_random_variable(new_body.typ.input)
-                product_var = Expr.lst([var2, new_var], interchange=False) # TODO: is the order of the variables correct?
+                product_var = Expr.lst([var2, new_var], interchange=False)
                 new_expr = Expr.lmbda(product_var, new_body(var2))
         else:
             new_expr = Expr.lmbda(new_var, new_body)
