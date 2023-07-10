@@ -92,11 +92,10 @@ class Func(Ty):
         return self.to_string()
     
     def to_string(self, index=True):
-        if isinstance(self.input, Ty):
+        if isinstance(self.input, Ty) and isinstance(self.output, Ty):
             fun_str = f'({self.input.to_string(index)} → {self.output.to_string(index)})'
         else:
             fun_str = f'({self.input} → {self.output})'
-
         if index:
             return f'{fun_str}{index_to_string(self.index)}'
         return f'{fun_str}'
