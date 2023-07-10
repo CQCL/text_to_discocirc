@@ -1,34 +1,21 @@
+from copy import deepcopy
 from random import randint
 from discocirc.expr.expr_normal_form import expr_normal_form
 
 from discocirc.helpers.closed import Ty, Func
 from discocirc.expr import Expr
 from discocirc.expr.expr_uncurry import expr_uncurry
-from discocirc.helpers.discocirc_utils import create_random_variable
+from discocirc.helpers.discocirc_utils import create_random_variable, \
+    create_lambda_swap
+from expr import pull_out
+from expr.expr import create_index_mapping_dict, map_expr_indices
 
 
-def create_lambda_swap(new_order):
-    """
-    Given a list of integers, create a lambda expression that swaps the wires
-    as specified by the list where the ith wire is swapped to all wires j where
-    new_order[j] = i.
-
-    :param new_order: The list of integers specifying the new order of the wires.
-    :return: The lambda expression that swaps the wires.
-    """
-    temp_vars = []
-    for num in range(max(new_order) + 1):
-        temp_vars.append(create_random_variable(Ty('n')))
-
-    lst = []
-    for i in new_order:
-        lst.append(temp_vars[i])
-
-    output = Expr.lst(lst)
-    for temp_var in temp_vars:
-        output = Expr.lmbda(temp_var, output)
-
-    return output
+def literal_equivalent(expr, word, pos):
+    return expr.expr_type == "literal" and \
+        expr.name == str(word) and \
+        len(expr.head) == 1 and \
+        expr.head[0].index == pos + 1
 
 
 def find_word_in_expr(expr, word, pos):
@@ -43,9 +30,7 @@ def find_word_in_expr(expr, word, pos):
     :return: The literal representing the word, or None if it is not present.
     """
     if expr.expr_type == "literal":
-        if expr.name == str(word) and \
-                len(expr.head) == 1 and \
-                expr.head[0].index == pos + 1:
+        if literal_equivalent(expr, word, pos):
             return expr
         else:
             return None
@@ -62,6 +47,46 @@ def find_word_in_expr(expr, word, pos):
         return None
 
 
+def replace_literal_in_expr(expr, word, pos, replacement):
+    """
+    Given an expr, replace the literal representing the word specified by the
+    tuple (word, pos) with the expr replacement. Returns the new expr and the
+    expr which was replaced.
+
+    :param expr: The expr in which the literal is replaced.
+    :param word: The string representation of the word to be replaced.
+    :param pos: The position in the sentence of the word to be replaced.
+    :param replacement: The expr to replace the literal with.
+    :return: A tuple of the new expr with the literal replaced and
+            the expr which was replaced.
+    """
+    if expr.expr_type == "literal":
+        if literal_equivalent(expr, word, pos):
+            new_expr = replacement
+            replaced = [Expr.literal(expr.name, expr.typ)]
+        else:
+            new_expr = Expr.literal(expr.name, expr.typ)
+            replaced = []
+    elif expr.expr_type == "application":
+        new_fun, fun_exprs = replace_literal_in_expr(expr.fun, word, pos, replacement)
+        new_arg, arg_exprs = replace_literal_in_expr(expr.arg, word, pos, replacement)
+        new_expr = new_fun(new_arg)
+        replaced = fun_exprs + arg_exprs
+    elif expr.expr_type == "lambda":
+        new_body, body_exprs = replace_literal_in_expr(expr.body, word, pos, replacement)
+        new_var, var_exprs = replace_literal_in_expr(expr.var, word, pos, replacement)
+        new_expr = Expr.lmbda(new_var, new_body)
+        replaced = body_exprs + var_exprs
+    elif expr.expr_type == "list":
+        new_list = [replace_literal_in_expr(e, word, pos, replacement)
+         for e in expr.expr_list]
+        new_expr = Expr.lst([element[0] for element in new_list])
+        replaced = [e for element in new_list for e in element[1]]
+
+    new_expr.head = expr.head
+    return new_expr, replaced
+
+
 def create_pp_block(most_specific, pps):
     """
     Given a list of the most specific mentions and a list of exprs corresponding
@@ -76,15 +101,17 @@ def create_pp_block(most_specific, pps):
             most specific mentions.
     """
     # Create the new possessive pronouns (which have a different type).
-    new_type = Ty.tensor(*[Ty('n') for _ in range(len(most_specific) + 1)])
-    for _ in range(len(most_specific) + 1):
-        new_type = Ty('n') >> new_type
 
     new_pps = []
     for pp in pps:
+        assert(pp.fun.typ.input == pp.fun.typ.output) # pp.fun is the pronoun
+        assert(pp.fun.typ.input == pp.typ)
+        input_type = Ty.tensor(*[ms_expr.typ for ms_expr in most_specific]) @ pp.typ
+        new_type = input_type >> input_type
+
         new_pps.append(Expr.literal(
             pp.fun.name, # requires the pp.fun to be the possessive pronoun.
-                         # Checked in expand_possessive_pronoun_chain().
+            # Checked in expand_possessive_pronoun_chain().
             new_type,
             head=pp.fun.head
         ))
@@ -100,8 +127,8 @@ def create_pp_block(most_specific, pps):
     ids = []
     for i in range(((len(pps) - 1))):
         lst = []
-        for j in range(i + 1):
-            temp = create_random_variable(Ty('n'))
+        for pp in pps[:i + 1]:
+            temp = create_random_variable(pp.typ)
             lst.append(Expr.lmbda(temp, temp))
         ids.append(Expr.lst(lst))
 
@@ -111,7 +138,7 @@ def create_pp_block(most_specific, pps):
                 list(range(0, i - 1)) +
                 [i + len(most_specific) - 1] +
                 list(range(i - 1, i + len(most_specific) - 1)) +
-                [i + len(most_specific)]))
+                [i + len(most_specific)], Ty.tensor(*[arg.typ for arg in [pp_block, pps[i].arg]])))
         new_args = Expr.apply(swap, Expr.lst(
             [pp_block, pps[i].arg]),
                               reduce=False)
@@ -126,32 +153,9 @@ def create_pp_block(most_specific, pps):
         list(range(no_wires - len(most_specific) - 1, no_wires - 1)) +
         list(range(len(pps) - 1)) +
         [no_wires - 1]
-    ))
+    , pp_block.typ))
 
     return unswap(pp_block)
-
-
-def find_arg_in_arg_list(args, word, word_pos):
-    """
-    Given a list of args, find the argument that contains the word specified
-    by the tuple word and word_pos. This argument may contain other words.
-    Return the args before the found argument, the found argument and the
-    remaining arguments.
-
-    :param args: A list of arguments in which the specified word is to be found.
-    :param word: The string representation of the word to be found.
-    :param word_pos: The position in the sentence of the word to be found.
-    :return: A tuple of the form
-        (args_before_found_arg, found_arg, remaining_args) where
-        - args_before_found_arg is a list of arguments before the found argument,
-        - found_arg is the argument which countains the specified word,
-        - remaining_args is a list of arguments after the found argument.
-    """
-    arg_pos = 0
-    while not find_word_in_expr(args[arg_pos], word, word_pos):
-        arg_pos += 1
-
-    return args[:arg_pos], args[arg_pos], args[arg_pos + 1:]
 
 
 def expand_possessive_pronoun_chain(args, most_specific_indices, pp_mentions):
@@ -195,18 +199,27 @@ def expand_possessive_pronoun_chain(args, most_specific_indices, pp_mentions):
     most_specific_args = []
     remaining_args = args
     for word, id in most_specific_indices:
-        prior_args, arg, remaining_args = find_arg_in_arg_list(remaining_args, word, id)
-        other_args[0] += prior_args
-        most_specific_args.append(arg)
+        arg_pos = 0
+        while not find_word_in_expr(remaining_args[arg_pos], word, id):
+            arg_pos += 1
+
+        other_args[0] += remaining_args[:arg_pos]
+        most_specific_args.append(remaining_args[arg_pos])
+        remaining_args = remaining_args[arg_pos + 1:]
 
     pps = []
     for word, id in pp_mentions:
-        prior_args, arg, remaining_args = find_arg_in_arg_list(remaining_args, word, id)
-        other_args.append(prior_args)
-        pps.append(arg)
+        arg_pos = 0
+        while not find_word_in_expr(remaining_args[arg_pos], word, id):
+            arg_pos += 1
+
+        other_args.append(remaining_args[:arg_pos])
+        pps.append(remaining_args[arg_pos])
 
         # Assertion currently made create_pp_block()
-        assert(find_word_in_expr(arg.fun, word, id) is not None)
+        assert(find_word_in_expr(remaining_args[arg_pos].fun, word, id) is not None)
+
+        remaining_args = remaining_args[arg_pos + 1:]
 
     other_args.append(remaining_args)
 
@@ -267,7 +280,8 @@ def expand_possessive_pronouns(expr, all_pp_chains):
             combined_swaps = [swap[i] for i in combined_swaps]
 
     # Build swaps
-    swapped_args = create_lambda_swap(combined_swaps)
+    swapped_args = create_lambda_swap(combined_swaps,
+                                      Ty.tensor(*[arg.typ for arg in args]))
     arg_counter = 1
     while args[-arg_counter].typ == Ty('n'):
         swapped_args = swapped_args(args[-arg_counter])
@@ -283,7 +297,48 @@ def expand_possessive_pronouns(expr, all_pp_chains):
     return new_outside(swapped_args)
 
 
-def _expand_coref(expr, doc):
+def expand_personal_pronouns(expr, all_personal):
+    for typ in expr.typ:
+        assert(typ == Ty('n'))
+
+    new_expr = deepcopy(expr)
+
+    for most_specific, personal in all_personal:
+        pre_coref_type = deepcopy(new_expr.typ)
+        most_specific_exprs = []
+        for occurance in most_specific:
+            typ = find_word_in_expr(expr, occurance[0], occurance[1]).typ
+            temp = create_random_variable(typ)
+            body = replace_literal_in_expr(new_expr, occurance[0], occurance[1], temp)
+            new_expr = Expr.lmbda(temp, body[0])
+            most_specific_exprs += body[1]
+
+        most_specific_typ = Ty('n', index=set.union(*[t.typ.index for t in most_specific_exprs]))
+        typs_to_remove = []
+        for occurance in personal:
+            typ = find_word_in_expr(expr, occurance[0], occurance[1]).typ
+            temp = create_random_variable(typ)
+            body = replace_literal_in_expr(new_expr, occurance[0], occurance[1], temp)
+            new_expr = Expr.lmbda(temp, body[0])
+            typs_to_remove.append(typ.index)
+            index_mapping = create_index_mapping_dict(typ, most_specific_typ)
+            new_expr = map_expr_indices(new_expr, index_mapping, reduce=False)
+
+        new_type = Ty().tensor(*[t for t in pre_coref_type if t.index not in typs_to_remove])
+        for ms_expr in most_specific_exprs:
+            new_type = ms_expr.typ >> new_type
+        new_frame = Expr.literal("coref",
+                                 new_expr.typ >> new_type)
+
+        composed = new_frame(new_expr)
+        for most_specific_expr in reversed(most_specific_exprs):
+            composed = composed(most_specific_expr)
+
+        new_expr = pull_out(composed)
+    return new_expr
+
+
+def expand_coref(expr, doc):
     """
     Given an expr and a doc containing corefs, create a new expr which expands
     the possessive pronouns.
@@ -292,27 +347,40 @@ def _expand_coref(expr, doc):
     :param doc: The doc containing the corefs.
     :return: The new expr.
     """
-    all_pps = []
+    all_possessive = []
+    all_personal = []
     for chain in doc._.coref_chains:
-        pps_in_chain = []
+        possessive_in_chain = []
+        personal_in_chain = []
         for mention in chain:
+            if mention == chain[chain.most_specific_mention_index]:
+                continue
+
             for token_index in mention.token_indexes:
                 word_expr = find_word_in_expr(expr, doc[token_index], token_index)
+                if word_expr is None:
+                    assert(False)
                 if word_expr.typ == Func(Ty('n'), Ty('n')):
                     assert(len(mention.token_indexes) == 1)
-                    pps_in_chain.append((doc[mention[0]], mention[0]))
+                    possessive_in_chain.append((doc[mention[0]], mention[0]))
 
-        if len(pps_in_chain) > 0:
-            most_specific = []
-            for mention in chain[chain.most_specific_mention_index]:
-                most_specific.append((doc[mention], mention))
-            all_pps.append((most_specific, pps_in_chain))
+                if word_expr.typ == Ty('n'):
+                    assert(mention == chain[chain.most_specific_mention_index] or len(mention.token_indexes) == 1)
+                    personal_in_chain.append((doc[mention[0]], mention[0]))
 
-    if len(all_pps) == 0:
-        return expr
+        most_specific = [(doc[m], m) for m in chain[chain.most_specific_mention_index]]
 
-    return expand_possessive_pronouns(expr, all_pps)
+        if len(possessive_in_chain) > 0:
+            all_possessive.append((most_specific, possessive_in_chain))
 
-def expand_coref(expr, doc):
-    expr_normal = expr_normal_form(expr)
-    return _expand_coref(expr_normal, doc)
+        if len(personal_in_chain) > 0:
+            all_personal.append((most_specific, personal_in_chain))
+
+    if len(all_possessive) > 0:
+        expr = expr_normal_form(expr)
+        expr = expand_possessive_pronouns(expr, all_possessive)
+
+    if len(all_personal) > 0:
+        expr = expand_personal_pronouns(expr, all_personal)
+
+    return expr

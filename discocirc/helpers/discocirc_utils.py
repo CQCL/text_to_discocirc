@@ -6,7 +6,7 @@ from discopy.monoidal import Functor
 from discopy import Ob
 
 from discocirc.expr.expr import Expr, expr_type_recursion
-from discocirc.helpers.closed import Func, Ty
+from discocirc.helpers.closed import Func, Ty, index_to_string
 
 
 def get_last_initial_noun(circ):
@@ -124,7 +124,7 @@ def add_indices_to_types(typ):
                     typ.index)
     if len(typ.objects) == 1:
         obj = typ.objects[0]
-        return Ty(f"{obj.name}{typ.index}", index=typ.index)
+        return Ty(f"{obj.name}{index_to_string(typ.index)}", index=typ.index)
     return Ty(*[add_indices_to_types(x) for x in typ.objects], index=typ.index)
 
 def expr_add_indices_to_types(expr):
@@ -134,23 +134,28 @@ def expr_add_indices_to_types(expr):
         return new_expr
     return expr_type_recursion(expr, expr_add_indices_to_types)
 
+
 random_variable_counter = 0
 def create_random_variable(typ, head=None):
     global random_variable_counter
     random_variable_counter += 1
     return Expr.literal(f"x_{random_variable_counter}", typ=typ, head=head)
 
-def create_lambda_swap(input_types, output_types):
+def create_lambda_swap(perm, input_types):
     """
-    a swap from input types to output types
+    Given a list of integers, create a lambda expression that swaps the wires
+    as specified by the list where the ith wire is swapped to all wires j where
+    new_order[j] = i.
+
+    :param perm: The list of integers specifying the new order of the wires.
+    :param input_types: The types of the inputs of the swap
+    :return: The lambda expression that swaps the wires.
     """
-    assert len(input_types) == len(output_types)
+    assert len(perm) == len(input_types)
     temp_vars = []
     for typ in input_types:
         temp_vars.append(create_random_variable(typ))
-    input_type_indices = [typ.index for typ in input_types]
-    output_type_indices = [typ.index for typ in output_types]
-    perm = [output_type_indices.index(idx) for idx in input_type_indices]
+
     lst = [temp_vars[i] for i in perm]
     swap = Expr.lmbda(Expr.lst(temp_vars), Expr.lst(lst))
     return swap
