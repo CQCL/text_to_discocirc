@@ -1,3 +1,4 @@
+from copy import deepcopy
 from random import randint
 from discocirc.expr.expr_normal_form import expr_normal_form
 
@@ -313,7 +314,7 @@ def expand_personal_pronouns(expr, all_personal):
     for typ in expr.typ:
         assert(typ == Ty('n'))
 
-    final_expr = expr
+    final_expr = deepcopy(expr)
 
     for most_specific, personal in all_personal:
         new_expr = final_expr
