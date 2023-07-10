@@ -1,4 +1,3 @@
-
 from discocirc.diag import Frame
 from discocirc.expr import expr_to_diag, pull_out
 from discocirc.expr.ccg_to_expr import ccg_to_expr
@@ -9,6 +8,8 @@ from discocirc.expr.n_type_expand import n_type_expand
 from discocirc.expr.s_type_expand import s_type_expand, p_type_expand
 from discocirc.helpers.discocirc_utils import expr_add_indices_to_types
 from discocirc.semantics.rewrite import rewrite
+from discocirc.expr.expr_expand_pronouns import expand_coref
+from expr.expr_uncurry import expr_uncurry
 from outdated_code.expand_s_types import expand_s_types
 
 
@@ -24,7 +25,7 @@ def compare_type_expansions(unittest, expr):
     unittest.assertEqual(test_diag, test_diag2)
 
 
-def ccg_to_diag_test(unittest, config, ccg_parse):
+def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=None):
     # ------- Step 1: CCG to Expr -----------
     expr = ccg_to_expr(ccg_parse)
     if config["type_check_ccg"]:
@@ -36,7 +37,6 @@ def ccg_to_diag_test(unittest, config, ccg_parse):
         diag.draw()
 
     # ------- Step 2: Pulling out -----------
-    expr = inverse_beta(expr)
     expr = pull_out(expr)
     if config["type_check_ccg"]:
         unittest.assertTrue(expr_type_check(expr),
@@ -63,7 +63,6 @@ def ccg_to_diag_test(unittest, config, ccg_parse):
         diag.draw()
 
     # ------- Step 4: Pulling out again -----------
-    expr = inverse_beta(expr)
     expr = pull_out(expr)
     if config["type_check_ccg"]:
         unittest.assertTrue(expr_type_check(expr),
@@ -115,22 +114,37 @@ def ccg_to_diag_test(unittest, config, ccg_parse):
         diag = (Frame.get_decompose_functor())(diag)
         diag.draw()
 
+    # ------- Step 7: Co-ref expansion -----------
+    if spacy_model and sentence:
+        doc = spacy_model(sentence)
+        expr = expand_coref(expr, doc)
 
-    # ------- Step 7: Expr to Diag -----------
+        print(doc._.coref_chains)
+
+        if config["draw_steps"]:
+            diag = expr_to_diag(expr_add_indices_to_types(expr))
+            diag = (Frame.get_decompose_functor())(diag)
+            diag.draw()
+
+    # ------- Step 8: Expr to Diag -----------
     diag = expr_to_diag(expr_add_indices_to_types(expr))
     
-    # ------- Step 8: Semantic rewrites -----------
+    # ------- Step 9: Semantic rewrites -----------
     if config["semantic_rewrites"]:
         diag = rewrite(diag, rules='all')
     diag = (Frame.get_decompose_functor())(diag)
 
     # expr_uncurried = expr_uncurry(expr)
-    # diag_uncurried = expr_to_diag(expr_uncurried)
+    # diag_uncurried = expr_to_diag(expr_add_indices_to_types(expr_uncurried))
     # diag_uncurried = (Frame.get_decompose_functor())(diag_uncurried)
-
+    #
+    # if (diag != diag_uncurried):
+    #     diag.draw(figsize=(10, 10))
+    #     diag_uncurried.draw(figsize=(10, 10))
+    #
     # unittest.assertEqual(diag, diag_uncurried)
 
     if config["draw_result"] or config["draw_steps"]:
-        diag.draw()
+        diag.draw(figsize=(10, 10))
 
     return True
