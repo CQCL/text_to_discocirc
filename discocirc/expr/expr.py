@@ -17,7 +17,7 @@ class Expr:
     def __repr__(self):
         return self.to_string()
 
-    def to_string(self, index=True):
+    def to_string(self, index=False):
         if self.expr_type == "literal":
             return get_literal_string(self, index)
         elif self.expr_type == "lambda":

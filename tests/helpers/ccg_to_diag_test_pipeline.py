@@ -62,7 +62,6 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
         diag.draw()
 
     # ------- Step 4: Pulling out again -----------
-    expr = inverse_beta(expr)
     expr = pull_out(expr)
     if config["type_check_ccg"]:
         unittest.assertTrue(expr_type_check(expr),
