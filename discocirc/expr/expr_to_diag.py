@@ -3,29 +3,9 @@ from discopy import monoidal
 
 from discocirc.expr import Expr
 from discocirc.diag.frame import Frame
-from discocirc.helpers.closed import Func, Ty
+from discocirc.helpers.closed import downgrade_to_monoidal
+from discocirc.helpers import closed
 
-
-def downgrade_types(typ):
-    if isinstance(typ, monoidal.Ob) and not isinstance(typ, monoidal.Ty):
-        return typ
-    elif isinstance(typ, Func):
-        return Func(downgrade_types(typ.input),
-                    downgrade_types(typ.output),
-                    index=typ.index)
-    elif len(typ) == 1 and isinstance(typ, Ty):
-        return Ty.downgrade(typ)
-    elif len(typ) > 1:
-        objects = []
-        for t in typ.objects:
-            if isinstance(t, monoidal.Ty) and not isinstance(t, Func):
-                objects.extend(t.objects)
-            else:
-                objects.append(downgrade_types(t))
-        typ = monoidal.Ty(*objects)
-        return typ
-    else:
-        return typ
 
 def _literal_to_diag(expr, context, expand_lambda_frames):
     """
@@ -46,17 +26,17 @@ def _literal_to_diag(expr, context, expand_lambda_frames):
             # If we expand the lambda frames, we use wires to draw how the
             # variables of the lambda expression will be manipulated.
             # Therefore, in that case, each var must be drawn as a state.
-            return monoidal.Box(name, Ty(), expr.typ)
+            return monoidal.Box(name, monoidal.Ty(), downgrade_to_monoidal(expr.typ))
 
     output = expr.typ
-    if isinstance(output, Func):
-        input = Ty()
-        while isinstance(output, Func):
+    if isinstance(output, closed.Func):
+        input = monoidal.Ty()
+        while isinstance(output, closed.Func):
             input = output.input @ input
             output = output.output
-        return monoidal.Box(name, downgrade_types(input), downgrade_types(output))
+        return monoidal.Box(name, downgrade_to_monoidal(input), downgrade_to_monoidal(output))
     else:
-        return monoidal.Box(name, monoidal.Ty(), downgrade_types(output))
+        return monoidal.Box(name, monoidal.Ty(), downgrade_to_monoidal(output))
 
 def _lambda_to_diag_frame(expr, context, expand_lambda_frames):
     """
@@ -111,13 +91,13 @@ def remove_state_at_layer(diag, layer_no):
     :return: Tuple: (The new diag, the number of the new wire).
     """
     removed_left, removed_box, removed_right = diag.layers[layer_no]
-    assert(removed_box.dom == Ty())
+    assert(removed_box.dom == monoidal.Ty())
 
     new_diag = monoidal.Id(diag.cod)
     for left, box, right in reversed(diag.layers[layer_no + 1:]):
         new_diag = monoidal.Id(left) @ box @ monoidal.Id(right) >> new_diag
 
-    typ = removed_box.cod
+    typ = downgrade_to_monoidal(removed_box.cod)
     # position of the new wire that has to be introduced.
     wire_no = len(removed_left)
 
@@ -131,7 +111,7 @@ def remove_state_at_layer(diag, layer_no):
                  # The wire is underneath the box we are adding.
                  new_diag = monoidal.Id(new_diag.dom[:wire_no]) @ \
                             monoidal.Swap(
-                                Ty(new_diag.dom[wire_no + 1]),
+                                monoidal.Ty(new_diag.dom[wire_no + 1]),
                                 typ) @ \
                             monoidal.Id(new_diag.dom[wire_no + 2:]) >> new_diag
                  wire_no += 1
@@ -213,13 +193,14 @@ def _lambda_to_diag_open_wire(expr, context, expand_lambda_frames):
 
 
     # make copy box
+    var_type = downgrade_to_monoidal(expr.var.typ)
     if len(var_instances_layer) == 0:
-        copy_box = monoidal.Box("lambda", expr.var.typ, Ty())
+        copy_box = monoidal.Box("lambda", var_type, monoidal.Ty())
     elif len(var_instances_layer) == 1:
-        copy_box = monoidal.Id(expr.var.typ)
+        copy_box = monoidal.Id(var_type)
     else:
-        copy_box = monoidal.Box("lambda", expr.var.typ, Ty().tensor(
-            *[expr.var.typ for _ in var_instances_layer]))
+        copy_box = monoidal.Box("lambda", var_type, monoidal.Ty().tensor(
+            *[var_type for _ in var_instances_layer]))
 
     return (monoidal.Id(swaps.dom[:-len(copy_box.cod)]) @ copy_box) >> swaps >> body
 
@@ -256,7 +237,7 @@ def _compose_diags(arg, fun):
     :param fun: The function which is applied to the argument.
     :return: The composed diag of fun(arg).
     """
-    if arg.dom == Ty():
+    if arg.dom == monoidal.Ty():
         new_args = monoidal.Id(fun.dom[:-len(arg.cod)]) @ arg
         return new_args >> fun
 
@@ -269,7 +250,7 @@ def _compose_diags(arg, fun):
         inputs = monoidal.Id(new_dom)
         for left, box, right in fun.layers[:-1]:
             assert(len(right) == 0)
-            if box.dom == Ty():
+            if box.dom == monoidal.Ty():
                 inputs = inputs @ box
             else:
                 inputs = inputs >> (monoidal.Id(inputs.cod[:-len(box.dom)]) @ box)

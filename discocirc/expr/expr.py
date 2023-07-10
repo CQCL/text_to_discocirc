@@ -16,8 +16,8 @@ class Expr:
     
     def __repr__(self):
         return self.to_string()
-    
-    def to_string(self, index=True):
+
+    def to_string(self, index=False):
         if self.expr_type == "literal":
             return get_literal_string(self, index)
         elif self.expr_type == "lambda":
@@ -190,8 +190,9 @@ def infer_list_type(expr_list, interchange):
                 final_output = final_output @ f
         list_type = final_input >> final_output
     else:
-        list_type = Ty()
-        for e in expr_list:
+        assert(len(expr_list) > 0)
+        list_type = expr_list[0].typ
+        for e in expr_list[1:]:
             list_type = list_type @ e.typ
     return list_type
 
@@ -228,6 +229,8 @@ def create_index_mapping_dict(key_typ, value_typ):
     return mapping
 
 def map_typ_indices(typ, mapping):
+    # TODO: remove deepcopy and make sure that typ is not modified
+    typ = deepcopy(typ)
     if isinstance(typ, Func):
         input_typ = map_typ_indices(typ.input, mapping)
         output_typ = map_typ_indices(typ.output, mapping)
@@ -240,6 +243,9 @@ def map_typ_indices(typ, mapping):
             else:
                 new_index.add(idx)
         typ.index = new_index
+    if len(typ.objects) > 1:
+        for obj in typ.objects:
+            obj.typ = map_typ_indices(obj, mapping)
     return typ
 
 def map_expr_indices(expr, mapping, reduce=True):

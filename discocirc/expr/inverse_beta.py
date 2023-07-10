@@ -3,6 +3,7 @@ from discocirc.expr.expr import Expr, expr_type_recursion
 from discocirc.helpers.closed import Func
 from discocirc.helpers.discocirc_utils import create_random_variable
 
+
 def expr_has_variable(expr, variable):
     if expr == variable:
         return True
@@ -47,7 +48,10 @@ def remove_free_vars(expr, variables):
             exprs.append(result[2])
         return free_vars, bound_vars, Expr.lst(exprs, interchange=False, head=expr.head)
     elif expr.expr_type == "lambda":
-        new_body = remove_free_vars(expr.body, variables + [expr.var])
+        if expr.var.expr_type == 'list':
+            new_body = remove_free_vars(expr.body, variables + list(expr.var.expr_list))
+        else:
+            new_body = remove_free_vars(expr.body, variables + [expr.var])
         return new_body[0], new_body[1], Expr.lmbda(expr.var, new_body[2], head=expr.head)
     elif expr.expr_type == "application":
         arg_result = remove_free_vars(expr.arg, variables)
@@ -65,12 +69,18 @@ def inverse_beta(expr):
         new_body = inverse_beta(expr.body)
         expr = Expr.lmbda(expr.var, new_body, head=expr.head, index=expr.typ.index)
         variables = []
+        flattened_variables = []
         indices = []
         while expr.expr_type == 'lambda':
+            if expr.var.expr_type == 'list':
+                for v in reversed(expr.var.expr_list):
+                    flattened_variables.append(v)
+            else:
+                flattened_variables.append(expr.var)
             variables.append(expr.var)
             indices.append(expr.typ.index)
             expr = expr.body
-        free_vars, bound_vars, expr = remove_free_vars(expr, variables)
+        free_vars, bound_vars, expr = remove_free_vars(expr, flattened_variables)
 
         for variable, index in zip(list(reversed(variables)) + bound_vars, list(reversed(indices)) + [None]*len(bound_vars)):
             expr = Expr.lmbda(variable, expr, index=index)

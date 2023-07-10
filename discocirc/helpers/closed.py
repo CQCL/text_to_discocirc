@@ -44,13 +44,16 @@ class Ty(monoidal.Ty):
 
     def __str__(self):
         return self.to_string()
-    
+
     def to_string(self, index=True):
         if index:
             if len(self._objects) > 1:
-                return f'({super().__str__()}){self.index}'
-            return super().__str__() + f'{self.index}'
-        return super().__str__()
+                return f'({super().__str__()}){index_to_string(self.index)}'
+            return super().__str__() + f'{index_to_string(self.index)}'
+        else:
+            if len(self._objects) > 1:
+                return ' @ '.join(map(lambda x: x.to_string(index), self._objects))
+            return super().__str__()
 
     def tensor(self, *others):
         for other in others:
@@ -89,9 +92,12 @@ class Func(Ty):
         return self.to_string()
     
     def to_string(self, index=True):
-        fun_str = f'({self.input.to_string(index)} → {self.output.to_string(index)})'
+        if isinstance(self.input, Ty) and isinstance(self.output, Ty):
+            fun_str = f'({self.input.to_string(index)} → {self.output.to_string(index)})'
+        else:
+            fun_str = f'({self.input} → {self.output})'
         if index:
-            return f'{fun_str}{self.index}'
+            return f'{fun_str}{index_to_string(self.index)}'
         return f'{fun_str}'
 
     def __eq__(self, other):
@@ -113,6 +119,28 @@ def biclosed_to_closed(x):
         return Ty(*[biclosed_to_closed(y) for y in x.objects])
     else:
         return x
+
+def downgrade_to_monoidal(typ):
+    if isinstance(typ, monoidal.Ob) and not isinstance(typ, monoidal.Ty):
+        return typ
+    elif isinstance(typ, Func):
+        return Func(downgrade_to_monoidal(typ.input),
+                    downgrade_to_monoidal(typ.output),
+                    index=typ.index)
+    elif len(typ) == 1 and isinstance(typ, Ty):
+        return Ty.downgrade(typ)
+    elif len(typ) > 1:
+        objects = []
+        for t in typ.objects:
+            if isinstance(t, monoidal.Ty) and not isinstance(t, Func):
+                objects.extend(t.objects)
+            else:
+                objects.append(downgrade_to_monoidal(t))
+        typ = monoidal.Ty(*objects)
+        return typ
+    else:
+        return typ
+
 
 def ccg_cat_to_closed(cat, word_str=None):
     if word_str:
@@ -141,3 +169,9 @@ def uncurry_types(typ, uncurry_everything=False):
 
     else:
         return typ
+
+
+def index_to_string(index):
+    if isinstance(index, set):
+        return str(sorted(list(index)))
+    return str(index)
