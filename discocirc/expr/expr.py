@@ -241,6 +241,11 @@ def map_typ_indices(typ, mapping):
             else:
                 new_index.add(idx)
         typ.index = new_index
+    if len(typ.objects) > 1:
+        # TODO: @Razin. I don't like this solution
+        typ = deepcopy(typ)
+        for obj in typ.objects:
+            obj.typ = map_typ_indices(obj, mapping)
     return typ
 
 def map_expr_indices(expr, mapping, reduce=True):
