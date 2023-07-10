@@ -229,6 +229,8 @@ def create_index_mapping_dict(key_typ, value_typ):
     return mapping
 
 def map_typ_indices(typ, mapping):
+    # TODO: remove deepcopy and make sure that typ is not modified
+    typ = deepcopy(typ)
     if isinstance(typ, Func):
         input_typ = map_typ_indices(typ.input, mapping)
         output_typ = map_typ_indices(typ.output, mapping)
@@ -242,7 +244,6 @@ def map_typ_indices(typ, mapping):
                 new_index.add(idx)
         typ.index = new_index
     if len(typ.objects) > 1:
-        # TODO: @Razin. I don't like this solution
         for obj in typ.objects:
             obj.typ = map_typ_indices(obj, mapping)
     return typ

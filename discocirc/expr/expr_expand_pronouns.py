@@ -301,10 +301,10 @@ def expand_personal_pronouns(expr, all_personal):
     for typ in expr.typ:
         assert(typ == Ty('n'))
 
-    final_expr = deepcopy(expr)
+    new_expr = deepcopy(expr)
 
     for most_specific, personal in all_personal:
-        new_expr = final_expr
+        pre_coref_type = deepcopy(new_expr.typ)
         most_specific_exprs = []
         for occurance in most_specific:
             typ = find_word_in_expr(expr, occurance[0], occurance[1]).typ
@@ -324,7 +324,7 @@ def expand_personal_pronouns(expr, all_personal):
             index_mapping = create_index_mapping_dict(typ, most_specific_typ)
             new_expr = map_expr_indices(new_expr, index_mapping, reduce=False)
 
-        new_type = Ty().tensor(*[t for t in final_expr.typ if t.index not in typs_to_remove])
+        new_type = Ty().tensor(*[t for t in pre_coref_type if t.index not in typs_to_remove])
         for ms_expr in most_specific_exprs:
             new_type = ms_expr.typ >> new_type
         new_frame = Expr.literal("coref",
@@ -334,8 +334,8 @@ def expand_personal_pronouns(expr, all_personal):
         for most_specific_expr in reversed(most_specific_exprs):
             composed = composed(most_specific_expr)
 
-        final_expr = pull_out(composed)
-    return final_expr
+        new_expr = pull_out(composed)
+    return new_expr
 
 
 def expand_coref(expr, doc):
