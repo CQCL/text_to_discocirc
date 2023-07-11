@@ -6,6 +6,13 @@ from discocirc.helpers.discocirc_utils import change_expr_typ, count_application
 
 
 def is_higher_order(typ):
+    """
+    Checks if a type is 'higher-order', hence corresponding to a frame
+    
+    it is considered higher-order if it is a
+    Func type, and furthermore its input is either a
+    s-type, p-type, or itself a Func type
+    """
     if not isinstance(typ, Func):
         return False
     return isinstance(typ.input, Func) \
@@ -13,12 +20,23 @@ def is_higher_order(typ):
            or typ.input == Ty('s')
 
 def if_application_pull_out(expr):
+    """
+    given an expr that is application type,
+    checks if pulling out can/should be performed
+    """
     return expr.expr_type == 'application'\
             and expr.arg.expr_type == 'application'\
             and is_higher_order(expr.fun.typ)\
             and not isinstance(expr.arg.arg.typ, Func)
 
 def b_combinator(expr):
+    """
+    input expr is of form
+        f(g(h))
+    We change the type of f, to get a new expression f' say,
+    such that we can return an expr
+        f'(g)(h)
+    """
     f = expr.fun
     g = expr.arg.fun
     h = expr.arg.arg
@@ -29,6 +47,9 @@ def b_combinator(expr):
     return Expr.apply(bf_g, h, reduce=False)
 
 def pull_out_application(expr):
+    """
+    performs pulling out in the case that the expr is of application type
+    """
     f = _pull_out(expr.fun)
     g = _pull_out(expr.arg)
     expr = Expr.apply(f, g, reduce=False)
@@ -37,6 +58,9 @@ def pull_out_application(expr):
     return expr
 
 def _pull_out(expr):
+    """
+    the main part of the pull out routine
+    """
     head = expr.head if hasattr(expr, 'head') else None
     typ_index = expr.typ.index
     if expr.expr_type == 'literal':
@@ -57,4 +81,11 @@ def _pull_out(expr):
     return expr_type_recursion(expr, _pull_out)
 
 def pull_out(expr):
+    """
+    the full pull_out routine consists of doing an inverse_beta pass over the expr,
+    before performing _pull_out
+
+    inverse_beta puts the expression in such a form that we can also pull out when
+    the expr contains lambda abstractions
+    """
     return _pull_out(inverse_beta(expr))
