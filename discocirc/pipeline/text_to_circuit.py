@@ -1,5 +1,3 @@
-import string
-
 import numpy as np
 import spacy
 from discopy import hypergraph
@@ -18,7 +16,8 @@ spacy_model.add_pipe('coreferee')
 # NOTE: this function may become redundant
 def noun_sort(circ):
     """
-    takes in a circuit with some number of nouns as the initial boxes
+    takes in a (discopy) circuit with some number of nouns as the initial boxes
+
     rearranges the order of these so that their offsets are 0, 1, 2, ...
     """
 
@@ -79,6 +78,11 @@ def sentence_list_to_circuit(context, simplify_swaps=True, wire_order='intro_ord
     return context_circ
 
 def text_to_circuit(text, **kwargs):
+    """
+    self explanatory, input text as a string
+
+    return the corresponding (discopy) circuit
+    """
     doc = spacy_model(text)
     sentences = []
     for sent in doc.sents:
@@ -135,6 +139,7 @@ def compose_circuits(circ1, circ2, wire_order='intro_order'):
         if nouns_circ2_name[i] in nouns_circ1_name:
             ob_map[nouns_circ2[i].cod] = nouns_circ1[nouns_circ1_name.index(nouns_circ2_name[i])].cod
     
+    # the two functions below are used to define a functor
     def ob_map2(obj):
         if obj in ob_map.keys():
             return ob_map[obj]
@@ -189,5 +194,3 @@ def compose_circuits(circ1, circ2, wire_order='intro_order'):
         raise Exception("Invalid wire_order.")
 
     return final_circ
-
-# %%

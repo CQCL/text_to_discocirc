@@ -34,6 +34,17 @@ def get_star_removal_functor():
     return f
 
 def change_expr_typ(expr, new_type):
+    """
+    does as the name suggests
+    given an expr, we attempt to change its type to new_type
+
+    this is nontrivial, because we need to recursively change
+    the type of the expr so everything remains internally consistent
+
+    This function is a little conceptually fraught right now.
+    In particular, the 'lambda' case is wrong,
+    and the 'list' case needs further thought in order to implement
+    """
     expr = deepcopy(expr)
     if expr.expr_type == 'literal':
         expr.typ = new_type
@@ -72,6 +83,14 @@ def count_applications(expr, branch='fun'):
     return count
 
 def c_combinator(expr):
+    """
+    Given an expr of the form
+        f(y)(x)
+    Change the type of the subexpr f, to obtain a new expr f', say,
+    such that we can return
+        f'(x)(y)
+    i.e. the order of the arguments y, x are swapped
+    """
     f = expr.fun.fun
     y = expr.fun.arg
     x = expr.arg
@@ -122,6 +141,17 @@ def inv_n_fold_c_combinator(expr, n):
     return expr
 
 def apply_at_root(fun, arg):
+    """
+    usually, if we apply a 'fun' to an 'arg', we just return 'fun(arg)'
+
+    apply_at_root instead applies 'arg' and ensures it is the first argument that is applied
+
+    e.g. if 'fun' is of the form 
+        f(x)(y)(z),
+    where f is not an instance of application,
+    then apply_at_root(fun,arg) returns
+        f(arg)(x)(y)(z)
+    """
     return inv_n_fold_c_combinator(fun(arg), count_applications(fun))
 
 def add_indices_to_types(typ):
