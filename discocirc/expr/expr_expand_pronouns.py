@@ -7,8 +7,8 @@ from discocirc.expr import Expr
 from discocirc.expr.expr_uncurry import expr_uncurry
 from discocirc.helpers.discocirc_utils import create_random_variable, \
     create_lambda_swap
-from expr import pull_out
-from expr.expr import create_index_mapping_dict, map_expr_indices
+from discocirc.expr import pull_out
+from discocirc.expr.expr import create_index_mapping_dict, map_expr_indices
 
 
 def literal_equivalent(expr, word, pos):
