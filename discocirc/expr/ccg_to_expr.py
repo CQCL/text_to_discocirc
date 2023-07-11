@@ -100,7 +100,7 @@ def ccg_to_expr(ccg_parse):
 def composition(ccg_parse, f, g):
     """
     returns the composition of f, g as an expression: 
-        lambda x.f(g(x))
+        λx.f(g(x))
     """
     x = create_random_variable(g.typ.input)
     result = Expr.lmbda(x, f(g(x)))

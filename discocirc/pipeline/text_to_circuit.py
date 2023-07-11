@@ -79,9 +79,9 @@ def sentence_list_to_circuit(context, simplify_swaps=True, wire_order='intro_ord
 
 def text_to_circuit(text, **kwargs):
     """
-    self explanatory, input text as a string
+    input a given text as a string
 
-    return the corresponding (discopy) circuit
+    return the corresponding (discopy) circuit for that text
     """
     doc = spacy_model(text)
     sentences = []
