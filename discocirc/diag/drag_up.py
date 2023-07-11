@@ -25,6 +25,9 @@ def drag_out(diagram, i, stop):
 
 
 def drag_all(diagram):
+    """
+    takes in a circuit (discopy diagram), and 'drags all the nouns to the top'
+    """
     i = len(diagram) - 1
     stop = 0
     while i >= stop:
