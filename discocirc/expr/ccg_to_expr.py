@@ -8,6 +8,14 @@ from discocirc.helpers.discocirc_utils import change_expr_typ, create_random_var
 
 
 def ccg_to_expr(ccg_parse):
+    """
+    Takes in a ccg_parse, and returns the corresponding expr.
+    Recurses to the leaves of the ccg tree first, and builds the expr up from leaf to root
+
+    This process is a canonical one, as described by the lambda-calculus semantics
+    of CCG.
+    There is some stuff at the end about appending the grammatical heads
+    """
     children = [ccg_to_expr(child) for child in ccg_parse.children]
 
     result = None
@@ -90,6 +98,10 @@ def ccg_to_expr(ccg_parse):
 
 
 def composition(ccg_parse, f, g):
+    """
+    returns the composition of f, g as an expression: 
+        lambda x.f(g(x))
+    """
     x = create_random_variable(g.typ.input)
     result = Expr.lmbda(x, f(g(x)))
     original_typ = ccg_cat_to_closed(ccg_parse.original.cat, str(random.randint(100, 999)))

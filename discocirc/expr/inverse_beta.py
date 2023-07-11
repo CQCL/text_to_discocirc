@@ -5,6 +5,10 @@ from discocirc.helpers.discocirc_utils import create_random_variable
 
 
 def expr_has_variable(expr, variable):
+    """
+    self explanatory; checks if a given expr contains a certain variable.
+    Does this recursively
+    """
     if expr == variable:
         return True
     if expr.expr_type == "literal":
@@ -20,6 +24,9 @@ def expr_has_variable(expr, variable):
     return False
 
 def expr_has_variables(expr, variables):
+    """
+    checks if a given expr contains any of the variables in a given list of variables
+    """
     for variable in variables:
         if expr_has_variable(expr, variable):
             return True
@@ -31,6 +38,11 @@ def remove_free_vars(expr, variables):
     (unless the non-function-type subexpr contains variables from 'variables' input)
 
     importantly, this procedure preserves the type and structure of the main expr
+
+    returns three items: 
+        a list of the extracted free variables, 
+        a corresponding list of the dummy variables they were replaced with,
+        the modified expression (containing the dummy variables)
     """
     if expr in variables:
         return [], [], expr
@@ -63,10 +75,25 @@ def remove_free_vars(expr, variables):
     return [], [], expr
 
 def inverse_beta(expr):
+    """
+    A technical step we do as part of the 'pulling out' procedure.
+    Specifically, we apply 'inverse beta' on the entire expr, before
+    performing _pull_out on the expr.
+
+    inverse_beta allows us to 'pull out' even in the case when we have
+    expressions containing the lambda abstraction type.
+
+    Specifically, if we have an expr 
+        lambda x.M
+    where M is a term containing a free variable f, inverse_beta replaces this expr with 
+        ( lambda y.lambda x.M[y/f] ) f
+    i.e. it replaces instances of f with a dummy variable y, and brings f itself outside the lambda scope
+    """
     if expr.expr_type == 'literal':
         return expr
+    # the 'lambda' case below is the only nontrivial case
     elif expr.expr_type == 'lambda':
-        new_body = inverse_beta(expr.body)
+        new_body = inverse_beta(expr.body) #recurse first
         expr = Expr.lmbda(expr.var, new_body, head=expr.head, index=expr.typ.index)
         variables = []
         flattened_variables = []
@@ -81,7 +108,6 @@ def inverse_beta(expr):
             indices.append(expr.typ.index)
             expr = expr.body
         free_vars, bound_vars, expr = remove_free_vars(expr, flattened_variables)
-
         for variable, index in zip(list(reversed(variables)) + bound_vars, list(reversed(indices)) + [None]*len(bound_vars)):
             expr = Expr.lmbda(variable, expr, index=index)
         for arg in reversed(free_vars):
