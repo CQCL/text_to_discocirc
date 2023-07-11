@@ -6,6 +6,10 @@ from discocirc.helpers.closed import Func, Ty
 from discocirc.helpers.discocirc_utils import change_expr_typ, create_random_variable
 
 def n_type_expand(expr):
+    """
+    takes in an expr,
+    expands n-type wires into several n-type wires as needed
+    """
     if expr.expr_type == "literal":
         return expand_literal(expr)
     elif expr.expr_type == "application":
@@ -16,10 +20,19 @@ def n_type_expand(expr):
         return expr_type_recursion(expr, n_type_expand)
 
 def expand_literal(expr):
+    """
+    applies type expansion to literal exprs
+    """
     new_type = expand_closed_type(expr.typ, Ty('n'))
     return change_expr_typ(expr, new_type)
 
 def expand_app_with_n_arg(expr):
+    """
+    this is used in the case when expr = f(g)
+    and the expr g has type 'n'
+
+    the nontrivial case occurs when g is expanded into several n-type wires
+    """
     arg = n_type_expand(expr.arg)
     num_arg_outputs = get_num_output_wires(arg)
     num_old_arg_outputs = get_num_output_wires(expr.arg)
@@ -43,6 +56,17 @@ def expand_app_with_n_arg(expr):
         return expand_app(expr)
 
 def expand_app(expr):
+    """
+    performs expansion, in the case where expr is a basic application type term
+
+    Note: the if statement is triggered when the 'arg' is a Func type, e.g. a box, and
+    the 'fun' is therefore a frame, and
+    the 'arg' no longer fits in the frame after it gets n-expanded
+
+    e.g. this occurs in complicated cases such as 'Alice , Bob and Claire who like beer and wine walked'
+    here, if n expansion is done before s expansion, then
+    n-expansion causes an 'arg' to change from type nxnxn->s to nxnxn->sxnxn
+    """
     fun = n_type_expand(expr.fun)
     arg = n_type_expand(expr.arg)
     if isinstance(arg.typ, Func) and arg.typ != fun.typ.input:
@@ -52,6 +76,9 @@ def expand_app(expr):
     return new_expr
 
 def get_num_output_wires(expr):
+    """
+    as the name suggests
+    """
     typ = expr_uncurry(expr).typ
     if isinstance(typ, Func):
         return len(typ.output)
@@ -59,6 +86,9 @@ def get_num_output_wires(expr):
         return len(typ)
 
 def get_wire_index_of_head(expr):
+    """
+    find the index of the noun wire corresponding to the head of the expr
+    """
     wire_index = 0
     for e in expr_uncurry(expr).arg.expr_list:
         if e.typ == Ty('n'):
