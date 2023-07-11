@@ -12,6 +12,10 @@ from expr.expr import create_index_mapping_dict, map_expr_indices
 
 
 def literal_equivalent(expr, word, pos):
+    """
+    Check if an expr is equivalent to a word in a sentence, specified by the
+    word and its position.
+    """
     return expr.expr_type == "literal" and \
         expr.name == str(word) and \
         len(expr.head) == 1 and \
@@ -90,9 +94,11 @@ def replace_literal_in_expr(expr, word, pos, replacement):
 def create_pp_block(most_specific, pps):
     """
     Given a list of the most specific mentions and a list of exprs corresponding
-    to states with possessive pronouns for a single coreference, create an expr
-    representing a state that combines the exprs of the pps with the most specific
+    to states with possessive pronouns, create an expr representing a state
+    that combines the exprs of the pps with the most specific
     mentions.
+
+    This code is probably unnecessarily complicated.
 
     :param most_specific: A list of the arguments corresponding to the most
             specific mentions.
@@ -298,6 +304,15 @@ def expand_possessive_pronouns(expr, all_pp_chains):
 
 
 def expand_personal_pronouns(expr, all_personal):
+    """
+    Given an expr and a list of all personal pronouns chains, create an expr
+    where the personal pronouns are expanded.
+
+    :param expr: The expr to be expanded.
+    :param all_personal: A list of all personal pronoun chains where
+         each chain is a tuple of the form (most_specific, pronoun_mentions)
+    :return: The expanded expr.
+    """
     for typ in expr.typ:
         assert(typ == Ty('n'))
 

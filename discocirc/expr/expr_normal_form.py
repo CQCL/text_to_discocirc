@@ -5,7 +5,8 @@ from discocirc.helpers.discocirc_utils import change_expr_typ
 
 def expr_normal_form(expr):
     """
-    Given an expr put it into normal form.
+    Given an expr put it into normal form. Normal form is where any chain of
+    applications first applies higher order functions and then states.
 
     :param expr: The expr to be put into normal form.
     :return: A new expr in normal form based on the input expr.

@@ -24,7 +24,6 @@ def expand_app_with_n_arg(expr):
     num_arg_outputs = get_num_output_wires(arg)
     num_old_arg_outputs = get_num_output_wires(expr.arg)
     if num_old_arg_outputs != num_arg_outputs:
-        # TODO: We need to figure out swaps here
         wire_index = get_wire_index_of_head(arg)
         left_ids = []
         right_ids = []

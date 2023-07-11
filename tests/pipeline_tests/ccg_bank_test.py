@@ -9,7 +9,6 @@ config = {
     "draw_result": False,
     "draw_steps": False,
     "type_check_ccg": True,
-    "compare_type_expansions": True,
 }
 
 ccgbankparser = CCGBankParser("../data/ccgbank")
@@ -17,6 +16,9 @@ trees = ccgbankparser.section2trees(0) # there is a total of 25 sections
 
 
 class CCGToDiagTests(UnitTestBaseClass):
+    """
+    Runs the ccg_to_diag_test for all trees in the first section of the ccgbank.
+    """
     @parameterized.expand(trees)
     def test_sequence(self, name):
         print(trees[name])

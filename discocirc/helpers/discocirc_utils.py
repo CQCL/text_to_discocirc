@@ -23,6 +23,9 @@ def get_last_initial_noun(circ):
 
 
 def get_star_removal_functor():
+    """
+    Get a functor, which removes all instances of the star type from a diagram.
+    """
     def star_removal_ob(ty):
         return rigid.Ty() if ty.name == "*" else ty
     def star_removal_ar(box):
@@ -53,6 +56,10 @@ def change_expr_typ(expr, new_type):
 
 
 def count_applications(expr, branch='fun'):
+    """
+    Count the number of consecutive applications, when following either the
+    'fun' or 'arg' branch of the expr tree.
+    """
     count = 0
     while expr.expr_type == "application":
         count += 1
@@ -137,6 +144,11 @@ def expr_add_indices_to_types(expr):
 
 random_variable_counter = 0
 def create_random_variable(typ, head=None):
+    """
+    Create an expr with a random variable name of type typ.
+    To ensure that no two random variables have the same name, we keep a global
+    counter.
+    """
     global random_variable_counter
     random_variable_counter += 1
     return Expr.literal(f"x_{random_variable_counter}", typ=typ, head=head)

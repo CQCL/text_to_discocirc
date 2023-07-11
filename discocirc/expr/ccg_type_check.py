@@ -1,3 +1,7 @@
+# This function was written to check, if an expr is typed correctly.
+# It was only used for testing. However, it is not used anymore as it
+# does not work with coindexing.
+
 from discocirc.helpers.closed import Ty
 
 

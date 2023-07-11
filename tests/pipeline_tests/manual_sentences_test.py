@@ -105,14 +105,16 @@ parser = BobcatParser()
 config = {
     "draw_result": True,
     "draw_steps": False,
-    "type_check_ccg": False,
-    "compare_type_expansions": False,
+    "type_check_ccg": True,
     "semantic_rewrites": True,
 }
 spacy_model = spacy.load('en_core_web_trf')
 spacy_model.add_pipe('coreferee')
 
 class CCGToDiagTests(UnitTestBaseClass):
+    """
+    Runs the ccg_to_diag_test for each sentence in the sentences list.
+    """
     @parameterized.expand(sentences)
     def test_sequence(self, sentence):
         print(sentence)

@@ -1,6 +1,10 @@
 import unittest
 
 class UnitTestBaseClass(unittest.TestCase):
+    """
+    Simple base class which ensures that test keep track of the errors they
+    throw and examples of the sentences which threw them.
+    """
     result_overview = {'ok': 0}
     logger_overview = {}
     test_logger = None

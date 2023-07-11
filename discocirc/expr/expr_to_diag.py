@@ -243,10 +243,12 @@ def _compose_diags(arg, fun):
 
     else:
         # Arg is of type Func and should therefore be placed inside fun.
-        # TODO: figure out how much of the dom to remove
+        # TODO: this currently assumes that the type of arg is equal to fun.dom[-1]
+        # If, for example, arg.typ == fun.dom[-2:] more of the dom would have
+        # to be removed. This does not seem to happen in our tests.
+        # Not sure, if this will be a problem in the future.
         new_dom = fun.dom[:-1]
 
-        # TODO: this assumes that the thing we apply to is on the last layer (Issue #13)
         inputs = monoidal.Id(new_dom)
         for left, box, right in fun.layers[:-1]:
             assert(len(right) == 0)
@@ -309,8 +311,3 @@ def expr_to_diag(expr, context=None, expand_lambda_frames=True):
         return _list_to_diag(expr, context, expand_lambda_frames)
     else:
         raise NotImplementedError(expr.expr_type)
-
-def draw_expr(expr, **kwargs):
-    diag = expr_to_diag(expr)
-    diag = (Frame.get_decompose_functor())(diag)
-    diag.draw(**kwargs)
