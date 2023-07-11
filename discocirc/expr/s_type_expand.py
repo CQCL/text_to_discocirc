@@ -4,10 +4,16 @@ from discocirc.helpers.discocirc_utils import add_indices_to_types, create_lambd
 
 
 def expand_closed_type(typ, expand_which_type):
+    """
+    takes in a type, and replaces it with an appropriately expanded type
+
+    expand_which_type in practice is set to either Ty('s') or Ty('p')
+    """
     if not isinstance(typ, Func):
         return typ
     args = []
     indices = []
+    # extract all the inputs from the type
     while isinstance(typ, Func):
         args.append(typ.input)
         indices.append(typ.index)
@@ -32,6 +38,11 @@ def expand_closed_type(typ, expand_which_type):
     return typ
 
 def expr_type_expand(expr, which_type):
+    """
+    takes an expr, and applies the appropriate type expansion
+
+    which_type in practice is set to either Ty('s') or Ty('p')
+    """
     if expr.expr_type == "literal":
         new_type = expand_closed_type(expr.typ, which_type)
         return Expr.literal(expr.name, new_type, head=expr.head)
@@ -65,4 +76,10 @@ def s_type_expand(expr):
     return expr_type_expand(expr, Ty('s'))
 
 def p_type_expand(expr):
+    """
+    currently this code treats p types exactly like s types
+
+    this is not always desirable in reality, as some instances of p types
+    should instead be treated like n types, and expanded analogously to n-type expansion
+    """
     return expr_type_expand(expr, Ty('p'))
