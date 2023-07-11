@@ -8,6 +8,9 @@ spacy_model = spacy.load('en_core_web_trf')
 
 
 def remove_articles(diagram):
+    """
+    Removes articles "a", "an", "the" from a diagram.
+    """
     def f_box(box):
         str = box.name.lower()
         if (str == "the" or str == "a" or str == "an") and \
@@ -18,6 +21,9 @@ def remove_articles(diagram):
     return f(diagram)
 
 def remove_to_be(diagram):
+    """
+    Removes "am", "is", "are", "was", "were" from a diagram.
+    """
     def is_to_be(str):
         str = str.lower()
         if str =="am" or str == "is" or str == "are" or str == "was" or str == "were":
@@ -27,6 +33,9 @@ def remove_to_be(diagram):
     return f(diagram)
 
 def remove_relative_pronouns(diagram):
+    """
+    Removes relative pronouns "who", "whom", "whose", "which", "that" from a diagram.
+    """
     def is_relative_pronouns(str):
         str = str.lower()
         if str == "who" or str == "whom" or str == "whose" or str == "which" or str == "that":
@@ -36,6 +45,9 @@ def remove_relative_pronouns(diagram):
     return f(diagram)
 
 def frame_to_id(box, name_condition):
+    """
+    Sets the outside frame to an identity if the name of the frame satisfies the name_condition.
+    """
     if name_condition(box.name) and \
         len(box.insides) == 1 and \
         box.dom == box.cod == box.insides[0].dom == box.insides[0].cod:
@@ -43,6 +55,9 @@ def frame_to_id(box, name_condition):
     return box
 
 def passive_to_active_voice(diagram):
+    """
+    Converts passive voice to active voice.
+    """
     def remove_passive_frame(frame):
         if frame.name.lower() == "by" and \
             len(frame.insides) == 1 and \

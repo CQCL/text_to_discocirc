@@ -3,6 +3,9 @@ from discocirc.helpers.closed import Func, uncurry_types
 from discocirc.helpers.discocirc_utils import create_random_variable
 
 def expr_uncurry(expr):
+    """
+    Returns an uncurried version of the given expression.
+    """
     head = expr.head
     if expr.expr_type == "literal":
         new_expr = Expr.literal(expr.name,

@@ -14,6 +14,9 @@ from discocirc.expr.expr_expand_pronouns import expand_coref
 tokenizer = SpacyTokeniser()
 
 def sentence2circ(parser, sentence, semantic_rewrites=True, spacy_model=None, add_indices_to_types=True):
+    """
+    Converts a natural language sentence to a DisCoCirc circuit.
+    """
     tokenized_sentence = tokenizer.tokenise_sentence(sentence)
     ccg = parser.sentence2tree(tokenized_sentence, tokenised=True)
     expr = ccg_to_expr(ccg)

@@ -25,6 +25,9 @@ class Ty(monoidal.Ty):
     """
 
     def __init__(self, *objects, input=None, output=None, index=None):
+        """
+        Initialize the Ty class. `index` is extra information added to Ty. This is used for coindexing. 
+        """
         super().__init__()
         self.input, self.output, self.index = input, output, index
         if len(objects) > 1:
@@ -40,12 +43,21 @@ class Ty(monoidal.Ty):
                 self._objects = monoidal.Ty(objects[0])
 
     def __rshift__(self, other):
+        """
+        Define the right shift operator to create a function
+        """
         return Func(self, other)
 
     def __str__(self):
+        """
+        Return the string representation of the Ty object.
+        """
         return self.to_string()
 
     def to_string(self, index=True):
+        """
+        Return the string representation of the Ty object.
+        """
         if index:
             if len(self._objects) > 1:
                 return f'({super().__str__()}){index_to_string(self.index)}'
@@ -56,6 +68,9 @@ class Ty(monoidal.Ty):
             return super().__str__()
 
     def tensor(self, *others):
+        """
+        Return the tensor product of self and others.
+        """
         for other in others:
             if not isinstance(other, monoidal.Ty):
                 raise TypeError(messages.type_err(monoidal.Ty, other))
@@ -69,29 +84,49 @@ class Ty(monoidal.Ty):
 
     @staticmethod
     def upgrade(old):
+        """
+        Upgrade a monoidal.Ty to a Ty.
+        """
         if len(old) == 1 and isinstance(old[0], Func):
             return old[0]
         return Ty(*old.objects)
 
     def downgrade(self):
+        """
+        Downgrade a Ty to a monoidal.Ty.
+        """
         if isinstance(self, Func):
             return self
         return super().downgrade()
 
 
 class Func(Ty):
-    """ Function types. """
+    """
+    A subclass of Ty representing Function objects in a free closed monoidal category.
+    """
     def __init__(self, input=None, output=None, index=None):
+        """
+        Initialize the Func class.
+        """
         name = f'({repr(input)} → {repr(output)})'
         super().__init__(name, input=input, output=output, index=index)
 
     def __repr__(self):
+        """
+        Return the string representation of the Func object.
+        """
         return "({} → {})".format(repr(self.input), repr(self.output))
 
     def __str__(self):
+        """
+        Return the string representation of the Func object.
+        """
         return self.to_string()
     
     def to_string(self, index=True):
+        """
+        Return the string representation of the Func object.
+        """
         if isinstance(self.input, Ty) and isinstance(self.output, Ty):
             fun_str = f'({self.input.to_string(index)} → {self.output.to_string(index)})'
         else:
@@ -101,16 +136,24 @@ class Func(Ty):
         return f'{fun_str}'
 
     def __eq__(self, other):
+        """
+        Check if two Func objects are equal.
+        """
         if not isinstance(other, Func):
             return False
         return self.input == other.input and self.output == other.output
 
     def __hash__(self):
+        """
+        Return the hash value of the Func object.
+        """
         return hash(repr(self))
 
 
 def biclosed_to_closed(x):
-    """Converts the biclosed types to closed types."""
+    """
+    Converts the biclosed types to closed types.
+    """
     if isinstance(x, biclosed.Under):
         return Func(biclosed_to_closed(x.left), biclosed_to_closed(x.right))
     elif isinstance(x, biclosed.Over):
@@ -120,7 +163,26 @@ def biclosed_to_closed(x):
     else:
         return x
 
+def ccg_cat_to_closed(cat, word_str=None):
+    """
+    Converts a CCG category to a closed type.
+    """
+    if word_str:
+        assert(type(word_str)==str)
+    if cat.atomic:
+        typ = biclosed_to_closed(BobcatParser._to_biclosed(cat))
+    else:
+        result_typ = ccg_cat_to_closed(cat.result, word_str)
+        argument_typ = ccg_cat_to_closed(cat.argument, word_str)
+        typ = argument_typ >> result_typ
+    idx = word_str + '_' + str(cat.var) if word_str else str(cat.var)
+    typ.index = set([idx])
+    return typ
+
 def downgrade_to_monoidal(typ):
+    """
+    Downgrades a given type to a monoidal type recursively.
+    """
     if isinstance(typ, monoidal.Ob) and not isinstance(typ, monoidal.Ty):
         return typ
     elif isinstance(typ, Func):
@@ -138,24 +200,12 @@ def downgrade_to_monoidal(typ):
                 objects.append(downgrade_to_monoidal(t))
         typ = monoidal.Ty(*objects)
         return typ
-    else:
-        return typ
-
-
-def ccg_cat_to_closed(cat, word_str=None):
-    if word_str:
-        assert(type(word_str)==str)
-    if cat.atomic:
-        typ = biclosed_to_closed(BobcatParser._to_biclosed(cat))
-    else:
-        result_typ = ccg_cat_to_closed(cat.result, word_str)
-        argument_typ = ccg_cat_to_closed(cat.argument, word_str)
-        typ = argument_typ >> result_typ
-    idx = word_str + '_' + str(cat.var) if word_str else str(cat.var)
-    typ.index = set([idx])
     return typ
 
 def uncurry_types(typ, uncurry_everything=False):
+    """
+    Uncurries a given type recursively. Example: (a → b → c) becomes (a x b → c).
+    """
     if isinstance(typ, Func) and isinstance(typ.output, Func):
         if uncurry_everything:
             inp = uncurry_types(typ.input, uncurry_everything=True)
@@ -170,8 +220,10 @@ def uncurry_types(typ, uncurry_everything=False):
     else:
         return typ
 
-
 def index_to_string(index):
+    """
+    Returns the string representation of the index.
+    """
     if isinstance(index, set):
         return str(sorted(list(index)))
     return str(index)

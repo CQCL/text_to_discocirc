@@ -6,7 +6,13 @@ from discocirc.helpers.closed import Func, uncurry_types, Ty
 
 
 class Expr:
+    """
+    A class representing an expression in the simply-typed lambda calculus.
+    """
     def __init__(self, name, expr_type, typ, head) -> None:
+        """
+        Initializes an Expr object with the given name, expression type, type, and head.
+        """
         self.name = name
         self.expr_type = expr_type
         if expr_type not in ["literal", "lambda", "application", "list"]:
@@ -15,9 +21,15 @@ class Expr:
         self.head = head
     
     def __repr__(self):
+        """
+        Returns a string representation of the Expr object.
+        """
         return self.to_string()
 
     def to_string(self, index=False):
+        """
+        Returns a string representation of the Expr object. 
+        """
         if self.expr_type == "literal":
             return get_literal_string(self, index)
         elif self.expr_type == "lambda":
@@ -30,9 +42,15 @@ class Expr:
             raise NotImplementedError(self.expr_type)
 
     def __call__(self, arg: Expr):
+        """
+        Applies the self to the given argument and returns self(arg).
+        """
         return Expr.apply(self, arg)
     
     def __members(self):
+        """
+        Returns a tuple of the members of the Expr object.
+        """
         if self.expr_type == "literal":
             return (self.expr_type, self.typ, self.name, str(self.head))
         elif self.expr_type == "lambda":
@@ -45,6 +63,9 @@ class Expr:
             raise NotImplementedError(self.expr_type)
 
     def __eq__(self, other) -> bool:
+        """
+        Returns True if the Expr object is equal to the other object, False otherwise.
+        """
         if not isinstance(other, Expr):
             return False
         if self.expr_type != other.expr_type:
@@ -52,14 +73,23 @@ class Expr:
         return self.__members() == other.__members()
 
     def __hash__(self) -> int:
+        """
+        Returns the hash value of the Expr object.
+        """
         return hash(self.__members())
 
     @staticmethod
     def literal(name, typ, head=None):
+        """
+        Returns a new Expr object representing a literal with the given name, type, and head.
+        """
         return Expr(name, "literal", typ, head)
 
     @staticmethod
     def lmbda(var, body, head=None, index=None):
+        """
+        Returns a new Expr object λvar.body representing a lambda expression with the given variable, body, and head.
+        """
         lambda_expr = Expr(body.name, "lambda", Func(var.typ, body.typ, index), head)
         lambda_expr.var = var
         lambda_expr.body = body
@@ -67,6 +97,9 @@ class Expr:
     
     @staticmethod
     def application(fun, arg, head=None):
+        """
+        Returns a new Expr object representing an application of the given function to the given argument.
+        """
         if fun.typ.input != arg.typ:
             raise TypeError(f"Type of \n{arg}\n does not"
                             + f"match the input type of \n{fun}")
@@ -80,6 +113,9 @@ class Expr:
     
     @staticmethod
     def lst(expr_list, interchange='auto', head=None):
+        """
+        Returns a new Expr object representing a list of given Expr objects. 
+        """
         if interchange == 'auto':
             interchange = if_interchange_list_type(expr_list)
         flattened_list = get_flattened_expr_list(expr_list)
@@ -118,7 +154,11 @@ class Expr:
     @staticmethod
     def apply(fun, arg, context=None, reduce=True, head=None, match_indices=True):
         """
-        apply expr to arg
+        Apply `fun` to `arg`.
+        If the type of `arg` matches only part of the input type of `fun`, then a partial application is returned.
+        If `fun` is a lambda expression and `reduce` is True, then the lambda expression is reduced by
+        substituting the argument in the body of the lambda expression.
+        If `match_indices` is True, then the overlapping indices of `arg` and the input type of `fun` are matched.
         """
         if fun.typ.input != arg.typ:
             new_expr = Expr.partial_apply(fun, arg, context)
@@ -145,6 +185,9 @@ class Expr:
 
     @staticmethod
     def partial_apply(expr, arg, context=None):
+        """
+        Return a partial application of `expr` with `arg`.
+        """
         num_inputs = 0
         for i in range(len(expr.typ.input) + 1):
             if expr.typ.input[-i:] == arg.typ:
@@ -163,6 +206,9 @@ class Expr:
 
 
 def get_flattened_expr_list(expr_list):
+    """
+    Returns a list of Expr objects where each Expr objects of type "list" are replaced by their underlying Expr objects.
+    """
     new_expr_list = []
     for e in expr_list:
         if e.expr_type == "list":
@@ -172,12 +218,18 @@ def get_flattened_expr_list(expr_list):
     return new_expr_list
 
 def get_expr_list_name(expr_list):
+    """
+    Returns a string representing the name of a list of Expr objects.
+    """
     name = ""
     for e in expr_list:
         name += e.name + ", "
     return name
 
 def infer_list_type(expr_list, interchange):
+    """
+    Infer the type of a list of expressions.
+    """
     if interchange:
         final_input = Ty()
         final_output = Ty()
@@ -197,6 +249,9 @@ def infer_list_type(expr_list, interchange):
     return list_type
 
 def if_interchange_list_type(expr_list):
+    """
+    Decides whether to apply the interchange law for the type of a list of expressions.
+    """
     for e in expr_list:
         # do not interchange if expr_list has a state
         if not isinstance(e.typ, Func):
@@ -208,6 +263,9 @@ def if_interchange_list_type(expr_list):
     return True
 
 def var_list_matches_arg_list(fun, arg):
+    """
+    Check if the variable list of `fun` matches the argument list of `arg`.
+    """
     if fun.var.expr_type != "list" or arg.expr_type != "list" or \
         len(fun.var.expr_list) != len(arg.expr_list):
         return False
@@ -217,6 +275,9 @@ def var_list_matches_arg_list(fun, arg):
     return True
 
 def create_index_mapping_dict(key_typ, value_typ):
+    """
+    Create a dictionary mapping the indices of `key_typ` to the indices of `value_typ`.
+    """
     mapping = {}
     if isinstance(key_typ, Func):
         mapping |= create_index_mapping_dict(key_typ.input, value_typ.input)
@@ -229,6 +290,9 @@ def create_index_mapping_dict(key_typ, value_typ):
     return mapping
 
 def map_typ_indices(typ, mapping):
+    """
+    Map the indices of `typ` according to `mapping`.
+    """
     # TODO: remove deepcopy and make sure that typ is not modified
     typ = deepcopy(typ)
     if isinstance(typ, Func):
@@ -249,6 +313,9 @@ def map_typ_indices(typ, mapping):
     return typ
 
 def map_expr_indices(expr, mapping, reduce=True):
+    """
+    Map the indices of type of `expr` according to `mapping`.
+    """
     if expr.expr_type == "literal":
         new_expr = deepcopy(expr)
         new_expr.typ = map_typ_indices(expr.typ, mapping)
@@ -267,6 +334,9 @@ def map_expr_indices(expr, mapping, reduce=True):
     return new_expr
 
 def get_literal_string(expr, index):
+    """
+    Returns a string representing a literal Expr object.
+    """
     name = str(expr.name)
     typ = expr.typ.to_string(index)
     length = max(len(name), len(typ))
@@ -276,6 +346,9 @@ def get_literal_string(expr, index):
     return string
 
 def get_lambda_string(expr, index):
+    """
+    Returns a string representing a lambda Expr object.
+    """
     var_temp = deepcopy(expr.var)
     if hasattr(var_temp, "name"):
         var_temp.name = 'λ ' + var_temp.name
@@ -296,6 +369,9 @@ def get_lambda_string(expr, index):
     return '\n'.join(string)
 
 def get_application_string(expr, index):
+    """
+    Returns a string representing an application Expr object.
+    """
     fun = expr.fun.to_string(index)
     arg = expr.arg.to_string(index)
     typ = expr.typ.to_string(index)
@@ -311,6 +387,9 @@ def get_application_string(expr, index):
     return '\n'.join(string)
 
 def get_list_string(expr, index):
+    """
+    Returns a string representing a list Expr object.
+    """
     max_lines = max([len(expr.to_string(index).splitlines()) for expr in expr.expr_list])
     tb = PrettyTable()
     tb.border=False
@@ -337,6 +416,10 @@ def get_list_string(expr, index):
     return string
 
 def expr_type_recursion(expr, function, *args, **kwargs):
+    """
+    Recursively applies the given function to the subexpressions of the given expression.
+    This is a useful helper function for implementing new Expr methods.
+    """
     if expr.expr_type == "literal":
         new_expr = function(expr, *args, **kwargs)
     elif expr.expr_type == "list":

@@ -11,7 +11,7 @@ rules_dict = {
 
 def rewrite(diagram, rules='all'):
     """
-    Applies a list of rules to a diagram
+    Applies a list of rewrite rules to a diagram
     """
     if rules == 'all':
         rules = rules_dict.keys()
