@@ -4,7 +4,7 @@
 Implements the free closed monoidal category.
 """
 
-from discopy import monoidal, biclosed, messages
+from discopy import monoidal, messages
 from lambeq import BobcatParser
 
 
@@ -154,14 +154,13 @@ def biclosed_to_closed(x):
     """
     Converts the biclosed types to closed types.
     """
-    if isinstance(x, biclosed.Under):
+    if x.is_under:
         return Func(biclosed_to_closed(x.left), biclosed_to_closed(x.right))
-    elif isinstance(x, biclosed.Over):
+    elif x.is_over:
         return Func(biclosed_to_closed(x.right), biclosed_to_closed(x.left))
-    elif isinstance(x, biclosed.Ty):
-        return Ty(*[biclosed_to_closed(y) for y in x.objects])
-    else:
-        return x
+    elif len(x.inside) > 1:
+        return Ty(*[biclosed_to_closed(y) for y in x.inside])
+
 
 def ccg_cat_to_closed(cat, word_str=None):
     """
@@ -170,7 +169,7 @@ def ccg_cat_to_closed(cat, word_str=None):
     if word_str:
         assert(type(word_str)==str)
     if cat.atomic:
-        typ = biclosed_to_closed(BobcatParser._to_biclosed(cat))
+        typ = biclosed_to_closed(BobcatParser._to_biclosed(cat).discopy())
     else:
         result_typ = ccg_cat_to_closed(cat.result, word_str)
         argument_typ = ccg_cat_to_closed(cat.argument, word_str)
