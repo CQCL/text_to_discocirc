@@ -7,8 +7,8 @@ from discocirc.helpers.discocirc_utils import change_expr_typ, create_random_var
 
 def n_type_expand(expr):
     """
-    takes in an expr,
-    expands n-type wires into several n-type wires as needed
+    Takes in an expr,
+    expands n-type wires into several n-type wires as required
     """
     if expr.expr_type == "literal":
         return expand_literal(expr)
@@ -21,17 +21,18 @@ def n_type_expand(expr):
 
 def expand_literal(expr):
     """
-    applies type expansion to literal exprs
+    Applies type expansion to literal exprs
     """
     new_type = expand_closed_type(expr.typ, Ty('n'))
     return change_expr_typ(expr, new_type)
 
 def expand_app_with_n_arg(expr):
     """
-    this is used in the case when expr = f(g)
-    and the expr g has type 'n'
+    This is used in the case when expr is of the form f(g)
+    and the expr g has type n
 
-    the nontrivial case occurs when g is expanded into several n-type wires
+    The nontrivial case occurs when the output of g is 
+    expanded into several n-type wires
     """
     arg = n_type_expand(expr.arg)
     num_arg_outputs = get_num_output_wires(arg)
@@ -57,14 +58,15 @@ def expand_app_with_n_arg(expr):
 
 def expand_app(expr):
     """
-    performs expansion, in the case where expr is a basic application type term
+    Performs expansion on an expr, in the case where expr is a basic application type
 
     Note: the if statement is triggered when the 'arg' is a Func type, e.g. a box, and
     the 'fun' is therefore a frame, and
     the 'arg' no longer fits in the frame after it gets n-expanded
 
-    e.g. this occurs in complicated cases such as 'Alice , Bob and Claire who like beer and wine walked'
-    here, if n expansion is done before s expansion, then
+    e.g. this occurs in complicated cases such as 
+    'Alice , Bob and Claire who like beer and wine walked'
+    Here, if n expansion is done before s expansion, then
     n-expansion causes an 'arg' to change from type nxnxn->s to nxnxn->sxnxn
     """
     fun = n_type_expand(expr.fun)
@@ -77,7 +79,7 @@ def expand_app(expr):
 
 def get_num_output_wires(expr):
     """
-    as the name suggests
+    Find the number of output wires of an expr
     """
     typ = expr_uncurry(expr).typ
     if isinstance(typ, Func):
@@ -87,7 +89,7 @@ def get_num_output_wires(expr):
 
 def get_wire_index_of_head(expr):
     """
-    find the index of the noun wire corresponding to the head of the expr
+    Find the index of the noun wire output corresponding to the head of the expr
     """
     wire_index = 0
     for e in expr_uncurry(expr).arg.expr_list:

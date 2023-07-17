@@ -9,7 +9,7 @@ def is_higher_order(typ):
     """
     Checks if a type is 'higher-order', hence corresponding to a frame
     
-    it is considered higher-order if it is a
+    It is considered higher-order if it is a
     Func type, and furthermore its input is either a
     s-type, p-type, or itself a Func type
     """
@@ -21,7 +21,7 @@ def is_higher_order(typ):
 
 def if_application_pull_out(expr):
     """
-    given an expr that is application type,
+    Given an expr that is application type,
     checks if pulling out can/should be performed
     """
     return expr.expr_type == 'application'\
@@ -31,7 +31,7 @@ def if_application_pull_out(expr):
 
 def b_combinator(expr):
     """
-    input expr is of form
+    Input expr is of form
         f(g(h))
     We change the type of f, to get a new expression f' say,
     such that we can return an expr
@@ -48,7 +48,7 @@ def b_combinator(expr):
 
 def pull_out_application(expr):
     """
-    performs pulling out in the case that the expr is of application type
+    Performs pulling out in the case that the expr is of application type
     """
     f = _pull_out(expr.fun)
     g = _pull_out(expr.arg)
@@ -59,7 +59,7 @@ def pull_out_application(expr):
 
 def _pull_out(expr):
     """
-    the main part of the pull out routine
+    The main part of the pull out routine
     """
     head = expr.head if hasattr(expr, 'head') else None
     typ_index = expr.typ.index
@@ -82,7 +82,7 @@ def _pull_out(expr):
 
 def pull_out(expr):
     """
-    the full pull_out routine consists of doing an inverse_beta pass over the expr,
+    The full pull_out routine consists of doing an inverse_beta pass over the expr,
     before performing _pull_out
 
     inverse_beta puts the expression in such a form that we can also pull out when

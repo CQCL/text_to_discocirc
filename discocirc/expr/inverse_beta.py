@@ -6,7 +6,7 @@ from discocirc.helpers.discocirc_utils import create_random_variable
 
 def expr_has_variable(expr, variable):
     """
-    self explanatory; checks if a given expr contains a certain variable.
+    Checks if a given expr contains a certain variable.
     Does this recursively
     """
     if expr == variable:
@@ -25,7 +25,7 @@ def expr_has_variable(expr, variable):
 
 def expr_has_variables(expr, variables):
     """
-    checks if a given expr contains any of the variables in a given list of variables
+    Checks if a given expr contains any of the variables in a given list of variables
     """
     for variable in variables:
         if expr_has_variable(expr, variable):
@@ -34,15 +34,15 @@ def expr_has_variables(expr, variables):
 
 def remove_free_vars(expr, variables):
     """
-    takes in an expr, and replaces all non-function-type subexprs with dummy variables
+    Takes in an expr, and replaces all non-function-type subexprs with dummy variables
     (unless the non-function-type subexpr contains variables from 'variables' input)
 
-    importantly, this procedure preserves the type and structure of the main expr
+    Importantly, this procedure preserves the type and structure of the main expr
 
-    returns three items: 
+    Returns three items: 
         a list of the extracted free variables, 
         a corresponding list of the dummy variables they were replaced with,
-        the modified expression (containing the dummy variables)
+        the modified expression (containing dummy variables)
     """
     if expr in variables:
         return [], [], expr
@@ -84,10 +84,11 @@ def inverse_beta(expr):
     expressions containing the lambda abstraction type.
 
     Specifically, if we have an expr 
-        lambda x.M
+        λx.M
     where M is a term containing a free variable f, inverse_beta replaces this expr with 
-        ( lambda y.lambda x.M[y/f] ) f
-    i.e. it replaces instances of f with a dummy variable y, and brings f itself outside the lambda scope
+        ( λy.λx.M[y/f] ) f
+    i.e. it replaces instances of f with a dummy variable y, and brings 
+    f itself outside the lambda scope
     """
     if expr.expr_type == 'literal':
         return expr

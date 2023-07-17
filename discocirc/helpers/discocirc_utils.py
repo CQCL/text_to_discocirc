@@ -35,10 +35,9 @@ def get_star_removal_functor():
 
 def change_expr_typ(expr, new_type):
     """
-    does as the name suggests
-    given an expr, we attempt to change its type to new_type
+    Given an expr, we attempt to change its type to new_type
 
-    this is nontrivial, because we need to recursively change
+    This is nontrivial, because we need to recursively change
     the type of the expr so everything remains internally consistent
 
     This function is a little conceptually fraught right now.
