@@ -13,7 +13,7 @@ from discocirc.expr.expr_expand_pronouns import expand_coref
 
 tokenizer = SpacyTokeniser()
 
-def sentence2circ(parser, sentence, semantic_rewrites=True, spacy_model=None, add_indices_to_types=True):
+def sentence2circ(parser, sentence, semantic_rewrites=True, spacy_model=None, add_indices_to_types=True, frame_expansion=True):
     """
     Converts a natural language sentence to a DisCoCirc circuit.
     """
@@ -34,6 +34,7 @@ def sentence2circ(parser, sentence, semantic_rewrites=True, spacy_model=None, ad
     diag = expr_to_diag(expr)
     if semantic_rewrites:
         diag = rewrite(diag, rules='all')
-    diag = (Frame.get_decompose_functor())(diag)
+    if frame_expansion:
+        diag = (Frame.get_decompose_functor())(diag)
 
     return diag
