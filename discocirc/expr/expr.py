@@ -307,8 +307,8 @@ def map_typ_indices(typ, mapping):
             else:
                 new_index.add(idx)
         typ.index = new_index
-    if len(typ.objects) > 1:
-        for obj in typ.objects:
+    if len(typ.inside) > 1:
+        for obj in typ.inside:
             obj.typ = map_typ_indices(obj, mapping)
     return typ
 

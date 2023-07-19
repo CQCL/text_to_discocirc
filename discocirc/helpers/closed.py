@@ -4,7 +4,7 @@
 Implements the free closed monoidal category.
 """
 
-from discopy import monoidal, messages
+from discopy import monoidal, messages, cat
 from lambeq import BobcatParser
 
 
@@ -24,23 +24,26 @@ class Ty(monoidal.Ty):
     ((y → x) → y) @ x
     """
 
-    def __init__(self, *objects, input=None, output=None, index=None):
+    def __init__(self, *inside, input=None, output=None, index=None):
         """
-        Initialize the Ty class. `index` is extra information added to Ty. This is used for coindexing. 
+        Initialize the Ty class. `index` is extra information added to Ty. This is used for coindexing.
         """
-        super().__init__()
         self.input, self.output, self.index = input, output, index
-        if len(objects) > 1:
-            self._objects = tuple(x if isinstance(x, Ty) else Ty(x) for x in objects)
-        elif len(objects) == 1:
-            if isinstance(objects[0], Ty):
+        super().__init__()  # initialize empty monoidal.Ty class
+
+        if len(inside) > 1:
+            self.inside = tuple(x if isinstance(x, Ty) else Ty(x) for x in inside)
+        elif len(inside) == 1:
+            if isinstance(inside[0], Ty):
                 if self.index == None:
-                    self.index = objects[0].index
-                self._objects = objects[0].downgrade()
-            elif isinstance(objects[0], monoidal.Ty):
-                self._objects = objects[0]
+                    self.index = inside[0].index
+                self.inside = (inside[0].downgrade(), )
+            elif isinstance(inside[0], cat.Ob):
+                self.inside = (inside[0], )
+            elif isinstance(inside[0], monoidal.Ty):
+                self.inside = (inside[0].inside[0], )
             else:
-                self._objects = monoidal.Ty(objects[0])
+                self.inside = (cat.Ob(inside[0]), )
 
     def __rshift__(self, other):
         """
@@ -59,12 +62,12 @@ class Ty(monoidal.Ty):
         Return the string representation of the Ty object.
         """
         if index:
-            if len(self._objects) > 1:
+            if len(self.inside) > 1:
                 return f'({super().__str__()}){index_to_string(self.index)}'
             return super().__str__() + f'{index_to_string(self.index)}'
         else:
-            if len(self._objects) > 1:
-                return ' @ '.join(map(lambda x: x.to_string(index), self._objects))
+            if len(self.inside) > 1:
+                return ' @ '.join(map(lambda x: x.to_string(index), self.inside))
             return super().__str__()
 
     def tensor(self, *others):
@@ -76,20 +79,20 @@ class Ty(monoidal.Ty):
                 raise TypeError(messages.type_err(monoidal.Ty, other))
         objects = []
         for t in (self,) + others:
-            if len(t.objects) > 1:
-                objects += t.objects
-            elif len(t.objects) == 1:
+            if len(t.inside) > 1:
+                objects += t.inside
+            elif len(t.inside) == 1:
                 objects.append(t)
         return Ty(*objects)
 
     @staticmethod
-    def upgrade(old):
+    def upgrade(old: monoidal.Ty):
         """
         Upgrade a monoidal.Ty to a Ty.
         """
         if len(old) == 1 and isinstance(old[0], Func):
             return old[0]
-        return Ty(*old.objects)
+        return Ty(*old.inside)
 
     def downgrade(self):
         """
@@ -97,7 +100,7 @@ class Ty(monoidal.Ty):
         """
         if isinstance(self, Func):
             return self
-        return super().downgrade()
+        return monoidal.Ty(*self.inside)
 
 
 class Func(Ty):
@@ -122,7 +125,7 @@ class Func(Ty):
         Return the string representation of the Func object.
         """
         return self.to_string()
-    
+
     def to_string(self, index=True):
         """
         Return the string representation of the Func object.
@@ -158,8 +161,14 @@ def biclosed_to_closed(x):
         return Func(biclosed_to_closed(x.left), biclosed_to_closed(x.right))
     elif x.is_over:
         return Func(biclosed_to_closed(x.right), biclosed_to_closed(x.left))
-    elif len(x.inside) > 1:
-        return Ty(*[biclosed_to_closed(y) for y in x.inside])
+    else:
+        inside = []
+        for y in x.inside:
+            if isinstance(y, monoidal.Ty):
+                inside.append(biclosed_to_closed(y))
+            else:
+                inside.append(y)
+        return Ty(*inside)
 
 
 def ccg_cat_to_closed(cat, word_str=None):
@@ -192,9 +201,9 @@ def downgrade_to_monoidal(typ):
         return Ty.downgrade(typ)
     elif len(typ) > 1:
         objects = []
-        for t in typ.objects:
+        for t in typ.inside:
             if isinstance(t, monoidal.Ty) and not isinstance(t, Func):
-                objects.extend(t.objects)
+                objects.extend(t.inside)
             else:
                 objects.append(downgrade_to_monoidal(t))
         typ = monoidal.Ty(*objects)
