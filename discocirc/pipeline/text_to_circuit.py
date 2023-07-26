@@ -1,7 +1,8 @@
 import numpy as np
 import spacy
-from discopy import hypergraph
-from discopy.monoidal import Box, Functor, Ty
+from discopy import symmetric
+from discopy.monoidal import Functor, Ty
+from discopy.symmetric import Hypergraph, Box
 from lambeq import BobcatParser
 
 from discocirc.helpers.discocirc_utils import get_last_initial_noun
@@ -12,6 +13,13 @@ parser = BobcatParser(verbose='suppress')
 # Load a SpaCy English model
 spacy_model = spacy.load('en_core_web_trf')
 spacy_model.add_pipe('coreferee')
+
+# convert to symmetric monoidal category
+sym_func = Functor(
+    cod=symmetric.Category,
+    ob=lambda ob: ob,
+    ar=lambda box: symmetric.Box(box.name, box.dom, box.cod))
+
 
 # NOTE: this function may become redundant
 def noun_sort(circ):
@@ -71,7 +79,7 @@ def sentence_list_to_circuit(context, simplify_swaps=True, wire_order='intro_ord
         context_circ = noun_normal_form(context_circ)
         num_nouns = get_last_initial_noun(context_circ) + 1
         nouns = context_circ[:num_nouns]
-        back_n_forth = lambda f: hypergraph.Diagram.upgrade(f).downgrade()
+        back_n_forth = lambda f: Hypergraph.from_diagram(f).to_diagram()
         context_circ = back_n_forth(context_circ[num_nouns:])
         context_circ = nouns >> context_circ
 
@@ -89,7 +97,7 @@ def text_to_circuit(text, **kwargs):
         s = sent.text
         sentences.append(s)
     return sentence_list_to_circuit(sentences, spacy_model=spacy_model, **kwargs)
-    
+
 def noun_normal_form(circuit):
     """
     Takes in a circuit, and returns it in a normal form, where all the
@@ -101,15 +109,15 @@ def noun_normal_form(circuit):
 
 def collect_normal_nouns(circuit):
     """
-    Takes in a circuit in noun normal form, 
+    Takes in a circuit in noun normal form,
     and returns a list of the pulled up nouns
     """
     return circuit.boxes[:get_last_initial_noun(circuit) + 1]
 
 def compose_circuits(circ1, circ2, wire_order='intro_order'):
     """
-    Return the sequential composite roughly corresponding 
-    to circ2 << circ 1, where common noun 
+    Return the sequential composite roughly corresponding
+    to circ2 << circ 1, where common noun
     wires are composed
 
     Parameters:
@@ -123,8 +131,12 @@ def compose_circuits(circ1, circ2, wire_order='intro_order'):
         'update_order' : the most recently updated wires occur on the right
         'intro_order' : the most recently introduced wires occur on the right
     """
-    
+
     # pull nouns to top and order them with offsets 0, 1, 2, ...
+
+    circ1 = sym_func(circ1)
+    circ2 = sym_func(circ2)
+
     circ1 = noun_normal_form(circ1)
     circ2 = noun_normal_form(circ2)
 
@@ -138,7 +150,7 @@ def compose_circuits(circ1, circ2, wire_order='intro_order'):
     for i in range(len(nouns_circ2)):
         if nouns_circ2_name[i] in nouns_circ1_name:
             ob_map[nouns_circ2[i].cod] = nouns_circ1[nouns_circ1_name.index(nouns_circ2_name[i])].cod
-    
+
     # the two functions below are used to define a functor
     def ob_map2(obj):
         if obj in ob_map.keys():
@@ -147,8 +159,8 @@ def compose_circuits(circ1, circ2, wire_order='intro_order'):
 
     def ar_map(box):
         return Box(box.name, functor(box.dom), functor(box.cod))
-    
-    functor = Functor(ob_map2, ar_map)
+
+    functor = Functor(ob_map2, ar_map, cod=symmetric.Category)
     circ2 = functor(circ2)
     nouns_circ2 = collect_normal_nouns(circ2)
     # collect nouns in circ2 not in circ1
@@ -177,12 +189,12 @@ def compose_circuits(circ1, circ2, wire_order='intro_order'):
     # generate the required permutation (as a list)
     perm = [nouns_circ2.index(x) for x in nouns_circ1]
     # generate the inverse permutation (as a list)
-    inv_perm = list(np.argsort(perm))
+    inv_perm = np.argsort(perm).astype(int).tolist()
 
     # NOTE: inv_perm and perm behaviour in the permute() function
     if wire_order == 'intro_order':
         # adopt the noun ordering of circ1
-        final_circ = circ1.permute(*perm) >> circ2[len(nouns_circ2):].permute(*inv_perm)
+        final_circ = circ1.permute(*inv_perm) >> circ2[len(nouns_circ2):].permute(*perm)
     elif wire_order == 'update_order':
         # adopt the noun ordering of circ2
         final_circ = circ2[:len(nouns_circ2)]

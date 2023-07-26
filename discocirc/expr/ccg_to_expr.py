@@ -88,7 +88,7 @@ def ccg_to_expr(ccg_parse):
     if result is None:
         raise NotImplementedError(ccg_parse.rule)
 
-    if hasattr(ccg_parse, "original"):
+    if 'original' in ccg_parse.metadata:
         if ccg_parse.metadata['original'].cat.var in ccg_parse.metadata['original'].var_map.keys():
             result.head = ccg_parse.metadata['original'].variable.fillers
         else:

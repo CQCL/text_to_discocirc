@@ -37,7 +37,7 @@ class Ty(monoidal.Ty):
             if isinstance(inside[0], Ty):
                 if self.index == None:
                     self.index = inside[0].index
-                self.inside = (inside[0].downgrade(), )
+                self.inside = inside[0].inside
             elif isinstance(inside[0], cat.Ob):
                 self.inside = (inside[0], )
             elif isinstance(inside[0], monoidal.Ty):

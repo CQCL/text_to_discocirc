@@ -110,11 +110,11 @@ class Expr:
         app_expr.fun = fun
         app_expr.arg = arg
         return app_expr
-    
+
     @staticmethod
     def lst(expr_list, interchange='auto', head=None):
         """
-        Returns a new Expr object representing a list of given Expr objects. 
+        Returns a new Expr object representing a list of given Expr objects.
         """
         if interchange == 'auto':
             interchange = if_interchange_list_type(expr_list)

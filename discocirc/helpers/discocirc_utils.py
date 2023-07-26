@@ -1,7 +1,6 @@
 from argparse import ArgumentError
 from copy import deepcopy
-from discopy import rigid
-from discopy.rigid import Ty
+from discopy import monoidal
 from discopy.monoidal import Functor
 
 from discocirc.expr.expr import Expr, expr_type_recursion
@@ -13,9 +12,9 @@ def get_last_initial_noun(circ):
     takes in a circuit with some number of states as the initial boxes
     returns the index of the last of these initial states
     """
-    assert(circ.boxes[0].dom == rigid.Ty())   # check that the first box is a noun
+    assert(circ.boxes[0].dom == monoidal.Ty())   # check that the first box is a noun
     for i in range(len(circ.boxes) - 1):
-        if circ.boxes[i].dom == rigid.Ty() and circ.boxes[i + 1].dom != rigid.Ty():
+        if circ.boxes[i].dom == monoidal.Ty() and circ.boxes[i + 1].dom != monoidal.Ty():
             return i
     # I think we only reach here if the entire circuit consists of nouns
     return len(circ.boxes)-1
@@ -26,9 +25,9 @@ def get_star_removal_functor():
     Get a functor, which removes all instances of the star type from a diagram.
     """
     def star_removal_ob(ty):
-        return rigid.Ty() if ty.name == "*" else ty
+        return monoidal.Ty() if ty.name == "*" else ty
     def star_removal_ar(box):
-        return rigid.Box(box.name, f(box.dom), f(box.cod))
+        return monoidal.Box(box.name, f(box.dom), f(box.cod))
     f = Functor(ob=star_removal_ob, ar=star_removal_ar)
     return f
 
