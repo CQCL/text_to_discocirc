@@ -349,24 +349,25 @@ def get_lambda_string(expr, index):
     """
     Returns a string representing a lambda Expr object.
     """
-    var_temp = deepcopy(expr.var)
-    if hasattr(var_temp, "name"):
-        var_temp.name = 'λ ' + var_temp.name
-        var = var_temp.to_string(index)
-    else:
-        var = 'λ ' + var_temp.to_string(index)
-    body = expr.body.to_string(index)
+    tb = PrettyTable(["lambda", "var", "dot", "body"])
+    tb.border=False
+    tb.preserve_internal_border = False
+    tb.header = False
+    tb.left_padding_width = 0
+    tb.right_padding_width = 0
+    tb.align = "l"
+    tb.add_row(["λ ", expr.var.to_string(index), " . ", expr.body.to_string(index)])
+    tb.valign["lambda"] = "m"
+    tb.valign["var"] = "b"
+    tb.valign["dot"] = "m"
+    tb.valign["body"] = "b"
+    string = tb.get_string()
+    length = len(string.splitlines()[-1])
+    string += '\n' + '─' * length + '\n'
     typ = expr.typ.to_string(index)
-    var_lines = var.split('\n')
-    expr_lines = body.split('\n')
-    empty_expr_lines = [' ' * len(max(expr_lines))] * (len(var_lines) - len(expr_lines))
-    expr_lines = empty_expr_lines + expr_lines
-    empty_var_lines = [' ' * len(max(var_lines))] * (len(expr_lines) - len(var_lines))
-    var_lines = empty_var_lines + var_lines
-    string = ['  '.join([var_l, expr_l]) for var_l, expr_l in zip(var_lines, expr_lines)]
-    string.append('─' * len(string[0]))
-    string.append(f'{typ:^{len(string[0])}}')
-    return '\n'.join(string)
+    string += f'{typ:^{length}}'
+    return string
+   
 
 def get_application_string(expr, index):
     """
