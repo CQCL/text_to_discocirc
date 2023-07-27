@@ -144,3 +144,6 @@ wandb/
 src/local_tests
 
 discocirc/version.py
+
+data/ccgbank
+.DS_Store
