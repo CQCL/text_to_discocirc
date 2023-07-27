@@ -1,7 +1,9 @@
 import numpy as np
+import re
 import spacy
 from discopy import hypergraph
-from discopy.monoidal import Box, Functor, Ty
+from discopy.monoidal import Box, Ty
+from discocirc.diag.frame import Functor, Frame
 from lambeq import BobcatParser
 
 from discocirc.helpers.discocirc_utils import get_last_initial_noun
@@ -29,7 +31,7 @@ def noun_sort(circ):
 
     # perform bubblesort on nouns
     swapped = True
-    while swapped == True:  # keep going as long as swaps are happening
+    while swapped:  # keep going as long as swaps are happening
         swapped = False
         for i in range(index, 0, -1):
             if circ.offsets[i] <= circ.offsets[i - 1]:
@@ -151,7 +153,10 @@ def compose_circuits(circ1, circ2, wire_order='intro_order'):
     def ar_map(box):
         return Box(box.name, functor(box.dom), functor(box.cod))
     
-    functor = Functor(ob_map2, ar_map)
+    def frame_map(box):
+        return Frame(box.name, functor(box.dom), functor(box.cod), [functor(inside) for inside in box.insides])
+    
+    functor = Functor(ob_map2, ar_map, frame_map)
     circ2 = functor(circ2)
     nouns_circ2 = collect_normal_nouns(circ2)
     # collect nouns in circ2 not in circ1
@@ -178,7 +183,14 @@ def compose_circuits(circ1, circ2, wire_order='intro_order'):
     assert len(nouns_circ1) == len(nouns_circ2)
 
     # generate the required permutation (as a list)
-    perm = [nouns_circ2.index(x) for x in nouns_circ1]
+    # NOTE: this is a bit of a hack
+    # We check if the types have indices via this regex
+    regex = r"n\['\w+_\d+_\d+'\]"
+    if re.match(regex, circ1.cod[0].name):
+        dom_circ2 = circ2[len(nouns_circ2):].dom.objects
+        perm = [dom_circ2.index(x) for x in circ1.cod]
+    else:
+        perm = [nouns_circ2.index(x) for x in nouns_circ1]
     # generate the inverse permutation (as a list)
     inv_perm = list(np.argsort(perm))
 

@@ -1,5 +1,7 @@
 from lambeq import SpacyTokeniser
 
+import warnings
+
 from discocirc.expr.n_type_expand import n_type_expand
 from discocirc.expr.s_type_expand import p_type_expand, s_type_expand
 from discocirc.expr.coordination_expand import coordination_expand
@@ -31,6 +33,8 @@ def sentence2circ(parser, sentence, semantic_rewrites=True, spacy_model=None, ad
         expr = expand_coref(expr, doc)
     if add_indices_to_types:
         expr = expr_add_indices_to_types(expr)
+    else: 
+        warnings.warn('If you do not add indices to the types, the composition of sentences might be incorrect.')
     diag = expr_to_diag(expr)
     if semantic_rewrites:
         diag = rewrite(diag, rules='all')
