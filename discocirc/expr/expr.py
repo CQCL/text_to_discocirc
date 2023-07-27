@@ -356,7 +356,7 @@ def get_lambda_string(expr, index):
     tb.left_padding_width = 0
     tb.right_padding_width = 0
     tb.align = "l"
-    tb.add_row(["λ ", expr.var.to_string(index), " . ", expr.body.to_string(index)])
+    tb.add_row(["λ ", expr.var.to_string(index), " • ", expr.body.to_string(index)])
     tb.valign["lambda"] = "m"
     tb.valign["var"] = "b"
     tb.valign["dot"] = "m"
