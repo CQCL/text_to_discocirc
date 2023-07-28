@@ -2,7 +2,9 @@ import spacy
 from lambeq import BobcatParser
 from parameterized import parameterized
 
+from helpers.ccg_to_diag_test_pipeline import ccg_to_diag_test
 from helpers.UnitTestBaseClass import UnitTestBaseClass
+
 sentences = [
     "Alice thinks she likes Bob",
     "Charles walks and Alice likes her work , Bob and her cat",
@@ -38,7 +40,7 @@ sentences = [
     'Although he was busy with his boring work , Peter had enough of it',
     'He and his wife decided they needed a holiday',
     'They travelled to Spain because they loved the country very much',
-    'Alice\'s mother likes her cat',
+    'Alice \'s mother likes her cat',
     'I thought the plane would be awful , but it was not',
     'Looking around he found the letter',
     'Alice quickly and slowly runs',
@@ -97,9 +99,7 @@ sentences = [
     'Alice , Bob and John who drank water , beer and wine walked',
     'Alice and Bob who drank water and wine walked',
     'If a farmer owns a donkey he beats it',
-
 ]
-from helpers.ccg_to_diag_test_pipeline import ccg_to_diag_test
 
 parser = BobcatParser()
 config = {
@@ -107,6 +107,7 @@ config = {
     "draw_steps": False,
     "type_check_ccg": True,
     "semantic_rewrites": True,
+    "coreference_resolution": True,
 }
 spacy_model = spacy.load('en_core_web_trf')
 spacy_model.add_pipe('coreferee')

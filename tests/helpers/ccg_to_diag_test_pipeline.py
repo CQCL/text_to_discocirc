@@ -1,7 +1,7 @@
 from discocirc.diag import Frame
 from discocirc.expr import expr_to_diag, pull_out
 from discocirc.expr.ccg_to_expr import ccg_to_expr
-from discocirc.expr.ccg_type_check import expr_type_check
+from discocirc.expr.expr_type_check import expr_type_check
 from discocirc.expr.coordination_expand import coordination_expand
 from discocirc.expr.n_type_expand import n_type_expand
 from discocirc.expr.s_type_expand import s_type_expand, p_type_expand
@@ -103,16 +103,20 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
         diag.draw()
 
     # ------- Step 7: Co-ref expansion -----------
-    if spacy_model and sentence:
-        doc = spacy_model(sentence)
-        expr = expand_coref(expr, doc)
+    if config["coreference_resolution"]:
+        if spacy_model and sentence:
+            doc = spacy_model(sentence)
+            expr = expand_coref(expr, doc)
 
-        print(doc._.coref_chains)
+            print(doc._.coref_chains)
 
-        if config["draw_steps"]:
-            diag = expr_to_diag(expr_add_indices_to_types(expr))
-            diag = (Frame.get_decompose_functor())(diag)
-            diag.draw()
+            if config["draw_steps"]:
+                diag = expr_to_diag(expr_add_indices_to_types(expr))
+                diag = (Frame.get_decompose_functor())(diag)
+                diag.draw()
+        else:
+            print("Warning: Spacy model and sentence not provided. "
+                  "Skipping coreference resolution.")
 
     # ------- Step 8: Expr to Diag -----------
     diag = expr_to_diag(expr_add_indices_to_types(expr))
