@@ -7,8 +7,8 @@ from discocirc.expr.n_type_expand import n_type_expand
 from discocirc.expr.s_type_expand import s_type_expand, p_type_expand
 from discocirc.helpers.discocirc_utils import expr_add_indices_to_types
 from discocirc.semantics.rewrite import rewrite
-from discocirc.expr.expr_uncurry import expr_uncurry
-from discocirc.expr.expr_expand_pronouns import expand_coref
+from discocirc.expr.uncurry import expr_uncurry
+from discocirc.expr.resolve_pronouns import expand_coref
 
 
 def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=None):

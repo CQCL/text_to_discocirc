@@ -6,12 +6,12 @@ from discocirc.expr.n_type_expand import n_type_expand
 from discocirc.expr.s_type_expand import p_type_expand, s_type_expand
 from discocirc.expr.coordination_expand import coordination_expand
 from discocirc.expr.ccg_to_expr import ccg_to_expr
-from discocirc.expr.expr_to_diag import expr_to_diag
+from discocirc.expr.to_discopy_diagram import expr_to_diag
 from discocirc.diag.frame import Frame
 from discocirc.expr.pull_out import pull_out
 from discocirc.helpers.discocirc_utils import expr_add_indices_to_types
 from discocirc.semantics.rewrite import rewrite
-from discocirc.expr.expr_expand_pronouns import expand_coref
+from discocirc.expr.resolve_pronouns import expand_coref
 
 tokenizer = SpacyTokeniser()
 

@@ -1,10 +1,10 @@
 from copy import deepcopy
 from random import randint
-from discocirc.expr.expr_normal_form import expr_normal_form
+from discocirc.expr.normal_form import expr_normal_form
 
 from discocirc.helpers.closed import Ty, Func
 from discocirc.expr import Expr
-from discocirc.expr.expr_uncurry import expr_uncurry
+from discocirc.expr.uncurry import expr_uncurry
 from discocirc.helpers.discocirc_utils import create_random_variable, \
     create_lambda_swap
 from discocirc.expr import pull_out
