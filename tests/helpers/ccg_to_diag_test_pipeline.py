@@ -1,7 +1,7 @@
 from discocirc.diag import Frame
 from discocirc.expr import expr_to_diag, pull_out
 from discocirc.expr.ccg_to_expr import ccg_to_expr
-from discocirc.expr.expr_type_check import type_check
+from discocirc.expr.type_check import type_check
 from discocirc.expr.coordination_expand import coordination_expand
 from discocirc.expr.n_type_expand import n_type_expand
 from discocirc.expr.s_type_expand import s_type_expand, p_type_expand
