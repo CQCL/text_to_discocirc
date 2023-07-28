@@ -1,46 +1,55 @@
-# This function was written to check, if an expr is typed correctly.
-# It was only used for testing. However, it is not used anymore as it
-# does not work with coindexing.
-
-from discocirc.helpers.closed import Ty
+from discocirc.helpers.closed import Func, Ty, uncurry_types
 
 
 def expr_type_check(expr):
+    """
+    Checks if the expression is well-typed. Returns the type if it is, else reutrns False
+    """
     if expr.expr_type == "literal":
         return expr.typ
 
     elif expr.expr_type == "list":
         expected_type = Ty()
+        interchanged_expected_type_input = Ty()
+        interchanged_expected_type_output = Ty()
         for e in expr.expr_list:
             element_type = expr_type_check(e)
-            if element_type is None:
-                return None
+            if not element_type:
+                return False
             expected_type = expected_type @ element_type
+            if isinstance(element_type, Func):
+                element_type = uncurry_types(element_type)
+                interchanged_expected_type_input @= element_type.input
+                interchanged_expected_type_output @= element_type.output
+            else:
+                interchanged_expected_type_output @= element_type
+        interchanged_expected_type = interchanged_expected_type_input >> interchanged_expected_type_output
 
         if expr.typ == expected_type:
             return expected_type
-        else:
-            return None
+        elif expr.typ == interchanged_expected_type:
+            return interchanged_expected_type
+        return False
 
     elif expr.expr_type == "application":
         type_arg = expr_type_check(expr.arg)
         type_expr = expr_type_check(expr.fun)
 
-        if type_arg is None or type_expr is None:
-            return None
+        if not type_arg or not type_expr:
+            return False
 
         if expr.typ != type_expr.output or type_expr.input != type_arg:
-            return None
+            return False
 
         return expr.typ
     elif expr.expr_type == "lambda":
         type_var = expr_type_check(expr.var)
         type_expr = expr_type_check(expr.body)
 
-        if type_var is None or type_expr is None:
-            return None
+        if not type_var or not type_expr:
+            return False
 
         if expr.typ != type_var >> type_expr:
-            return None
+            return False
 
         return expr.typ
