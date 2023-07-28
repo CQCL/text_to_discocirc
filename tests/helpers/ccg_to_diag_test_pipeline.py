@@ -1,13 +1,13 @@
 from discocirc.diag import Frame
 from discocirc.expr import expr_to_diag, pull_out
 from discocirc.expr.ccg_to_expr import ccg_to_expr
-from discocirc.expr.expr_type_check import expr_type_check
+from discocirc.expr.expr_type_check import type_check
 from discocirc.expr.coordination_expand import coordination_expand
 from discocirc.expr.n_type_expand import n_type_expand
 from discocirc.expr.s_type_expand import s_type_expand, p_type_expand
 from discocirc.helpers.discocirc_utils import expr_add_indices_to_types
 from discocirc.semantics.rewrite import rewrite
-from discocirc.expr.uncurry import expr_uncurry
+from discocirc.expr.uncurry import uncurry
 from discocirc.expr.resolve_pronouns import expand_coref
 
 
@@ -19,7 +19,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
     # ------- Step 1: CCG to Expr -----------
     expr = ccg_to_expr(ccg_parse)
     if config["type_check_ccg"]:
-        unittest.assertTrue(expr_type_check(expr), msg="Typechecking ccg to expr")
+        unittest.assertTrue(type_check(expr), msg="Typechecking ccg to expr")
 
     if config["draw_steps"]:
         diag = expr_to_diag(expr_add_indices_to_types(expr))
@@ -29,7 +29,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
     # ------- Step 2: Pulling out -----------
     expr = pull_out(expr)
     if config["type_check_ccg"]:
-        unittest.assertTrue(expr_type_check(expr),
+        unittest.assertTrue(type_check(expr),
                             msg="Typechecking pulled out expr")
 
     # TODO: write test to check that all types have been pulled out
@@ -44,7 +44,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
     expr = coordination_expand(expr)
 
     if config["type_check_ccg"]:
-        unittest.assertTrue(expr_type_check(expr),
+        unittest.assertTrue(type_check(expr),
                             msg="Typechecking coordination expanded expr")
 
     if config["draw_steps"]:
@@ -55,7 +55,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
     # ------- Step 4: Pulling out again -----------
     expr = pull_out(expr)
     if config["type_check_ccg"]:
-        unittest.assertTrue(expr_type_check(expr),
+        unittest.assertTrue(type_check(expr),
                             msg="Typechecking pulled out expr")
 
     if config["draw_steps"]:
@@ -67,7 +67,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
     expr = n_type_expand(expr)
 
     if config["type_check_ccg"]:
-        unittest.assertTrue(expr_type_check(expr),
+        unittest.assertTrue(type_check(expr),
                             msg="Typechecking n_type expanded expr")
 
     if config["draw_steps"]:
@@ -79,7 +79,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
     expr = p_type_expand(expr)
 
     if config["type_check_ccg"]:
-        unittest.assertTrue(expr_type_check(expr),
+        unittest.assertTrue(type_check(expr),
                             msg="Typechecking s_type expanded expr")
 
     if config["draw_steps"]:
@@ -91,7 +91,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
     expr = s_type_expand(expr)
 
     if config["type_check_ccg"]:
-        unittest.assertTrue(expr_type_check(expr),
+        unittest.assertTrue(type_check(expr),
                             msg="Typechecking s_type expanded expr")
 
     # TODO: write test to check that all types have been expanded

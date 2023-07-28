@@ -3,7 +3,7 @@ from discocirc.helpers.closed import Func
 from discocirc.helpers.discocirc_utils import change_expr_typ
 
 
-def expr_normal_form(expr):
+def normal_form(expr):
     """
     Given an expr put it into normal form. Normal form is where any chain of
     applications first applies higher order functions and then states.
@@ -15,10 +15,10 @@ def expr_normal_form(expr):
     if expr.expr_type == "literal":
         return Expr.literal(expr.name, expr.typ, expr.head)
     elif expr.expr_type == "lambda":
-        return Expr.lmbda(expr_normal_form(expr.var),
-                          expr_normal_form(expr.body), expr.head)
+        return Expr.lmbda(normal_form(expr.var),
+                          normal_form(expr.body), expr.head)
     elif expr.expr_type == "list":
-        return Expr.lst([expr_normal_form(e) for e in expr.expr_list],
+        return Expr.lst([normal_form(e) for e in expr.expr_list],
                         interchange=expr.interchange,
                         head=expr.head)
     elif expr.expr_type == "application":
@@ -33,7 +33,7 @@ def expr_normal_form(expr):
                 state_vars.append(body.arg)
             body = body.fun
 
-        body = expr_normal_form(body)
+        body = normal_form(body)
 
         new_type = body.typ
         for _ in function_vars + state_vars:

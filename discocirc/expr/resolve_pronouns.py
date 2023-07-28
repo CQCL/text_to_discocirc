@@ -1,10 +1,10 @@
 from copy import deepcopy
 from random import randint
-from discocirc.expr.normal_form import expr_normal_form
+from discocirc.expr.normal_form import normal_form
 
 from discocirc.helpers.closed import Ty, Func
 from discocirc.expr import Expr
-from discocirc.expr.uncurry import expr_uncurry
+from discocirc.expr.uncurry import uncurry
 from discocirc.helpers.discocirc_utils import create_random_variable, \
     create_lambda_swap
 from discocirc.expr import pull_out
@@ -139,7 +139,7 @@ def create_pp_block(most_specific, pps):
         ids.append(Expr.lst(lst))
 
     for i in range(1, len(new_pps)):
-        swap = expr_uncurry(
+        swap = uncurry(
             create_lambda_swap(
                 list(range(0, i - 1)) +
                 [i + len(most_specific) - 1] +
@@ -155,7 +155,7 @@ def create_pp_block(most_specific, pps):
     # The second to last wires are the most specific mentions, which have to be
     # moved back to the beginning.
     no_wires = len(most_specific) + len(pps)
-    unswap = expr_uncurry(create_lambda_swap(
+    unswap = uncurry(create_lambda_swap(
         list(range(no_wires - len(most_specific) - 1, no_wires - 1)) +
         list(range(len(pps) - 1)) +
         [no_wires - 1]
@@ -273,7 +273,7 @@ def expand_possessive_pronouns(expr, all_pp_chains):
         args.append(remainder.arg)
         remainder = remainder.fun
 
-    new_outside = expr_uncurry(remainder)
+    new_outside = uncurry(remainder)
 
     # Expand possessive pronouns
     combined_swaps = None
@@ -296,7 +296,7 @@ def expand_possessive_pronouns(expr, all_pp_chains):
     arg_list = args
     if arg_counter > 1:
         arg_list = args[:-arg_counter + 1]
-    swapped_args = Expr.apply(expr_uncurry(swapped_args), Expr.lst(arg_list),
+    swapped_args = Expr.apply(uncurry(swapped_args), Expr.lst(arg_list),
                               reduce=False)
 
     # Combine
@@ -392,7 +392,7 @@ def expand_coref(expr, doc):
             all_personal.append((most_specific, personal_in_chain))
 
     if len(all_possessive) > 0:
-        expr = expr_normal_form(expr)
+        expr = normal_form(expr)
         expr = expand_possessive_pronouns(expr, all_possessive)
 
     if len(all_personal) > 0:

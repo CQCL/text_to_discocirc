@@ -1,7 +1,7 @@
 from discocirc.helpers.closed import Func, Ty, uncurry_types
 
 
-def expr_type_check(expr):
+def type_check(expr):
     """
     Checks if the expression is well-typed. Returns the type if it is, else reutrns False
     """
@@ -13,7 +13,7 @@ def expr_type_check(expr):
         interchanged_expected_type_input = Ty()
         interchanged_expected_type_output = Ty()
         for e in expr.expr_list:
-            element_type = expr_type_check(e)
+            element_type = type_check(e)
             if not element_type:
                 return False
             expected_type = expected_type @ element_type
@@ -32,8 +32,8 @@ def expr_type_check(expr):
         return False
 
     elif expr.expr_type == "application":
-        type_arg = expr_type_check(expr.arg)
-        type_expr = expr_type_check(expr.fun)
+        type_arg = type_check(expr.arg)
+        type_expr = type_check(expr.fun)
 
         if not type_arg or not type_expr:
             return False
@@ -43,8 +43,8 @@ def expr_type_check(expr):
 
         return expr.typ
     elif expr.expr_type == "lambda":
-        type_var = expr_type_check(expr.var)
-        type_expr = expr_type_check(expr.body)
+        type_var = type_check(expr.var)
+        type_expr = type_check(expr.body)
 
         if not type_var or not type_expr:
             return False

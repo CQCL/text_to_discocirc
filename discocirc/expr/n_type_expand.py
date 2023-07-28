@@ -1,6 +1,6 @@
 
 from discocirc.expr.expr import Expr, expr_type_recursion
-from discocirc.expr.uncurry import expr_uncurry
+from discocirc.expr.uncurry import uncurry
 from discocirc.expr.s_type_expand import expand_closed_type
 from discocirc.helpers.closed import Func, Ty
 from discocirc.helpers.discocirc_utils import change_expr_typ, create_random_variable
@@ -81,7 +81,7 @@ def get_num_output_wires(expr):
     """
     Find the number of output wires of an expr
     """
-    typ = expr_uncurry(expr).typ
+    typ = uncurry(expr).typ
     if isinstance(typ, Func):
         return len(typ.output)
     else:
@@ -92,7 +92,7 @@ def get_wire_index_of_head(expr):
     Find the index of the noun wire output corresponding to the head of the expr
     """
     wire_index = 0
-    for e in expr_uncurry(expr).arg.expr_list:
+    for e in uncurry(expr).arg.expr_list:
         if e.typ == Ty('n'):
             if e.head == expr.head:
                 break

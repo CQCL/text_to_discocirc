@@ -37,7 +37,7 @@ def expand_closed_type(typ, expand_which_type):
         typ.index = index
     return typ
 
-def expr_type_expand(expr, which_type):
+def type_expand(expr, which_type):
     """
     Takes an expr, and applies the appropriate type expansion
 
@@ -53,7 +53,7 @@ def expr_type_expand(expr, which_type):
         new_type = expand_closed_type(expr.typ, which_type)
         return Expr.literal(expr.name, new_type, head=expr.head)
     elif expr.expr_type == "application":
-        arg = expr_type_expand(expr.arg, which_type)
+        arg = type_expand(expr.arg, which_type)
         orig_types = arg.typ
         new_types = expand_closed_type(expr.arg.typ,which_type)
         if add_indices_to_types(orig_types) != add_indices_to_types(new_types):
@@ -73,13 +73,13 @@ def expr_type_expand(expr, which_type):
             arg = swap(arg)
             for temp_var in reversed(temp_vars):
                 arg = Expr.lmbda(temp_var, arg)
-        fun = expr_type_expand(expr.fun, which_type)
+        fun = type_expand(expr.fun, which_type)
         return fun(arg)
     else:
-        return expr_type_recursion(expr, expr_type_expand, which_type=which_type)
+        return expr_type_recursion(expr, type_expand, which_type=which_type)
 
 def s_type_expand(expr):
-    return expr_type_expand(expr, Ty('s'))
+    return type_expand(expr, Ty('s'))
 
 def p_type_expand(expr):
     """
@@ -88,4 +88,4 @@ def p_type_expand(expr):
     This is not always desirable in reality, as some instances of p types
     should instead be treated like n types, and expanded analogously to n-type expansion
     """
-    return expr_type_expand(expr, Ty('p'))
+    return type_expand(expr, Ty('p'))
