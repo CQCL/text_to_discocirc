@@ -6,7 +6,6 @@ from discocirc.helpers.discocirc_utils import add_indices_to_types, create_lambd
 def expand_closed_type(typ, expand_which_type):
     """
     Takes in a type, and replaces it with an appropriately expanded type
-
     expand_which_type in practice is set to either Ty('s') or Ty('p')
     """
     if not isinstance(typ, Func):
@@ -18,16 +17,16 @@ def expand_closed_type(typ, expand_which_type):
         args.append(typ.input)
         indices.append(typ.index)
         typ = typ.output
-    n_nouns = sum([1 for i in Ty('').tensor(*args) if i == Ty('n')])
     noun_args = reversed([i for i in args if i == Ty('n')])
     if typ == expand_which_type:
         typ = Ty().tensor(*noun_args)
-    elif len(typ) > 1 and expand_which_type != Ty('n'): #TODO coindexing in this case
-        num_output_nouns = sum([1 for t in typ if t == Ty('n')])
+    elif len(typ) > 1 and expand_which_type != Ty('n'):
+        nouns_in_output = [t.index for t in typ if t == Ty('n')]
         new_typ = Ty()
         for t in typ:
             if Ty(t) == expand_which_type:
-                new_typ = new_typ @ Ty().tensor(*([Ty('n')] * (n_nouns - num_output_nouns)))
+                nouns_not_accounted_for = [n for n in reversed(args) if n.index not in nouns_in_output]
+                new_typ = new_typ @ Ty().tensor(*nouns_not_accounted_for)
             else:
                 t = Ty(t) if not isinstance(t, Func) else t
                 new_typ = new_typ @ t
@@ -39,7 +38,7 @@ def expand_closed_type(typ, expand_which_type):
 
 def type_expand(expr, which_type):
     """
-    Takes an expr, and applies the appropriate type expansion
+    Takes an expr, and applies the appropriate type expansion.
 
     which_type in practice is set to either Ty('s') or Ty('p')
 
@@ -55,7 +54,7 @@ def type_expand(expr, which_type):
     elif expr.expr_type == "application":
         arg = type_expand(expr.arg, which_type)
         orig_types = arg.typ
-        new_types = expand_closed_type(expr.arg.typ,which_type)
+        new_types = expand_closed_type(expr.arg.typ, which_type)
         if add_indices_to_types(orig_types) != add_indices_to_types(new_types):
             # if types do not match, need to compose arg w/ appropriate swap
             orig_types = uncurry_types(orig_types, uncurry_everything=True)
