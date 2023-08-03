@@ -52,15 +52,14 @@ def ccg_to_expr(ccg_parse):
             or ccg_parse.rule == CCGRule.BACKWARD_CROSSED_COMPOSITION:
         result = composition(ccg_parse, children[1], children[0])
     elif ccg_parse.rule == CCGRule.CONJUNCTION:
-        first_word = ccg_parse.children[0].biclosed_type
-        if CCGType.conjoinable(first_word):
+        if ccg_parse.children[0].biclosed_type.is_conjoinable:
             w0, w1 = 0, 1
         else:
             w0, w1 = 1, 0
         # w0, w1 = 0, 1 if CCGAtomicType.conjoinable(first_word) else 1, 0
         conjunction = children[w0]
         conjunct = children[w1]
-        word_index = ccg_parse.children[w0].original.variable.fillers[0].index
+        word_index = ccg_parse.children[w0].metadata['original'].variable.fillers[0].index
         if conjunct.typ == Ty('n'):
             second_conjunct_typ = Ty('n', index=set([str(word_index) + '_x']))
             final_idx = set.union(conjunct.typ.index, second_conjunct_typ.index)

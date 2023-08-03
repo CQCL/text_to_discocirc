@@ -73,7 +73,7 @@ def get_instances_of_var(diag, var):
     """
 
     instances = []
-    for i, (left, box, right) in enumerate(diag.layers):
+    for i, (left, box, right) in enumerate(diag):
         if box.name == f"context: {var.name}: {var.typ}":
             instances.append(i)
 
@@ -90,18 +90,18 @@ def remove_state_at_layer(diag, layer_no):
     :param layer_no: The layer on which the state to be removed is.
     :return: Tuple: (The new diag, the number of the new wire).
     """
-    removed_left, removed_box, removed_right = diag.layers[layer_no]
+    removed_left, removed_box, removed_right = diag.inside[layer_no]
     assert(removed_box.dom == monoidal.Ty())
 
     new_diag = monoidal.Id(diag.cod)
-    for left, box, right in reversed(diag.layers[layer_no + 1:]):
+    for left, box, right in reversed(diag.inside[layer_no + 1:]):
         new_diag = monoidal.Id(left) @ box @ monoidal.Id(right) >> new_diag
 
     typ = downgrade_to_monoidal(removed_box.cod)
     # position of the new wire that has to be introduced.
     wire_no = len(removed_left)
 
-    for left, box, right in reversed(diag.layers[:layer_no]):
+    for left, box, right in reversed(diag.inside[:layer_no]):
         if wire_no <= len(left):
             new_left = left[:wire_no] @ \
                        typ @ left[wire_no:]
