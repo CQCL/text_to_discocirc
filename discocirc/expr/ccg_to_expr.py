@@ -28,7 +28,7 @@ def ccg_to_expr(ccg_parse):
     # Rules with 1 child
     elif ccg_parse.rule == CCGRule.FORWARD_TYPE_RAISING \
             or ccg_parse.rule == CCGRule.BACKWARD_TYPE_RAISING:
-        word_index = ccg_parse.children[0].original.variable.fillers[0].index
+        word_index = ccg_parse.children[0].metadata['original'].variable.fillers[0].index
         tr_type = ccg_cat_to_closed(ccg_parse.metadata['original'].cat, str(word_index))
         x = create_random_variable(tr_type.input)
         result = Expr.lmbda(x, x(children[0]), tr_type.index)
