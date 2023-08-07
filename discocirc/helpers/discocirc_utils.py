@@ -44,6 +44,8 @@ def change_expr_typ(expr, new_type):
     In particular, the 'lambda' case is wrong,
     and the 'list' case needs further thought in order to implement
     """
+    if expr.typ == new_type:
+        return expr
     expr = deepcopy(expr)
     if expr.expr_type == 'literal':
         expr.typ = new_type
