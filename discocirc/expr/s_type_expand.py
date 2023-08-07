@@ -9,6 +9,8 @@ def expand_closed_type(typ, expand_which_type):
     expand_which_type in practice is set to either Ty('s') or Ty('p')
     """
     if not isinstance(typ, Func):
+        if len(typ) > 1:
+            typ = Ty().tensor(*[expand_closed_type(t, expand_which_type) for t in typ])
         return typ
     args = []
     indices = []
