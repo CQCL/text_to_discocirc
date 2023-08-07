@@ -18,7 +18,7 @@ def type_check(expr):
                 return False
             expected_type = expected_type @ element_type
             if isinstance(element_type, Func):
-                element_type = uncurry_types(element_type)
+                element_type = uncurry_types(element_type, uncurry_everything=True)
                 interchanged_expected_type_input @= element_type.input
                 interchanged_expected_type_output @= element_type.output
             else:
