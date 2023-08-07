@@ -184,25 +184,25 @@ class Expr:
         return new_expr
 
     @staticmethod
-    def partial_apply(expr, arg, context=None):
+    def partial_apply(fun, arg, context=None):
         """
-        Return a partial application of `expr` with `arg`.
+        Return a partial application of `fun` with `arg`.
         """
         num_inputs = 0
-        for i in range(len(expr.typ.input) + 1):
-            if expr.typ.input[-i:] == arg.typ:
+        for i in range(len(fun.typ.input) + 1):
+            if fun.typ.input[-i:] == arg.typ:
                 num_inputs = i
                 break
         if num_inputs == 0:
             raise TypeError(f"Type of:\n{arg}\n is not compatible "
-                            + f"with the input type of:\n{expr}")
+                            + f"with the input type of:\n{fun}")
 
         from discocirc.helpers.discocirc_utils import create_random_variable
-        var1 = create_random_variable(expr.typ.input[-i:])
-        var2 = create_random_variable(expr.typ.input[:-num_inputs])
+        var1 = create_random_variable(fun.typ.input[-i:])
+        var2 = create_random_variable(fun.typ.input[:-num_inputs])
         var2_var1 = Expr.lst([var2, var1], interchange=False)
-        expr = Expr.lmbda(var1, Expr.lmbda(var2, expr(var2_var1)))
-        return Expr.apply(expr, arg, context, reduce=True)
+        fun = Expr.lmbda(var1, Expr.lmbda(var2, fun(var2_var1)))
+        return Expr.apply(fun, arg, context, reduce=True)
 
 
 def get_flattened_expr_list(expr_list):
