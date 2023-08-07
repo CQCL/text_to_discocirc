@@ -160,6 +160,8 @@ class Expr:
         substituting the argument in the body of the lambda expression.
         If `match_indices` is True, then the overlapping indices of `arg` and the input type of `fun` are matched.
         """
+        if not isinstance(fun.typ, Func):
+            raise TypeError(f"Cannot apply {fun} to {arg}")
         if fun.typ.input != arg.typ:
             new_expr = Expr.partial_apply(fun, arg, context)
         elif fun.expr_type == "lambda" and reduce:
@@ -188,6 +190,8 @@ class Expr:
         """
         Return a partial application of `fun` with `arg`.
         """
+        if not isinstance(fun.typ, Func):
+            raise TypeError(f"Cannot apply {fun} to {arg}")
         num_inputs = 0
         for i in range(len(fun.typ.input) + 1):
             if fun.typ.input[-i:] == arg.typ:
