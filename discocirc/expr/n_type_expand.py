@@ -71,9 +71,14 @@ def expand_app(expr):
     """
     fun = n_type_expand(expr.fun)
     arg = n_type_expand(expr.arg)
-    if isinstance(arg.typ, Func) and arg.typ != fun.typ.input:
-        fun = change_expr_typ(fun, arg.typ >> fun.typ.output)
-    new_expr = fun(arg)
+    if isinstance(arg.typ, Func):
+        try:
+            new_expr = fun(arg)
+        except TypeError:
+            fun = change_expr_typ(fun, arg.typ >> fun.typ.output)
+            new_expr = fun(arg)
+    else:
+        new_expr = fun(arg)
     new_expr.head = expr.head
     return new_expr
 
