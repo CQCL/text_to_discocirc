@@ -257,13 +257,18 @@ def _compose_diags(arg, fun):
             else:
                 inputs = inputs >> (monoidal.Id(inputs.cod[:-len(box.dom)]) @ box)
 
-        if isinstance(fun.boxes[-1], Frame):
-            frame = Frame(fun.boxes[-1], inputs.cod, fun.cod,
-                          [arg] + fun.boxes[-1].insides)
+        left, box, right = fun.layers[-1]
+        frame_dom = inputs.cod[len(left):]
+        if len(right) > 0:
+            frame_dom = frame_dom[:-len(right)]
+        
+        if isinstance(box, Frame):
+            frame = Frame(box, frame_dom, fun.cod,
+                          [arg] + box.insides)
         else:
-            frame = Frame(fun.boxes[-1], inputs.cod, fun.cod, [arg])
+            frame = Frame(box, frame_dom, fun.cod, [arg])
 
-        return inputs >> frame
+        return inputs >> (monoidal.Id(left) @ frame @ monoidal.Id(right))
 
 
 def _list_to_diag(expr, context, expand_lambda_frames):
