@@ -263,10 +263,10 @@ def _compose_diags(arg, fun):
             frame_dom = frame_dom[:-len(right)]
         
         if isinstance(box, Frame):
-            frame = Frame(box, frame_dom, fun.cod,
+            frame = Frame(box, frame_dom, box.cod,
                           [arg] + box.insides)
         else:
-            frame = Frame(box, frame_dom, fun.cod, [arg])
+            frame = Frame(box, frame_dom, box.cod, [arg])
 
         return inputs >> (monoidal.Id(left) @ frame @ monoidal.Id(right))
 
