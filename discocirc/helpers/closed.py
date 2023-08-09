@@ -24,12 +24,12 @@ class Ty(monoidal.Ty):
     ((y → x) → y) @ x
     """
 
-    def __init__(self, *objects, input=None, output=None, index=None):
+    def __init__(self, *objects, index=None):
         """
         Initialize the Ty class. `index` is extra information added to Ty. This is used for coindexing. 
         """
         super().__init__()
-        self.input, self.output, self.index = input, output, index
+        self.index = index
         if len(objects) > 1:
             self._objects = tuple(x if isinstance(x, Ty) else Ty(x) for x in objects)
         elif len(objects) == 1:
@@ -109,7 +109,9 @@ class Func(Ty):
         Initialize the Func class.
         """
         name = f'({repr(input)} → {repr(output)})'
-        super().__init__(name, input=input, output=output, index=index)
+        self.input = input
+        self.output = output
+        super().__init__(name, index=index)
 
     def __repr__(self):
         """
