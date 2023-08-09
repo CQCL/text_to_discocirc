@@ -159,7 +159,6 @@ def compose_circuits(circ1, circ2, wire_order='intro_order'):
     circ2 = functor(circ2)
     nouns_circ2 = collect_normal_nouns(circ2)
     # collect nouns in circ2 not in circ1
-    nouns_circ2[0] == nouns_circ1[1]
     new_nouns = [x for x in nouns_circ2 if x not in nouns_circ1]
     # collect nouns in circ1 not in circ2
     unused_nouns = [x for x in nouns_circ1 if x not in nouns_circ2]
