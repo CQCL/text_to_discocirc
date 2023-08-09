@@ -19,7 +19,7 @@ class Expr:
             raise ValueError("Invalid expression type")
         self.typ = typ
         self.head = head
-    
+
     def __repr__(self):
         """
         Returns a string representation of the Expr object.
@@ -28,7 +28,7 @@ class Expr:
 
     def to_string(self, index=False):
         """
-        Returns a string representation of the Expr object. 
+        Returns a string representation of the Expr object.
         """
         if self.expr_type == "literal":
             return get_literal_string(self, index)
@@ -46,7 +46,7 @@ class Expr:
         Applies the self to the given argument and returns self(arg).
         """
         return Expr.apply(self, arg)
-    
+
     def __members(self):
         """
         Returns a tuple of the members of the Expr object.
@@ -94,7 +94,7 @@ class Expr:
         lambda_expr.var = var
         lambda_expr.body = body
         return lambda_expr
-    
+
     @staticmethod
     def application(fun, arg, head=None):
         """
@@ -110,7 +110,7 @@ class Expr:
         app_expr.fun = fun
         app_expr.arg = arg
         return app_expr
-    
+
     @staticmethod
     def lst(expr_list, interchange='auto', head=None):
         """
@@ -142,7 +142,7 @@ class Expr:
             new_expr = Expr.lmbda(expr.var, Expr.evl(context, expr.body))
         elif expr.expr_type == "application":
             new_expr = Expr.apply(Expr.evl(context, expr.fun),
-                              Expr.evl(context, expr.arg), 
+                              Expr.evl(context, expr.arg),
                               context)
         elif expr.expr_type == "list":
             new_expr = Expr.lst([Expr.evl(context, e) for e in expr.expr_list])
@@ -321,8 +321,8 @@ def map_expr_indices(expr, mapping, reduce=True):
     Map the indices of type of `expr` according to `mapping`.
     """
     if expr.expr_type == "literal":
-        new_expr = deepcopy(expr)
-        new_expr.typ = map_typ_indices(expr.typ, mapping)
+        new_type = map_typ_indices(expr.typ, mapping)
+        new_expr = Expr.literal(expr.name, new_type, expr.head)
     elif expr.expr_type == "lambda" or expr.expr_type == "list":
         new_expr = expr_type_recursion(expr, map_expr_indices, mapping, reduce)
         if expr.typ.index in mapping.keys():
@@ -371,7 +371,6 @@ def get_lambda_string(expr, index):
     typ = expr.typ.to_string(index)
     string += f'{typ:^{length}}'
     return string
-   
 
 def get_application_string(expr, index):
     """

@@ -1,5 +1,4 @@
 from argparse import ArgumentError
-from copy import deepcopy
 from discopy import rigid
 from discopy.rigid import Ty, Box
 from discopy.monoidal import Functor
@@ -46,10 +45,8 @@ def change_expr_typ(expr, new_type):
     """
     if expr.typ == new_type:
         return expr
-    expr = deepcopy(expr)
     if expr.expr_type == 'literal':
-        expr.typ = new_type
-        return expr
+        return Expr.literal(expr.name, new_type, expr.head)
     elif expr.expr_type == 'application':
         fun_new_type = expr.arg.typ >> new_type
         fun = change_expr_typ(expr.fun, fun_new_type)
@@ -167,9 +164,7 @@ def add_indices_to_types(typ):
 
 def expr_add_indices_to_types(expr):
     if expr.expr_type == 'literal':
-        new_expr = deepcopy(expr)
-        new_expr.typ = add_indices_to_types(expr.typ)
-        return new_expr
+        return Expr.literal(expr.name, add_indices_to_types(expr.typ), expr.head)
     return expr_type_recursion(expr, expr_add_indices_to_types)
 
 
