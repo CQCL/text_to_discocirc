@@ -2,7 +2,7 @@ from copy import deepcopy
 from random import randint
 from discocirc.expr.normal_form import normal_form
 
-from discocirc.helpers.closed import Ty, Func
+from discocirc.helpers.closed import Ty, Func, deep_copy_ty
 from discocirc.expr import Expr
 from discocirc.expr.uncurry import uncurry
 from discocirc.helpers.discocirc_utils import create_random_variable, \
@@ -319,7 +319,7 @@ def expand_personal_pronouns(expr, all_personal):
     new_expr = deepcopy(expr)
 
     for most_specific, personal in all_personal:
-        pre_coref_type = deepcopy(new_expr.typ)
+        pre_coref_type = deep_copy_ty(new_expr.typ)
         most_specific_exprs = []
         for occurance in most_specific:
             typ = find_word_in_expr(expr, occurance[0], occurance[1]).typ

@@ -26,7 +26,7 @@ class Ty(monoidal.Ty):
 
     def __init__(self, *objects, index=None):
         """
-        Initialize the Ty class. `index` is extra information added to Ty. This is used for coindexing. 
+        Initialize the Ty class. `index` is extra information added to Ty. This is used for coindexing.
         """
         super().__init__()
         self.index = index
@@ -124,7 +124,7 @@ class Func(Ty):
         Return the string representation of the Func object.
         """
         return self.to_string()
-    
+
     def to_string(self, index=True):
         """
         Return the string representation of the Func object.
@@ -229,3 +229,16 @@ def index_to_string(index):
     if isinstance(index, set):
         return str(sorted(list(index)))
     return str(index)
+
+def deep_copy_ty(ty):
+    """
+    Return a deep copy of the given Ty object.
+    """
+    if isinstance(ty, Func):
+        new_ty = Func(input=deep_copy_ty(ty.input),
+                      output=deep_copy_ty(ty.output),
+                      index=set(ty.index) if ty.index is not None else None)
+    else:
+        new_ty = Ty(*[deep_copy_ty(obj) if isinstance(obj, Ty) else obj for obj in ty.objects], \
+                    index=set(ty.index) if ty.index is not None else None)
+    return new_ty

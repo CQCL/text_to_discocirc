@@ -2,7 +2,7 @@ from __future__ import annotations
 from copy import deepcopy
 from prettytable import PrettyTable
 
-from discocirc.helpers.closed import Func, uncurry_types, Ty
+from discocirc.helpers.closed import Func, deep_copy_ty, uncurry_types, Ty
 
 
 class Expr:
@@ -297,8 +297,7 @@ def map_typ_indices(typ, mapping):
     """
     Map the indices of `typ` according to `mapping`.
     """
-    # TODO: remove deepcopy and make sure that typ is not modified
-    typ = deepcopy(typ)
+    typ = deep_copy_ty(typ)
     if isinstance(typ, Func):
         input_typ = map_typ_indices(typ.input, mapping)
         output_typ = map_typ_indices(typ.output, mapping)
