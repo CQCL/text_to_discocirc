@@ -1,5 +1,4 @@
 from copy import deepcopy
-from random import randint
 from discocirc.expr.normal_form import normal_form
 
 from discocirc.helpers.closed import Ty, Func, deep_copy_ty
@@ -69,7 +68,7 @@ def replace_literal_in_expr(expr, word, pos, replacement):
             new_expr = replacement
             replaced = [Expr.literal(expr.name, expr.typ)]
         else:
-            new_expr = Expr.literal(expr.name, expr.typ)
+            new_expr = expr
             replaced = []
     elif expr.expr_type == "application":
         new_fun, fun_exprs = replace_literal_in_expr(expr.fun, word, pos, replacement)

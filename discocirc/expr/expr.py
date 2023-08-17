@@ -1,5 +1,4 @@
 from __future__ import annotations
-from copy import deepcopy
 from prettytable import PrettyTable
 
 from discocirc.helpers.closed import Func, deep_copy_ty, uncurry_types, Ty
