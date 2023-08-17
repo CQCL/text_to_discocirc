@@ -297,10 +297,6 @@ def map_typ_indices(typ, mapping):
     Map the indices of `typ` according to `mapping`.
     """
     typ = deep_copy_ty(typ)
-    if isinstance(typ, Func):
-        input_typ = map_typ_indices(typ.input, mapping)
-        output_typ = map_typ_indices(typ.output, mapping)
-        typ = Func(input_typ, output_typ, typ.index)
     if typ.index != None:
         new_index = set()
         for idx in typ.index:
@@ -309,9 +305,15 @@ def map_typ_indices(typ, mapping):
             else:
                 new_index.add(idx)
         typ.index = new_index
+    if isinstance(typ, Func):
+        input_typ = map_typ_indices(typ.input, mapping)
+        output_typ = map_typ_indices(typ.output, mapping)
+        typ = Func(input_typ, output_typ, typ.index)
     if len(typ.objects) > 1:
+        new_objects = []
         for obj in typ.objects:
-            obj.typ = map_typ_indices(obj, mapping)
+            new_objects.append(map_typ_indices(obj, mapping))
+        typ = Ty(*new_objects, index=typ.index)
     return typ
 
 def map_expr_indices(expr, mapping, reduce=True):
