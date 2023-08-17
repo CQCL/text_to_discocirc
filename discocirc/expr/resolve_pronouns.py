@@ -321,23 +321,23 @@ def expand_personal_pronouns(expr, all_personal):
     for most_specific, personal in all_personal:
         pre_coref_type = deep_copy_ty(new_expr.typ)
         most_specific_exprs = []
-        for occurance in most_specific:
-            typ = find_word_in_expr(expr, occurance[0], occurance[1]).typ
+        for occurrence in most_specific:
+            typ = find_word_in_expr(expr, occurrence[0], occurrence[1]).typ
             temp = create_random_variable(typ)
-            body = replace_literal_in_expr(new_expr, occurance[0], occurance[1], temp)
+            body = replace_literal_in_expr(new_expr, occurrence[0], occurrence[1], temp)
             new_expr = Expr.lmbda(temp, body[0])
             most_specific_exprs += body[1]
 
         most_specific_typ = Ty('n', index=set.union(*[t.typ.index for t in most_specific_exprs]))
         typs_to_remove = []
-        for occurance in personal:
-            typ = find_word_in_expr(expr, occurance[0], occurance[1]).typ
+        for occurrence in personal:
+            typ = find_word_in_expr(expr, occurrence[0], occurrence[1]).typ
             temp = create_random_variable(typ)
-            body = replace_literal_in_expr(new_expr, occurance[0], occurance[1], temp)
+            body = replace_literal_in_expr(new_expr, occurrence[0], occurrence[1], temp)
             new_expr = Expr.lmbda(temp, body[0])
             typs_to_remove.append(typ.index)
             index_mapping = create_index_mapping_dict(typ, most_specific_typ)
-            new_expr = map_expr_indices(new_expr, index_mapping, reduce=False)
+            new_expr = map_expr_indices(new_expr, index_mapping, reduce=False) #isnt working properly
 
         new_type = Ty().tensor(*[t for t in pre_coref_type if t.index not in typs_to_remove])
         for ms_expr in most_specific_exprs:
