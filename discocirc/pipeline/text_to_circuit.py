@@ -247,10 +247,15 @@ def merge_circuits(circ1, circ2, corefs_to_merge):
     circ1 = noun_normal_form(circ1)
     circ2 = noun_normal_form(circ2)
     # get noun boxes
+    nouns_circ1 = circ1.boxes[:get_last_initial_noun(circ1) + 1]
     nouns_circ2 = circ2.boxes[:get_last_initial_noun(circ2) + 1]
     # resolve coreferences between nouns
     for noun1, noun2 in corefs_to_merge:
+        noun1_box = find_box_using_name(nouns_circ1, noun1)
         noun2_box = find_box_using_name(nouns_circ2, noun2)
+        # check we actually find noun boxes corresponding to the corefs
+        if noun1_box is None or noun2_box is None:
+            continue
         #replace noun2 with noun1 in nouns_circ2
         nouns_circ2[nouns_circ2.index(noun2_box)] = Box(noun1, noun2_box.dom, noun2_box.cod)
     nouns_diagram = Id()
