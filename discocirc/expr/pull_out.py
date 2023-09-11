@@ -46,17 +46,6 @@ def b_combinator(expr):
     bf_g = Expr.apply(bf, g, reduce=False)
     return Expr.apply(bf_g, h, reduce=False)
 
-def pull_out_application(expr):
-    """
-    Performs pulling out in the case that the expr is of application type
-    """
-    f = _pull_out(expr.fun)
-    g = _pull_out(expr.arg)
-    expr = Expr.apply(f, g, reduce=False)
-    if if_application_pull_out(expr):
-        expr = _pull_out(b_combinator(expr))
-    return expr
-
 def _pull_out(expr):
     """
     The main part of the pull out routine
@@ -66,18 +55,23 @@ def _pull_out(expr):
     if expr.expr_type == 'literal':
         return expr
     elif expr.expr_type == 'application':
-        expr = pull_out_application(expr)
-        for n in range(1, count_applications(expr.arg)): # we can only apply C combinator if we have at least two applications
-            n_c_combi_expr = Expr.apply(expr.fun, n_fold_c_combinator(expr.arg, n), reduce=False)
-            n_c_combi_expr_pulled = pull_out_application(n_c_combi_expr)
-            if n_c_combi_expr_pulled != n_c_combi_expr: # check if something was pulled out
-                expr = _pull_out(n_c_combi_expr_pulled)
-                break
-        new_expr = expr
-        new_expr.typ.index = typ_index
-        if head:
-            new_expr.head = head
-        return new_expr        
+        f = _pull_out(expr.fun)
+        g = _pull_out(expr.arg)
+        expr = Expr.apply(f, g, reduce=False)
+        num_pulled = 0
+        pulled_args = []
+        for n in range(count_applications(expr.arg)):
+            n_c_combi_expr = Expr.apply(expr.fun, n_fold_c_combinator(expr.arg, n-num_pulled), reduce=False)
+            if if_application_pull_out(n_c_combi_expr):
+                expr = b_combinator(n_c_combi_expr)
+                pulled_args.append(expr.arg)
+                expr = expr.fun
+                num_pulled += 1
+        for arg in reversed(pulled_args):
+            expr = Expr.apply(expr, arg, reduce=False)
+        expr.typ.index = typ_index
+        expr.head = head
+        return expr
     return expr_type_recursion(expr, _pull_out)
 
 def pull_out(expr):
