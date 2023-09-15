@@ -99,6 +99,7 @@ sentences = [
     'Alice , Bob and John who drank water , beer and wine walked',
     'Alice and Bob who drank water and wine walked',
     'If a farmer owns a donkey he beats it',
+    'If a person is the CEO of a company, then the person is hard-working'
 ]
 
 parser = BobcatParser()

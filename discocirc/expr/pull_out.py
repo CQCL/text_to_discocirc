@@ -25,8 +25,8 @@ def if_application_pull_out(expr):
     checks if pulling out can/should be performed
     """
     return expr.expr_type == 'application'\
-            and expr.arg.expr_type == 'application'\
             and is_higher_order(expr.fun.typ)\
+            and expr.arg.expr_type == 'application'\
             and not isinstance(expr.arg.arg.typ, Func)
 
 def b_combinator(expr):

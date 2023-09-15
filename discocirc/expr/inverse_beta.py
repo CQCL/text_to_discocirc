@@ -58,7 +58,7 @@ def remove_free_vars(expr, variables):
             free_vars.extend(result[0])
             bound_vars.extend(result[1])
             exprs.append(result[2])
-        return free_vars, bound_vars, Expr.lst(exprs, interchange=False, head=expr.head)
+        return free_vars, bound_vars, Expr.lst(exprs, head=expr.head)
     elif expr.expr_type == "lambda":
         if expr.var.expr_type == 'list':
             new_body = remove_free_vars(expr.body, variables + list(expr.var.expr_list))
