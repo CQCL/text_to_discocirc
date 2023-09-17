@@ -1,5 +1,5 @@
 import spacy
-from lambeq import BobcatParser
+from lambeq import BobcatParser, SpacyTokeniser
 from parameterized import parameterized
 
 from helpers.ccg_to_diag_test_pipeline import ccg_to_diag_test
@@ -99,10 +99,15 @@ sentences = [
     'Alice , Bob and John who drank water , beer and wine walked',
     'Alice and Bob who drank water and wine walked',
     'If a farmer owns a donkey he beats it',
-    'If a person is the CEO of a company, then the person is hard-working'
+    'If a person is the CEO of a company, then the person is hard-working',
+    'If a person is a chef, then the person is the owner of a fancy restaurant',
+    'If a person is radicalized by the internet, then the person is angry',
+    'If a person is a pilot for Air Canada, then the person is a pilot',
+    'If a person has a pair of sunglasses, then the person has a pair of black sunglasses'
 ]
 
 parser = BobcatParser()
+tokenizer = SpacyTokeniser()
 config = {
     "draw_result": True,
     "draw_steps": False,
@@ -121,6 +126,7 @@ class CCGToDiagTests(UnitTestBaseClass):
     def test_sequence(self, sentence):
         print(sentence)
         self.test_logger = sentence
-        ccg_parse = parser.sentence2tree(sentence)
+        tokenized_sentence = tokenizer.tokenise_sentence(sentence)
+        ccg_parse = parser.sentence2tree(tokenized_sentence, tokenised=True)
         print(ccg_parse.deriv())
         ccg_to_diag_test(self, config, ccg_parse, sentence, spacy_model)
