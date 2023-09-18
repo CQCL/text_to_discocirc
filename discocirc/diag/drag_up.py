@@ -1,17 +1,15 @@
-from discopy import rigid
+from discopy import monoidal
 from discopy.rewriting import InterchangerError
 
 def swap_right(diagram, i):
     left, box, right = diagram.layers[i]
     if box.dom:
         raise ValueError(f"{box} is not a word.")
-
-    new_left, new_right = left @ right[0:1], right[1:]
-    new_layer = rigid.Id(new_left) @ box @ rigid.Id(new_right)
-    return (
-        diagram[:i]
-        >> new_layer.permute(len(new_left), len(new_left) - 1)
-        >> diagram[i+1:])
+    new_left, new_right = left @ right[:1], right[1:]
+    new_layer = monoidal.Id(new_left) @ box @ monoidal.Id(new_right)
+    swaps = monoidal.Id(left) @ monoidal.Diagram.swap(right[:1], box.cod) @ monoidal.Id(right[1:])
+    new_layer = new_layer >> swaps
+    return diagram[:i] >> new_layer >> diagram[i+1:]
 
 
 def drag_out(diagram, i, stop):
