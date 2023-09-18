@@ -1,7 +1,7 @@
 from __future__ import annotations
 from prettytable import PrettyTable
 
-from discocirc.helpers.closed import Func, deep_copy_ty, uncurry_types, Ty
+from discocirc.helpers.closed import Func, deep_copy_ty, types_match_modulo_curry, uncurry_types, Ty
 
 
 class Expr:
@@ -99,7 +99,7 @@ class Expr:
         """
         Returns a new Expr object representing an application of the given function to the given argument.
         """
-        if fun.typ.input != arg.typ:
+        if not types_match_modulo_curry(fun.typ.input, arg.typ):
             raise TypeError(f"Type of \n{arg}\n does not"
                             + f"match the input type of \n{fun}")
         app_expr = Expr(f"{fun.name}({arg.name})",
@@ -134,15 +134,15 @@ class Expr:
         head = expr.head
         if expr.expr_type == "literal":
             if expr in context.keys():
-                assert(context[expr].typ == expr.typ)
+                assert(types_match_modulo_curry(context[expr].typ, expr.typ))
                 return context[expr]
             return expr
         elif expr.expr_type == "lambda":
             new_expr = Expr.lmbda(expr.var, Expr.evl(context, expr.body))
         elif expr.expr_type == "application":
             new_expr = Expr.apply(Expr.evl(context, expr.fun),
-                              Expr.evl(context, expr.arg),
-                              context)
+                                  Expr.evl(context, expr.arg),
+                                  context)
         elif expr.expr_type == "list":
             new_expr = Expr.lst([Expr.evl(context, e) for e in expr.expr_list])
         else:
@@ -161,7 +161,7 @@ class Expr:
         """
         if not isinstance(fun.typ, Func):
             raise TypeError(f"Cannot apply {fun} to {arg}")
-        if fun.typ.input != arg.typ:
+        if not types_match_modulo_curry(fun.typ.input, arg.typ):
             new_expr = Expr.partial_apply(fun, arg, context)
         elif fun.expr_type == "lambda" and reduce:
             if context == None:
@@ -193,7 +193,7 @@ class Expr:
             raise TypeError(f"Cannot apply {fun} to {arg}")
         num_inputs = 0
         for i in range(len(fun.typ.input) + 1):
-            if fun.typ.input[-i:] == arg.typ:
+            if types_match_modulo_curry(fun.typ.input[-i:], arg.typ):
                 num_inputs = i
                 break
         if num_inputs == 0:

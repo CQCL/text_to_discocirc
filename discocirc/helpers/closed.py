@@ -246,3 +246,6 @@ def deep_copy_ty(ty):
         new_ty = Ty(*[deep_copy_ty(obj) if isinstance(obj, Ty) else obj for obj in ty.objects], \
                     index=set(ty.index) if ty.index is not None else None)
     return new_ty
+
+def types_match_modulo_curry(typ1, typ2):
+    return uncurry_types(typ1, uncurry_everything=True) == uncurry_types(typ2, uncurry_everything=True)
