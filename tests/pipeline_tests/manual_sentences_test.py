@@ -21,7 +21,7 @@ sentences = [
     "Alice likes her work and her life",
     "Alice likes her boring work",
     "Tall Alice likes her boring work",
-    "ALice think she will like Bob",
+    "Alice thinks she will like Bob",
     'Alice , Bob and Claire who like beer and wine walked',
     'Alice likes her work and Bob also likes her work',
     'Alice who Bob gives flowers to in bedroom , walks',
@@ -103,7 +103,8 @@ sentences = [
     'If a person is a chef, then the person is the owner of a fancy restaurant',
     'If a person is radicalized by the internet, then the person is angry',
     'If a person is a pilot for Air Canada, then the person is a pilot',
-    'If a person has a pair of sunglasses, then the person has a pair of black sunglasses'
+    'If a person has a pair of sunglasses, then the person has a pair of black sunglasses',
+    'I think you know me better than Bob'
 ]
 
 parser = BobcatParser()

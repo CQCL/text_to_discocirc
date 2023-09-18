@@ -237,7 +237,7 @@ def _compose_diags(arg, fun):
     :param fun: The function which is applied to the argument.
     :return: The composed diag of fun(arg).
     """
-    if arg.dom == monoidal.Ty():
+    if arg.dom == monoidal.Ty() and arg.cod != monoidal.Ty('s') and arg.cod != monoidal.Ty('p'):
         new_args = monoidal.Id(fun.dom[:-len(arg.cod)]) @ arg
         return new_args >> fun
 
@@ -316,3 +316,7 @@ def expr_to_diag(expr, context=None, expand_lambda_frames=True):
         return _list_to_diag(expr, context, expand_lambda_frames)
     else:
         raise NotImplementedError(expr.expr_type)
+
+
+def expr_to_frame_diag(expr):
+    return Frame.get_decompose_functor()(expr_to_diag(expr))
