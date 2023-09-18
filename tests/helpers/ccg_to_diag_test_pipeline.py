@@ -120,7 +120,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
 
     # ------- Step 8: Expr to Diag -----------
     diag = expr_to_diag(expr_add_indices_to_types(expr))
-    
+
     # ------- Step 9: Semantic rewrites -----------
     if config["semantic_rewrites"]:
         diag = rewrite(diag, rules='all')

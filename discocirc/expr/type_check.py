@@ -1,4 +1,4 @@
-from discocirc.helpers.closed import Func, Ty, uncurry_types
+from discocirc.helpers.closed import Func, Ty, types_match_modulo_curry, uncurry_types
 
 
 def type_check(expr):
@@ -38,7 +38,7 @@ def type_check(expr):
         if not type_arg or not type_expr:
             return False
 
-        if expr.typ != type_expr.output or type_expr.input != type_arg:
+        if expr.typ != type_expr.output or not types_match_modulo_curry(type_expr.input, type_arg):
             return False
 
         return expr.typ
@@ -49,7 +49,7 @@ def type_check(expr):
         if not type_var or not type_expr:
             return False
 
-        if expr.typ != type_var >> type_expr:
+        if not types_match_modulo_curry(expr.typ, type_var >> type_expr):
             return False
 
         return expr.typ

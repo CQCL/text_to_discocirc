@@ -218,7 +218,11 @@ def uncurry_types(typ, uncurry_everything=False):
             out_inp = typ.output.input
             out_out = typ.output.output
         return uncurry_types((out_inp @ inp) >> out_out)
-
+    elif uncurry_everything and len(typ) > 1:
+        types = []
+        for t in typ:
+            types.append(uncurry_types(t, uncurry_everything=True))
+        return Ty(*types, index = typ.index)
     else:
         return typ
 
