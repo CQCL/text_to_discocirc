@@ -1,6 +1,5 @@
 import spacy
-from discopy.rigid import Id, Box, Swap
-from discopy import rigid
+from discopy.monoidal import Id, Box, Swap, Ty
 
 from discocirc.diag.frame import Functor
 
@@ -64,7 +63,9 @@ def passive_to_active_voice(diagram):
             len(frame.insides[0].dom) == 1 and \
             len(frame.dom) == 2:
             name = spacy_model(frame.insides[0].name)[0].lemma_
-            return Swap(rigid.Ty('n'), rigid.Ty('n')) >> Box(name, frame.dom, frame.cod) >> Swap(rigid.Ty('n'), rigid.Ty('n'))
+            return Swap(Ty(frame.dom[0]), Ty(frame.dom[1])) \
+                >> Box(name, frame.dom[::-1], frame.cod[::-1]) \
+                >> Swap(Ty(frame.cod[1]), Ty(frame.cod[0]))
         return frame
     f = Functor(ob=lambda x: x, ar=lambda x: x, frame=remove_passive_frame)
     return f(diagram)

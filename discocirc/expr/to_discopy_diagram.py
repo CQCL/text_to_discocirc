@@ -261,7 +261,7 @@ def _compose_diags(arg, fun):
         frame_dom = inputs.cod[len(left):]
         if len(right) > 0:
             frame_dom = frame_dom[:-len(right)]
-        
+
         if isinstance(box, Frame):
             frame = Frame(box, frame_dom, box.cod,
                           [arg] + box.insides)
