@@ -1,5 +1,6 @@
 
 from discopy import monoidal
+from discocirc.diag.drag_up import drag_all
 
 from discocirc.expr import Expr
 from discocirc.diag.frame import Frame
@@ -103,18 +104,9 @@ def remove_state_at_layer(diag, layer_no):
 
     for left, box, right in reversed(diag.layers[:layer_no]):
         if wire_no <= len(left):
-            new_left = left[:wire_no] @ \
-                       typ @ left[wire_no:]
+            new_left = left[:wire_no] @ typ @ left[wire_no:]
             new_right = right
         else:
-            while wire_no < len(left) + len(box.cod):
-                 # The wire is underneath the box we are adding.
-                 new_diag = monoidal.Id(new_diag.dom[:wire_no]) @ \
-                            monoidal.Swap(
-                                monoidal.Ty(new_diag.dom[wire_no + 1]),
-                                typ) @ \
-                            monoidal.Id(new_diag.dom[wire_no + 2:]) >> new_diag
-                 wire_no += 1
             no = wire_no - len(left) - len(box.cod)
             new_right = right[:no] @ typ @ right[no:]
             new_left = left
@@ -166,6 +158,7 @@ def _lambda_to_diag_open_wire(expr, context, expand_lambda_frames):
     body = expr_to_diag(expr.body, context, expand_lambda_frames)
     context.remove(expr.var)
 
+    body = drag_all(body)
     var_instances_layer = get_instances_of_var(body, expr.var)
     assert(len(var_instances_layer) == 1)
 
