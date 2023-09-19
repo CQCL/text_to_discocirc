@@ -102,6 +102,8 @@ def n_fold_c_combinator(expr, n):
     say f(a1)(a2)...(a(n+1)),
     we pass a1 down to a(n+1), i.e.
     return f'(a2)(a3)...(a(n+1))(a1)
+
+    Note n=0 does nothing, whereas n=1 is the standard c combinator
     """
     if n == 0:
         return expr

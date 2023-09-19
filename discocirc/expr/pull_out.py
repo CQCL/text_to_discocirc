@@ -55,18 +55,23 @@ def _pull_out(expr):
     if expr.expr_type == 'literal':
         return expr
     elif expr.expr_type == 'application':
+        # do recursion first
         f = _pull_out(expr.fun)
         g = _pull_out(expr.arg)
         expr = Expr.apply(f, g, reduce=False)
+        # we need to record the number of args pulled out,
+        # in order to apply the correct n_fold_c_combinators
         num_pulled = 0
         pulled_args = []
         for n in range(count_applications(expr.arg)):
+            # apply the appropriate combinator. 0 does nothing, 1 is the usual c combinator
             n_c_combi_expr = Expr.apply(expr.fun, n_fold_c_combinator(expr.arg, n-num_pulled), reduce=False)
             if if_application_pull_out(n_c_combi_expr):
                 expr = b_combinator(n_c_combi_expr)
                 pulled_args.append(expr.arg)
                 expr = expr.fun
                 num_pulled += 1
+        # reattach pulled out args
         for arg in reversed(pulled_args):
             expr = Expr.apply(expr, arg, reduce=False)
         expr.typ.index = typ_index
