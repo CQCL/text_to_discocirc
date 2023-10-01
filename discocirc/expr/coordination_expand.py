@@ -1,4 +1,3 @@
-
 from discocirc.expr.expr import Expr
 from discocirc.helpers.closed import Ty
 from discocirc.helpers.discocirc_utils import apply_at_root, change_expr_typ, count_applications, create_random_variable
@@ -6,7 +5,8 @@ from discocirc.helpers.discocirc_utils import apply_at_root, change_expr_typ, co
 
 def coordination_expand(expr):
     """
-    This function expands coorditation words like 'and', 'or', etc. in expr into a higher order expression.
+    This function expands coordinating conjunctions like 'and', 'or', etc. between nouns
+    in the expr into a higher order expression.
     """
     if expr.expr_type == "application":
         original_head = expr.head
