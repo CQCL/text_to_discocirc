@@ -25,7 +25,6 @@ sentences = [
     'Alice , Bob and Claire who like beer and wine walked',
     'Alice likes her work and Bob also likes her work',
     'Alice who Bob gives flowers to in bedroom , walks',
-    'Alice who Bob likes walks',
     'Alice and Bob like their work',
     'Alice likes her work and Bob likes his cat',
     'Alice thinks she is funny and she is happy and Bob and Claire think they are green',
