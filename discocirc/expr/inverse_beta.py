@@ -94,11 +94,13 @@ def inverse_beta(expr):
         return expr
     # the 'lambda' case below is the only nontrivial case
     elif expr.expr_type == 'lambda':
-        new_body = inverse_beta(expr.body) #recurse first
-        expr = Expr.lmbda(expr.var, new_body, head=expr.head, index=expr.typ.index)
+        # We want to recurse first, but on the true body of the lambda expr
+        # This prevents some redundancy: consider the case lambda x.lambda y.fxy
+        # -- recursing naively on expr.body would return lambda x.((lambda z.lambda y.fzy)x)
         variables = []
         flattened_variables = []
         indices = []
+        # pluck off all initial dummy variables
         while expr.expr_type == 'lambda':
             if expr.var.expr_type == 'list':
                 for v in reversed(expr.var.expr_list):
@@ -108,6 +110,7 @@ def inverse_beta(expr):
             variables.append(expr.var)
             indices.append(expr.typ.index)
             expr = expr.body
+        expr = inverse_beta(expr) # recursion (on the body)
         free_vars, bound_vars, expr = remove_free_vars(expr, flattened_variables)
         for variable, index in zip(list(reversed(variables)) + bound_vars, list(reversed(indices)) + [None]*len(bound_vars)):
             expr = Expr.lmbda(variable, expr, index=index)

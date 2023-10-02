@@ -54,7 +54,9 @@ def type_expand(expr, which_type):
         new_type = expand_closed_type(expr.typ, which_type)
         return Expr.literal(expr.name, new_type, head=expr.head)
     elif expr.expr_type == "application":
+        fun = type_expand(expr.fun, which_type)
         arg = type_expand(expr.arg, which_type)
+        # the rest of this section deals with the special case
         orig_types = arg.typ
         new_types = expand_closed_type(expr.arg.typ, which_type)
         if add_indices_to_types(orig_types) != add_indices_to_types(new_types):
@@ -74,7 +76,6 @@ def type_expand(expr, which_type):
             arg = swap(arg)
             for temp_var in reversed(temp_vars):
                 arg = Expr.lmbda(temp_var, arg)
-        fun = type_expand(expr.fun, which_type)
         return fun(arg)
     else:
         return expr_type_recursion(expr, type_expand, which_type=which_type)
