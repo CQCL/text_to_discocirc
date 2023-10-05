@@ -229,12 +229,10 @@ def get_corefs(doc):
 def compose_circuits_using_corefs(circs, corefs, corefs_sent_ids):
     merged_circuit = circs[0] 
     for i in range(1, len(circs)):
-        # print(i)
         corefs_to_merge = []
         for coref, sent_ids in zip(corefs, corefs_sent_ids):
             if i in sent_ids and sent_ids.index(i) != 0:
                 corefs_to_merge.append((coref[0], coref[sent_ids.index(i)]))
-        # print(corefs_to_merge)
         merged_circuit = merge_circuits(merged_circuit, circs[i], corefs_to_merge)
     return merged_circuit
 
