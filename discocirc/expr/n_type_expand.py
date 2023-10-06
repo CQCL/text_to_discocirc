@@ -68,6 +68,8 @@ def expand_app(expr):
     'Alice , Bob and Claire who like beer and wine walked'
     Here, if n expansion is done before s expansion, then
     n-expansion causes an 'arg' to change from type nxnxn->s to nxnxn->sxnxn
+
+    An alternative simpler example case might be 'Alice who likes beer and wine walked'?
     """
     fun = n_type_expand(expr.fun)
     arg = n_type_expand(expr.arg)
