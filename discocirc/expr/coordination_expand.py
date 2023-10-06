@@ -35,11 +35,12 @@ def coordination_expand(expr):
                 nth_arg = apply_at_root(nth_arg, composition)
                 expr = change_expr_typ(nth_arg, expr.typ)
                 expr.head = original_head
-                assert expr.arg.typ == Ty('n') # these assumptions justify recursing on fun
-                if expr.arg.head:
-                    assert len(expr.arg.head) <= 1
+                # assert expr.arg.typ == Ty('n')
+                # if expr.arg.head:
+                #     assert len(expr.arg.head) <= 1
                 break # something changed - break out of loop and recurse on new expr
-        fun = coordination_expand(expr.fun) # recurse on the fun
-        expr = fun(expr.arg)
+        fun = coordination_expand(expr.fun)
+        arg = coordination_expand(expr.arg) # expect that this one is redundant if the for loop triggered
+        expr = fun(arg)
         expr.head = original_head
     return expr
