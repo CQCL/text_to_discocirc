@@ -94,6 +94,7 @@ sentences = [
     'Before looking around , he noticed a letter',
     'He noticed a letter before looking around',
     'Alice and John drank water',
+    'Alice who likes beer and wine walked',
     'Alice , Bob and John drank water , beer and wine',
     'Alice , Bob and John who drank water , beer and wine walked',
     'Alice and Bob who drank water and wine walked',
