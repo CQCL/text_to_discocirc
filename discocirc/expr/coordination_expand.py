@@ -33,6 +33,6 @@ def coordination_expand(expr):
                 nth_arg = change_expr_typ(nth_arg, composition.typ >> nth_arg.typ)
                 nth_arg = apply_at_root(nth_arg, composition)
                 new_expr = change_expr_typ(nth_arg, expr.typ)
-                new_expr.head = original_head
+                new_expr.head = expr.head
                 return coordination_expand(new_expr)
     return expr
