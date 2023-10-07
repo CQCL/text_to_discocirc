@@ -10,6 +10,9 @@ from discocirc.semantics.rewrite import rewrite
 from discocirc.expr.uncurry import uncurry
 from discocirc.expr.resolve_pronouns import expand_coref
 
+# useful import for debugging
+from discocirc.expr.to_discopy_diagram import expr_to_frame_diag
+
 
 def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=None):
     """
