@@ -3,6 +3,7 @@ from lambeq import SpacyTokeniser
 import warnings
 
 from discocirc.expr.n_type_expand import n_type_expand
+from discocirc.expr.normal_form import normal_form
 from discocirc.expr.s_type_expand import p_type_expand, s_type_expand
 from discocirc.expr.coordination_expand import coordination_expand
 from discocirc.expr.ccg_to_expr import ccg_to_expr
@@ -23,6 +24,9 @@ def sentence2circ(parser, sentence, semantic_rewrites=True, spacy_model=None, if
     ccg = parser.sentence2tree(tokenized_sentence, tokenised=True)
     expr = ccg_to_expr(ccg)
     expr = pull_out(expr)
+    # unsure if it suffies for normal_form to be called once, 
+    # or if it needs to be called recursively inside coord_expand
+    expr = normal_form(expr)
     expr = coordination_expand(expr)
     expr = pull_out(expr)
     expr = n_type_expand(expr)

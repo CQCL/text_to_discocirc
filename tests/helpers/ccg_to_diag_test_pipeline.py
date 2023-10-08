@@ -1,6 +1,7 @@
 from discocirc.diag import Frame
 from discocirc.expr import expr_to_diag, pull_out
 from discocirc.expr.ccg_to_expr import ccg_to_expr
+from discocirc.expr.normal_form import normal_form
 from discocirc.expr.type_check import type_check
 from discocirc.expr.coordination_expand import coordination_expand
 from discocirc.expr.n_type_expand import n_type_expand
@@ -44,6 +45,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
         diag.draw()
 
     # ------- Step 3: Coordination expansion -----------
+    expr = normal_form(expr)
     expr = coordination_expand(expr)
 
     if config["type_check_ccg"]:
