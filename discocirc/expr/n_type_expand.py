@@ -1,4 +1,3 @@
-
 from discocirc.expr.expr import Expr, expr_type_recursion
 from discocirc.expr.uncurry import uncurry
 from discocirc.expr.s_type_expand import expand_closed_type
@@ -37,6 +36,7 @@ def expand_app_with_n_arg(expr):
     arg = n_type_expand(expr.arg)
     num_arg_outputs = get_num_output_wires(arg)
     num_old_arg_outputs = get_num_output_wires(expr.arg)
+    # check if n-type argument got expanded into multiple n's
     if num_old_arg_outputs != num_arg_outputs:
         wire_index = get_wire_index_of_head(arg)
         left_ids = []
@@ -59,17 +59,16 @@ def expand_app_with_n_arg(expr):
 def expand_app(expr):
     """
     Performs expansion on an expr, in the case where expr is a basic application type
+    This is almost a trivial recursion, except for one special case
 
-    Note: the if statement is triggered when the 'arg' is a Func type, e.g. a box, and
+    The special case if statement is triggered when the 'arg' is a Func type, e.g. a box, and
     the 'fun' is therefore a frame, and
     the 'arg' no longer fits in the frame after it gets n-expanded
 
-    e.g. this occurs in complicated cases such as 
-    'Alice , Bob and Claire who like beer and wine walked'
+    e.g. this occurs in cases such as 
+        'Alice and Bob who like beer walked'
     Here, if n expansion is done before s expansion, then
-    n-expansion causes an 'arg' to change from type nxnxn->s to nxnxn->sxnxn
-
-    An alternative simpler example case might be 'Alice who likes beer and wine walked'?
+    n-expansion causes an 'arg' to change from type nxn->s to nxn->sxn
     """
     fun = n_type_expand(expr.fun)
     arg = n_type_expand(expr.arg)

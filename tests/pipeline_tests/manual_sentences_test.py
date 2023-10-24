@@ -103,7 +103,8 @@ sentences = [
     'If a person is radicalized by the internet, then the person is angry',
     'If a person is a pilot for Air Canada, then the person is a pilot',
     'If a person has a pair of sunglasses, then the person has a pair of black sunglasses',
-    'I think you know me better than Bob'
+    'I think you know me better than Bob',
+    'I saw the man you love'
 ]
 
 parser = BobcatParser()
