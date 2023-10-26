@@ -10,20 +10,16 @@ def n_type_expand(expr):
     expands n-type wires into several n-type wires as required
     """
     if expr.expr_type == "literal":
-        return expand_literal(expr)
+        new_type = expand_closed_type(expr.typ, Ty('n'))
+        return change_expr_typ(expr, new_type)
     elif expr.expr_type == "application":
         if expr.arg.typ == Ty('n') and expr.arg.head:
+            # n-expansion possibly occurs
             return expand_app_with_n_arg(expr)
+        # basically the usual recursion, except sometimes there is type mismatch
         return expand_app(expr)
     else:
         return expr_type_recursion(expr, n_type_expand)
-
-def expand_literal(expr):
-    """
-    Applies type expansion to literal exprs
-    """
-    new_type = expand_closed_type(expr.typ, Ty('n'))
-    return change_expr_typ(expr, new_type)
 
 def expand_app_with_n_arg(expr):
     """
