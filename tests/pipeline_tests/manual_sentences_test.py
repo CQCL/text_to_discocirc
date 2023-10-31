@@ -103,8 +103,10 @@ sentences = [
     'If a person is radicalized by the internet, then the person is angry',
     'If a person is a pilot for Air Canada, then the person is a pilot',
     'If a person has a pair of sunglasses, then the person has a pair of black sunglasses',
-    'I think you know me better than Bob',
-    'I saw the man you love'
+    'I think you dance better than Bob', # higher order c combinator
+    'I saw the man you love', # n type exp
+    'Alice who loves Bob hates Claire', # n type exp
+    'I saw Alice who likes Bob' # n type exp
 ]
 
 parser = BobcatParser()
