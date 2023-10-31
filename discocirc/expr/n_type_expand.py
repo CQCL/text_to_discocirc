@@ -2,7 +2,7 @@ from discocirc.expr.expr import Expr, expr_type_recursion
 from discocirc.expr.uncurry import uncurry
 from discocirc.expr.s_type_expand import expand_closed_type
 from discocirc.helpers.closed import Func, Ty
-from discocirc.helpers.discocirc_utils import change_expr_typ, create_random_variable
+from discocirc.helpers.discocirc_utils import change_expr_typ, create_lambda_swap, create_random_variable
 
 def n_type_expand(expr):
     """
@@ -10,6 +10,7 @@ def n_type_expand(expr):
     expands n-type wires into several n-type wires as required
     """
     if expr.expr_type == "literal":
+        # n-expanded types percolate down from the literals
         new_type = expand_closed_type(expr.typ, Ty('n'))
         return change_expr_typ(expr, new_type)
     elif expr.expr_type == "application":
@@ -35,12 +36,17 @@ def expand_app_with_n_arg(expr):
     # check if n-type argument got expanded into multiple n's
     if num_old_arg_outputs != num_arg_outputs:
         wire_index = get_wire_index_of_head(arg)
+        # slightly hacky solution: swap head to left and change wire_index to 0
+        if wire_index != 0:
+            # apply swaps so head noun of arg is on the left
+            arg = swap_head_to_left(arg, wire_index)
+        wire_index = 0 # this means left_ids is always empty
         left_ids = []
         right_ids = []
-        for i in range(0, wire_index):
-            x = create_random_variable(arg.typ[i])
-            id_expr = Expr.lmbda(x,x)
-            left_ids.append(id_expr)
+        # for i in range(0, wire_index):
+        #     x = create_random_variable(arg.typ[i])
+        #     id_expr = Expr.lmbda(x,x)
+        #     left_ids.append(id_expr)
         for i in range(wire_index+1,len(arg.typ)):
             x = create_random_variable(arg.typ[i])
             id_expr = Expr.lmbda(x,x)
@@ -100,3 +106,24 @@ def get_wire_index_of_head(expr):
                 break
             wire_index = wire_index + 1
     return wire_index
+
+def swap_head_to_left(expr, head_index):
+    """
+    We may assume expr.typ is some product of n's
+    """    
+    # generate permutation lambda-term that swaps head to left
+    perm_list = list(range(len(expr.typ)))
+    perm_list.insert(0, perm_list.pop(head_index))
+    swap = create_lambda_swap(perm_list, expr.typ)
+
+    # TODO: do the inverse swap to the top of the expr, so that
+    # the top & bottom ordering of the noun wires remains consistent
+
+    # TODO: generate the inverse swap lambda term
+    # TODO: extract nouns from expr
+    
+    # compose w/ swap(s)
+    expr = swap(expr)
+    
+    # TODO: reattach nouns to expr
+    return expr
