@@ -42,7 +42,7 @@ def noun_sort(circ):
     return circ
 
 
-def sentence_list_to_circuit(context, simplify_swaps=True, wire_order='intro_order', spacy_model=spacy_model, add_indices_to_types=True, frame_expansion=True, doc=None):
+def sentence_list_to_circuit(context, simplify_swaps=True, wire_order='intro_order', spacy_model=spacy_model, add_indices_to_types=True, frame_expansion=True, doc=None, **kwargs):
     """
     Parameters:
     -----------
@@ -65,7 +65,8 @@ def sentence_list_to_circuit(context, simplify_swaps=True, wire_order='intro_ord
                                       sentence,
                                       spacy_model = spacy_model,
                                       add_indices_to_types = add_indices_to_types,
-                                      frame_expansion = frame_expansion)
+                                      frame_expansion = frame_expansion,
+                                      **kwargs)
         sentence_circuits.append(sentence_diag)
     corefs, corefs_sent_ids = get_corefs(doc)
     context_circ = compose_circuits_using_corefs(sentence_circuits, corefs, corefs_sent_ids)
