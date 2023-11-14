@@ -1,4 +1,3 @@
-from discocirc.diag import Frame
 from discocirc.expr import expr_to_diag, pull_out
 from discocirc.expr.ccg_to_expr import ccg_to_expr
 from discocirc.expr.normal_form import normal_form
@@ -10,9 +9,6 @@ from discocirc.helpers.discocirc_utils import expr_add_indices_to_types
 from discocirc.semantics.rewrite import rewrite
 from discocirc.expr.uncurry import uncurry
 from discocirc.expr.resolve_pronouns import expand_coref
-
-# useful import for debugging
-from discocirc.expr.to_discopy_diagram import expr_to_frame_diag
 
 
 def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=None):
@@ -26,9 +22,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
         unittest.assertTrue(type_check(expr), msg="Typechecking ccg to expr")
 
     if config["draw_steps"]:
-        diag = expr_to_diag(expr_add_indices_to_types(expr))
-        diag = (Frame.get_decompose_functor())(diag)
-        diag.draw()
+        diag = expr_to_diag(expr_add_indices_to_types(expr))        diag.draw()
 
     # ------- Step 2: Pulling out -----------
     expr = pull_out(expr)
@@ -40,9 +34,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
     #  correctly (Issue #14)
 
     if config["draw_steps"]:
-        diag = expr_to_diag(expr_add_indices_to_types(expr))
-        diag = (Frame.get_decompose_functor())(diag)
-        diag.draw()
+        diag = expr_to_diag(expr_add_indices_to_types(expr))        diag.draw()
 
     # ------- Step 3: Coordination expansion -----------
     expr = normal_form(expr)
@@ -53,9 +45,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
                             msg="Typechecking coordination expanded expr")
 
     if config["draw_steps"]:
-        diag = expr_to_diag(expr_add_indices_to_types(expr))
-        diag = (Frame.get_decompose_functor())(diag)
-        diag.draw()
+        diag = expr_to_diag(expr_add_indices_to_types(expr))        diag.draw()
 
     # ------- Step 4: Pulling out again -----------
     expr = pull_out(expr)
@@ -64,9 +54,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
                             msg="Typechecking pulled out expr")
 
     if config["draw_steps"]:
-        diag = expr_to_diag(expr_add_indices_to_types(expr))
-        diag = (Frame.get_decompose_functor())(diag)
-        diag.draw()
+        diag = expr_to_diag(expr_add_indices_to_types(expr))        diag.draw()
 
     # ------- Step 5: N-type expansion -----------
     expr = n_type_expand(expr)
@@ -76,9 +64,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
                             msg="Typechecking n_type expanded expr")
 
     if config["draw_steps"]:
-        diag = expr_to_diag(expr_add_indices_to_types(expr))
-        diag = (Frame.get_decompose_functor())(diag)
-        diag.draw()
+        diag = expr_to_diag(expr_add_indices_to_types(expr))        diag.draw()
 
     # ------- Step 6: P-type expansion -----------
     expr = p_type_expand(expr)
@@ -88,9 +74,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
                             msg="Typechecking s_type expanded expr")
 
     if config["draw_steps"]:
-        diag = expr_to_diag(expr_add_indices_to_types(expr))
-        diag = (Frame.get_decompose_functor())(diag)
-        diag.draw()
+        diag = expr_to_diag(expr_add_indices_to_types(expr))        diag.draw()
 
     # ------- Step 6: S-type expansion -----------
     expr = s_type_expand(expr)
@@ -103,9 +87,7 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
     #  correctly (Issue #14)
 
     if config["draw_steps"]:
-        diag = expr_to_diag(expr_add_indices_to_types(expr))
-        diag = (Frame.get_decompose_functor())(diag)
-        diag.draw()
+        diag = expr_to_diag(expr_add_indices_to_types(expr))        diag.draw()
 
     # ------- Step 7: Co-ref expansion -----------
     if config["coreference_resolution"]:
@@ -117,7 +99,6 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
 
             if config["draw_steps"]:
                 diag = expr_to_diag(expr_add_indices_to_types(expr))
-                diag = (Frame.get_decompose_functor())(diag)
                 diag.draw()
         else:
             print("Warning: Spacy model and sentence not provided. "
@@ -129,11 +110,9 @@ def ccg_to_diag_test(unittest, config, ccg_parse, sentence=None, spacy_model=Non
     # ------- Step 9: Semantic rewrites -----------
     if config["semantic_rewrites"]:
         diag = rewrite(diag, rules='all')
-    diag = (Frame.get_decompose_functor())(diag)
 
     # expr_uncurried = expr_uncurry(expr)
     # diag_uncurried = expr_to_diag(expr_add_indices_to_types(expr_uncurried))
-    # diag_uncurried = (Frame.get_decompose_functor())(diag_uncurried)
     #
     # if (diag != diag_uncurried):
     #     diag.draw(figsize=(10, 10))

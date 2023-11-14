@@ -1,9 +1,9 @@
 
 from discopy import monoidal
+from discopy.monoidal import Frame
 from discocirc.diag.drag_up import drag_all
 
 from discocirc.expr import Expr
-from discocirc.diag.frame import Frame
 from discocirc.helpers.closed import downgrade_to_monoidal
 from discocirc.helpers import closed
 
