@@ -1,5 +1,10 @@
 from discopy import monoidal
 
+from warnings import warn
+
+warn(f'The frames module is deprecated. Please use frames features from discopy.', DeprecationWarning)
+
+
 class Frame(monoidal.Box):
     """
     A subclass of monoidal.Box that supports higher order boxes, i.e. box that has another diagram inside it. 
