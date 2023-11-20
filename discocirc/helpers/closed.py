@@ -231,7 +231,11 @@ def index_to_string(index):
     Returns the string representation of the index.
     """
     if isinstance(index, set):
-        return str(sorted(list(index)))
+        string = " ("
+        for i in sorted(list(index)):
+            string += i.split("_")[0] + ", "
+        return string[:-2] + ")"
+
     return str(index)
 
 def deep_copy_ty(ty):
