@@ -2,7 +2,8 @@ import numpy as np
 import re
 import spacy
 from discopy import hypergraph
-from discopy.monoidal import Box, Ty, Id, Diagram, Functor
+from discopy.monoidal import Box, Ty, Id
+from discocirc.diag.frame import Functor, Frame
 from lambeq import BobcatParser
 
 from discocirc.helpers.discocirc_utils import get_last_initial_noun
@@ -41,7 +42,7 @@ def noun_sort(circ):
     return circ
 
 
-def sentence_list_to_circuit(context, simplify_swaps=False, wire_order='intro_order', spacy_model=spacy_model, add_indices_to_types=True, frame_expansion=True, doc=None, **kwargs):
+def sentence_list_to_circuit(context, simplify_swaps=True, wire_order='intro_order', spacy_model=spacy_model, add_indices_to_types=True, frame_expansion=True, doc=None):
     """
     Parameters:
     -----------
@@ -64,7 +65,7 @@ def sentence_list_to_circuit(context, simplify_swaps=False, wire_order='intro_or
                                       sentence,
                                       spacy_model = spacy_model,
                                       add_indices_to_types = add_indices_to_types,
-                                      **kwargs)
+                                      frame_expansion = frame_expansion)
         sentence_circuits.append(sentence_diag)
     corefs, corefs_sent_ids = get_corefs(doc)
     context_circ = compose_circuits_using_corefs(sentence_circuits, corefs, corefs_sent_ids)
@@ -126,7 +127,7 @@ def compose_circuits(circ1, circ2, wire_order='intro_order'):
         'update_order' : the most recently updated wires occur on the right
         'intro_order' : the most recently introduced wires occur on the right
     """
-
+    
     # pull nouns to top and order them with offsets 0, 1, 2, ...
     circ1 = noun_normal_form(circ1)
     circ2 = noun_normal_form(circ2)
@@ -141,7 +142,7 @@ def compose_circuits(circ1, circ2, wire_order='intro_order'):
     for i in range(len(nouns_circ2)):
         if nouns_circ2_name[i] in nouns_circ1_name:
             ob_map[nouns_circ2[i].cod] = nouns_circ1[nouns_circ1_name.index(nouns_circ2_name[i])].cod
-
+    
     # the two functions below are used to define a functor
     def ob_map2(obj):
         if obj in ob_map.keys():
@@ -150,13 +151,11 @@ def compose_circuits(circ1, circ2, wire_order='intro_order'):
 
     def ar_map(box):
         return Box(box.name, functor(box.dom), functor(box.cod))
-
-    class FrameMap(Diagram):
-        def frame_factory(name, dom, cod, insides):
-            return Diagram.frame_factory(name, functor(dom), functor(cod),\
-                                         [functor(inside) for inside in insides])
-
-    functor = Functor(ob_map2, ar_map, ar_factory=FrameMap)
+    
+    def frame_map(box):
+        return Frame(box.name, functor(box.dom), functor(box.cod), [functor(inside) for inside in box.insides])
+    
+    functor = Functor(ob_map2, ar_map, frame_map)
     circ2 = functor(circ2)
     nouns_circ2 = collect_normal_nouns(circ2)
     # collect nouns in circ2 not in circ1
