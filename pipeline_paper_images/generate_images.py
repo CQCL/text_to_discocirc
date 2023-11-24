@@ -64,6 +64,26 @@ def sentence2circ(parser, sentence, semantic_rewrites=True, spacy_model=None, if
             diag = rewrite(diag, rules=rules)
 
         return diag
+    
+    if early_break == 'only_s_type_expand':
+        expr = s_type_expand(expr)
+        if add_indices_to_types:
+            expr = expr_add_indices_to_types(expr)
+        
+        diag = expr_to_diag(expr)
+        if semantic_rewrites:
+            diag = rewrite(diag, rules=rules)
+        return diag
+    
+    if early_break == 'only_n_type_expand':
+        expr = n_type_expand(expr)
+        # if add_indices_to_types:
+        #     expr = expr_add_indices_to_types(expr)
+        
+        diag = expr_to_diag(expr)
+        if semantic_rewrites:
+            diag = rewrite(diag, rules=rules)
+            
     expr = n_type_expand(expr)
     expr = p_type_expand(expr)
     expr = s_type_expand(expr)
@@ -137,69 +157,159 @@ def text_to_circuit(text, **kwargs):
 aspect_ratio = 5/8
 
 # Section 1 - Introduction
-text_to_circuit("Alice really likes Bob", semantic_rewrites=False).draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section1/example1.png")
+text_to_circuit("Alice really likes Bob", semantic_rewrites=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section1/example1.png")
 
-text_to_circuit("Claire dislikes Alice", semantic_rewrites=False).draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section1/example2.png")
+text_to_circuit("Claire dislikes Alice", semantic_rewrites=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section1/example2.png")
 
-text_to_circuit("Alice really likes Bob. Claire dislikes Alice.", semantic_rewrites=False).draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section1/example3.png")
+text_to_circuit("Alice really likes Bob. Claire dislikes Alice.", semantic_rewrites=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section1/example3.png")
 
 # Section 2 - Background
 
 # Section 3 - Lambeq to Diagram
 n_type = Ty('n')
 s_type_fake = Ty('s ')
-expr_to_diag(Expr.literal('Alice', n_type)).draw(figsize=[2, 2*aspect_ratio], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/constant_terms0.png")
+expr_to_diag(Expr.literal('Alice', n_type)).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/constant_terms0.png")
 walkes = Expr.literal('walkes', n_type >> s_type_fake)
-expr_to_diag(walkes).draw(figsize=[2, 2*aspect_ratio], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/constant_terms1.png")
+expr_to_diag(walkes).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/constant_terms1.png")
 quickly = Expr.literal('quickly', (n_type >> s_type_fake)>> (n_type >> s_type_fake))
-expr_to_diag(quickly(walkes)).draw(figsize=[6, 6*aspect_ratio], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/constant_terms2.png")
+expr_to_diag(quickly(walkes)).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/constant_terms2.png")
 
-text_to_circuit("I Alice dislikes Bob who likes Claire", semantic_rewrites=False, early_break="pre_pull_out", add_indices_to_types=False).draw(figsize=[6, 6*aspect_ratio], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/final_example.png")
+text_to_circuit("Alice dislikes Bob who likes Claire", semantic_rewrites=False, early_break="pre_pull_out", add_indices_to_types=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/final_example.png")
 
 
 I = Expr.literal('I', n_type)
 dreamt = Expr.literal('dreamt', s_type_fake >> (n_type >> s_type_fake))
 Bob = Expr.literal('Bob', n_type)
 flew = Expr.literal('flew', n_type >> s_type_fake)
-expr_to_diag((dreamt(flew(Bob))(I))).draw(figsize=[6, 6*aspect_ratio], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/s_type1.png")
+expr_to_diag((dreamt(flew(Bob))(I))).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/s_type1.png")
 
-# TODO: pipeline drawing is weird here
-text_to_circuit("I dreamt Bob flew", semantic_rewrites=False, early_break="pre_pull_out", add_indices_to_types=False).draw(figsize=[6, 6*aspect_ratio], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/s_type2.png")
+text_to_circuit("I dreamt Bob flew", semantic_rewrites=False, early_break="pre_pull_out", add_indices_to_types=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/s_type2.png")
+
+likes = Expr.literal('likes', n_type >> (n_type >> s_type_fake))
+expr_to_diag(likes).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/application1.png")
+
+expr_to_diag(Expr.literal('Alice', n_type)).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/application2.png")
+
+expr_to_diag(likes(Expr.literal('Alice', n_type))).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/application3.png")
+
+who = Expr.literal('who', (n_type >> s_type_fake) >> (n_type >> s_type_fake))
+expr_to_diag(who).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/application4.png")
+
+expr_to_diag(likes(Expr.literal('Claire', n_type))).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/application5.png")
+
+expr_to_diag(who(likes(Expr.literal('Alice', n_type)))).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/application6.png")
+
+
+
+likes = Expr.literal('likes', n_type >> (n_type >> s_type_fake))
+x = Expr.literal('x', n_type)
+expr_to_diag(likes(x)).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/abstraction1.png")
+
+expr_to_diag(likes).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/abstraction2.png")
+
+x_n_to_s = Expr.literal('x', n_type >> s_type_fake)
+expr_to_diag(quickly(x_n_to_s)).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/abstraction3.png")
+
+expr_to_diag(quickly).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/abstraction4.png")
+
+
+y = Expr.literal('y', n_type)
+expr_to_diag(likes(y)(x)).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/swap1.png")
+
+likes_swap = Expr.lmbda(x, Expr.lmbda(y, likes(y)(x)))
+expr_to_diag(likes_swap).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/swap2.png")
+
+expr_to_diag(likes).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/parallel_composition1.png")
+
+expr_to_diag(quickly(flew)).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section3/parallel_composition2.png")
 
 # Section 4 - Lambda to circuit
+# Section 4.1 - Dragging out
+text_to_circuit("Alice really likes Bob", semantic_rewrites=False, early_break="pre_pull_out").draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/dragging_out1.png")
+
+text_to_circuit("Alice really likes Bob", semantic_rewrites=False, early_break="pre_type_expand").draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/dragging_out2.png")
+
+text_to_circuit("Claire knows Alice really likes Bob", semantic_rewrites=False, early_break="pre_pull_out").draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/dragging_out3.png")
+
+alice_noun = Ty('n (Alice)')
+bob_noun = Ty('n (Bob)')
+claire_noun = Ty('n (Claire)')
+likes_sentence = Ty('s (likes)')
+knows_sentence = Ty('s (knows)')
+
+bob = Expr.literal('Bob', bob_noun)
+alice = Expr.literal('Alice', alice_noun)
+claire = Expr.literal('Claire', claire_noun)
+likes = Expr.literal('likes', bob_noun >> (alice_noun >> likes_sentence))
+really = Expr.literal('really', (bob_noun >> (alice_noun >> likes_sentence)) >> (bob_noun >> (alice_noun >> likes_sentence)))
+knows = Expr.literal('knows', likes_sentence >> (claire_noun >> knows_sentence))
+expr_to_diag(knows(really(likes)(bob)(alice))(claire)).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/dragging_out4.png")
+
+text_to_circuit("Claire knows Alice really likes Bob", semantic_rewrites=False, early_break="pre_type_expand").draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/dragging_out5.png")
+
+text_to_circuit("Alice quickly runs to Bob", semantic_rewrites=False, early_break="pre_pull_out").draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/c_combinator.png")
+
+# Section 4.2 - Type expansion 
+text_to_circuit("Alice likes Bob", semantic_rewrites=False, early_break="pre_pull_out").draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/s_type1.png")
+
+text_to_circuit("Alice likes Bob", semantic_rewrites=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/s_type2.png")
+
+text_to_circuit("I dreamt Bob punched Charlie", semantic_rewrites=False, early_break="pre_pull_out").draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/s_type3.png")
+
+text_to_circuit("I dreamt Bob punched Charlie", semantic_rewrites=False, early_break="pre_type_expand").draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/s_type4.png")
+
+text_to_circuit("I dreamt Bob punched Charlie", semantic_rewrites=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/s_type5.png")
+
+
+text_to_circuit("Bob who loves Alice runs", semantic_rewrites=False, early_break="pre_pull_out").draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/n_type1.png")
+
+text_to_circuit("Bob who loves Alice runs", semantic_rewrites=False, early_break="pre_type_expand").draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/n_type2.png")
+
+text_to_circuit("Bob who loves Alice runs", semantic_rewrites=False, early_break="only_s_type_expand").draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/n_type3.png")
+
+
+loves_sentence = Ty('s (loves)')
+loves = Expr.literal('loves', alice_noun >> (bob_noun >> loves_sentence))
+who = Expr.literal('who', (alice_noun >> (bob_noun >> loves_sentence)) >> (alice_noun >> (bob_noun >> (bob_noun @ alice_noun))))
+expr_to_diag(who(loves)(alice)(bob)).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/n_type4.png")
+
+text_to_circuit("Bob who loves Alice runs", semantic_rewrites=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/n_type5.png")
+
+
 
 # Section 4.3 - Noun coordination expand
-text_to_circuit("Alice and Bob walk", semantic_rewrites=False, early_break="pre_pull_out").draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/coordination_expand1.png")
+text_to_circuit("Alice and Bob walk", semantic_rewrites=False, early_break="pre_pull_out").draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/coordination_expand1.png")
 
-text_to_circuit("Alice and Bob walk", semantic_rewrites=False, early_break="pre_type_expand").draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/coordination_expand2.png")
+text_to_circuit("Alice and Bob walk", semantic_rewrites=False, early_break="pre_type_expand").draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/coordination_expand2.png")
 
-text_to_circuit("Alice , Bob , Claire and Dave walk", semantic_rewrites=False, early_break="pre_pull_out").draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/coordination_expand3.png")
+text_to_circuit("Alice , Bob , Claire and Dave walk", semantic_rewrites=False, early_break="pre_pull_out").draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/coordination_expand3.png")
 
-text_to_circuit("Alice , Bob , Claire and Dave walk", semantic_rewrites=False, early_break="pre_type_expand").draw(figsize=[12, 12*aspect_ratio], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/coordination_expand4.png")
+text_to_circuit("Alice , Bob , Claire and Dave walk", semantic_rewrites=False, early_break="pre_type_expand").draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/coordination_expand4.png")
 
 # Section 4.4 - Sentence composition
-text_to_circuit("Alice likes Bob", semantic_rewrites=False).draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/sentence_composition1.png")
-text_to_circuit("He is funny", semantic_rewrites=False).draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/sentence_composition2.png")
-text_to_circuit("Alice likes Bob. He is funny", semantic_rewrites=False).draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/sentence_composition3.png")
+text_to_circuit("Alice likes Bob", semantic_rewrites=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/sentence_composition1.png")
+text_to_circuit("He is funny", semantic_rewrites=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/sentence_composition2.png")
+text_to_circuit("Alice likes Bob. He is funny", semantic_rewrites=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/sentence_composition3.png")
 
-text_to_circuit("Bob thinks he is smart", semantic_rewrites=False, if_expand_coref=False).draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/noun_contraction1.png")
-text_to_circuit("Bob thinks he is smart", semantic_rewrites=False, if_expand_coref=True).draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/noun_contraction2.png")
+text_to_circuit("Bob thinks he is smart", semantic_rewrites=False, if_expand_coref=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/noun_contraction1.png")
+text_to_circuit("Bob thinks he is smart", semantic_rewrites=False, if_expand_coref=True).draw(figsize=[10, 10*aspect_ratio], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/noun_contraction2.png")
 
 # Section 4.5 - Semantic rewrites
-text_to_circuit("Alice pets the cat", semantic_rewrites=False, if_expand_coref=False).draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/determiners1.png")
-text_to_circuit("Alice pets the cat", semantic_rewrites=True, if_expand_coref=False).draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/determiners2.png")
+text_to_circuit("Alice pets the cat", semantic_rewrites=False, if_expand_coref=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/determiners1.png")
+text_to_circuit("Alice pets the cat", semantic_rewrites=True, if_expand_coref=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/determiners2.png")
 
-text_to_circuit("Alice is red", semantic_rewrites=False, if_expand_coref=False).draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/isdeletion1.png")
-text_to_circuit("Alice is red", semantic_rewrites=True, if_expand_coref=False).draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/isdeletion2.png")
+text_to_circuit("Alice is red", semantic_rewrites=False, if_expand_coref=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/isdeletion1.png")
+text_to_circuit("Alice is red", semantic_rewrites=True, if_expand_coref=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/isdeletion2.png")
 
-text_to_circuit("Bob who loves Alice runs", semantic_rewrites=True, if_expand_coref=False).draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/relativepronoundeletion.png")
+text_to_circuit("Bob who loves Alice runs", semantic_rewrites=True, if_expand_coref=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/relativepronoundeletion.png")
 
-text_to_circuit("Alice is bored by the class", semantic_rewrites=False, if_expand_coref=False).draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/passivevoice1.png")
-text_to_circuit("Alice is bored by the class", semantic_rewrites=True, if_expand_coref=False, rules={"remove_to_be": remove_to_be, "remove_articles": remove_articles}).draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/passivevoice2.png")
-text_to_circuit("Alice is bored by the class", semantic_rewrites=True, if_expand_coref=False).draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/passivevoice3.png")
+text_to_circuit("Alice is bored by the class", semantic_rewrites=False, if_expand_coref=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/passivevoice1.png")
+text_to_circuit("Alice is bored by the class", semantic_rewrites=True, if_expand_coref=False, rules={"remove_to_be": remove_to_be, "remove_articles": remove_articles}).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/passivevoice2.png")
+text_to_circuit("Alice is bored by the class", semantic_rewrites=True, if_expand_coref=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/passivevoice3.png")
 
-text_to_circuit("Bob loves his dog", semantic_rewrites=False, if_expand_coref=False).draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/possessive_pronoun1.png")
-text_to_circuit("Bob loves his dog", semantic_rewrites=False, if_expand_coref=True).draw(figsize=[8, 5], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/possessive_pronoun2.png")
+text_to_circuit("Bob loves his dog", semantic_rewrites=False, if_expand_coref=False).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/possessive_pronoun1.png")
+text_to_circuit("Bob loves his dog", semantic_rewrites=False, if_expand_coref=True).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/possessive_pronoun2.png")
+text_to_circuit("Alice , Bob and Dave love their dog", semantic_rewrites=False, if_expand_coref=True).draw(figsize=[80, 50], margins=[0.1, 0.1], aspect='auto', path="pipeline_paper_images/paper_figures/pipeline_output/Section4/possessive_pronoun3.png")
 
 # Section 5 - Discussion
 

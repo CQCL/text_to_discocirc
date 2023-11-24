@@ -230,7 +230,7 @@ def _compose_diags(arg, fun):
     :param fun: The function which is applied to the argument.
     :return: The composed diag of fun(arg).
     """
-    if arg.dom == monoidal.Ty() and arg.cod != monoidal.Ty('s') and arg.cod != monoidal.Ty('p'):
+    if arg.dom == monoidal.Ty() and arg.cod != monoidal.Ty('s') and str(arg.cod).split(' (')[0] != 's' and arg.cod != monoidal.Ty('p'):
         new_args = monoidal.Id(fun.dom[:-len(arg.cod)]) @ arg
         return new_args >> fun
 
