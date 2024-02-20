@@ -147,3 +147,8 @@ discocirc/version.py
 
 data/ccgbank
 .DS_Store
+
+# some notebooks
+notebooks/discocirc_pipeline_tutorial.ipynb
+notebooks/qpl 2023 pipeline tutorial.ipynb
+notebooks/tech-demo.ipynb
