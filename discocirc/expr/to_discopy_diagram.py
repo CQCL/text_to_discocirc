@@ -27,7 +27,7 @@ def _literal_to_diag(expr, context, expand_lambda_frames):
             # If we expand the lambda frames, we use wires to draw how the
             # variables of the lambda expression will be manipulated.
             # Therefore, in that case, each var must be drawn as a state.
-            return monoidal.Box(name, monoidal.Ty(), downgrade_to_monoidal(expr.typ))
+            return monoidal.Box(name, monoidal.Ty(), downgrade_to_monoidal(expr.typ)) @ monoidal.Id()
 
     output = expr.typ
     if isinstance(output, closed.Func):
@@ -35,9 +35,9 @@ def _literal_to_diag(expr, context, expand_lambda_frames):
         while isinstance(output, closed.Func):
             input = output.input @ input
             output = output.output
-        return monoidal.Box(name, downgrade_to_monoidal(input), downgrade_to_monoidal(output))
+        return monoidal.Box(name, downgrade_to_monoidal(input), downgrade_to_monoidal(output))@ monoidal.Id()
     else:
-        return monoidal.Box(name, monoidal.Ty(), downgrade_to_monoidal(output))
+        return monoidal.Box(name, monoidal.Ty(), downgrade_to_monoidal(output))@ monoidal.Id()
 
 def _lambda_to_diag_frame(expr, context, expand_lambda_frames):
     """
@@ -243,7 +243,7 @@ def _compose_diags(arg, fun):
         new_dom = fun.dom[:-1]
 
         inputs = monoidal.Id(new_dom)
-        for left, box, right in fun.layers[:-1]:
+        for left, box, right in fun[:-1]:
             assert(len(right) == 0)
             if box.dom == monoidal.Ty():
                 inputs = inputs @ box
@@ -310,6 +310,5 @@ def expr_to_diag(expr, context=None, expand_lambda_frames=True):
     else:
         raise NotImplementedError(expr.expr_type)
 
-
-def expr_to_frame_diag(expr):
-    return Frame.get_decompose_functor()(expr_to_diag(expr))
+# def expr_to_frame_diag(expr):
+#     return Frame.get_decompose_functor()(expr_to_diag(expr))

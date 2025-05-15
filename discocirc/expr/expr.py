@@ -8,7 +8,7 @@ class Expr:
     """
     A class representing an expression in the simply-typed lambda calculus.
     """
-    def __init__(self, name, expr_type, typ, head) -> None:
+    def __init__(self, name:str, expr_type:str, typ, head) -> None:
         """
         Initializes an Expr object with the given name, expression type, type, and head.
         """
@@ -82,14 +82,20 @@ class Expr:
         """
         Returns a new Expr object representing a literal with the given name, type, and head.
         """
-        return Expr(name, "literal", typ, head)
+        return Expr(name=name,
+                       expr_type="literal",
+                       typ=typ,
+                       head=head)
 
     @staticmethod
     def lmbda(var, body, head=None, index=None):
         """
         Returns a new Expr object λvar.body representing a lambda expression with the given variable, body, and head.
         """
-        lambda_expr = Expr(body.name, "lambda", Func(var.typ, body.typ, index), head)
+        lambda_expr = Expr(name=body.name,
+                           expr_type="lambda",
+                           typ=Func(var.typ, body.typ, index),
+                           head=head)
         lambda_expr.var = var
         lambda_expr.body = body
         return lambda_expr
@@ -102,10 +108,10 @@ class Expr:
         if not types_match_modulo_curry(fun.typ.input, arg.typ):
             raise TypeError(f"Type of \n{arg}\n does not"
                             + f"match the input type of \n{fun}")
-        app_expr = Expr(f"{fun.name}({arg.name})",
-                        "application",
-                        fun.typ.output,
-                        head)
+        app_expr = Expr(name=f"{fun.name}({arg.name})",
+                        expr_type="application",
+                        typ=fun.typ.output,
+                        head=head)
         app_expr.fun = fun
         app_expr.arg = arg
         return app_expr
@@ -113,15 +119,15 @@ class Expr:
     @staticmethod
     def lst(expr_list, interchange='auto', head=None):
         """
-        Returns a new Expr object representing a list of given Expr objects. 
+        Returns a new Expr object representing a list of given Expr objects.
         """
         if interchange == 'auto':
             interchange = if_interchange_list_type(expr_list)
         flattened_list = get_flattened_expr_list(expr_list)
-        expr = Expr(get_expr_list_name(flattened_list),
-                    "list",
-                    infer_list_type(flattened_list, interchange),
-                    head)
+        expr = Expr(name=get_expr_list_name(flattened_list),
+                    expr_type="list",
+                    typ=infer_list_type(flattened_list, interchange),
+                    head=head)
         expr.expr_list = tuple(flattened_list)
         expr.interchange = interchange
         return expr
@@ -151,7 +157,12 @@ class Expr:
         return new_expr
 
     @staticmethod
-    def apply(fun, arg, context=None, reduce=True, head=None, match_indices=True):
+    def apply(fun,
+              arg,
+              context=None,
+              reduce=True,
+              head=None,
+              match_indices=True):
         """
         Apply `fun` to `arg`.
         If the type of `arg` matches only part of the input type of `fun`, then a partial application is returned.
@@ -160,7 +171,7 @@ class Expr:
         If `match_indices` is True, then the overlapping indices of `arg` and the input type of `fun` are matched.
         """
         if not isinstance(fun.typ, Func):
-            raise TypeError(f"Cannot apply {fun} to {arg}")
+            raise TypeError(f"Cannot apply\n{fun}\nto\n{arg}: function is of type {type(fun.typ)}, with expr_type == {fun.expr_type}")
         if not types_match_modulo_curry(fun.typ.input, arg.typ):
             new_expr = Expr.partial_apply(fun, arg, context)
         elif fun.expr_type == "lambda" and reduce:
@@ -305,15 +316,9 @@ def map_typ_indices(typ, mapping):
             else:
                 new_index.add(idx)
         typ.index = new_index
-    if isinstance(typ, Func):
-        input_typ = map_typ_indices(typ.input, mapping)
-        output_typ = map_typ_indices(typ.output, mapping)
-        typ = Func(input_typ, output_typ, typ.index)
-    if len(typ.objects) > 1:
-        new_objects = []
-        for obj in typ.objects:
-            new_objects.append(map_typ_indices(obj, mapping))
-        typ = Ty(*new_objects, index=typ.index)
+    if len(typ.inside) > 1:
+        for obj in typ.inside:
+            obj.typ = map_typ_indices(obj, mapping)
     return typ
 
 def map_expr_indices(expr, mapping, reduce=True):

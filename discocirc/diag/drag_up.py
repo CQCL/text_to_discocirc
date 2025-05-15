@@ -1,5 +1,5 @@
 from discopy import monoidal
-from discopy.rewriting import InterchangerError
+from discopy.utils import AxiomError
 
 def swap_right(diagram, i):
     left, box, right = diagram.layers[i]
@@ -17,7 +17,7 @@ def drag_out(diagram, i, stop):
         try:
             diagram = diagram.interchange(i-1, i)
             i -= 1
-        except InterchangerError:
+        except AxiomError:
             diagram = swap_right(diagram, i)
     return diagram
 

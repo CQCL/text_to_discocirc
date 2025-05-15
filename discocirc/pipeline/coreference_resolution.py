@@ -9,7 +9,7 @@ import neuralcoref
 import spacy
 import string
 
-from discocirc.pipeline.sentence_to_circuit import sentence2circ
+from discocirc.pipeline.sentence_to_circuit import sentences2circs
 from discocirc.helpers.discocirc_utils import get_last_initial_noun
 from discocirc.diag.drag_up import drag_all
 from discocirc.pipeline.text_to_circuit import compose_circuits, noun_sort
@@ -29,7 +29,7 @@ def get_sentence_id(span_or_token, sentences):
 def text_to_circ(text):
     doc = nlp(text)
     sentences = [sent.text for sent in doc.sents]
-    circs = [sentence2circ(parser, sentence) for sentence in sentences]
+    circs = sentences2circs(parser, sentences)
     corefs, corefs_sent_ids = get_corefs(doc)
     return compose_circuits_using_corefs(circs, corefs, corefs_sent_ids)
 

@@ -119,7 +119,7 @@ config = {
     "coreference_resolution": True,
 }
 spacy_model = spacy.load('en_core_web_trf')
-spacy_model.add_pipe('coreferee')
+spacy_model.add_pipe('fastcoref')
 
 class CCGToDiagTests(UnitTestBaseClass):
     """

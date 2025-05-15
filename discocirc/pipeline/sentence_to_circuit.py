@@ -16,35 +16,49 @@ from discocirc.expr.resolve_pronouns import expand_coref
 
 tokenizer = SpacyTokeniser()
 
-def sentence2circ(parser, sentence, semantic_rewrites=True, spacy_model=None, if_expand_coref=True, add_indices_to_types=True, frame_expansion=True):
+def sentences2circs(parser,
+                    sentences,
+                    semantic_rewrites=True,
+                    spacy_model=None,
+                    if_expand_coref=True,
+                    add_indices_to_types=True,
+                    frame_expansion=True):
     """
-    Converts a natural language sentence to a DisCoCirc circuit.
+    Converts multiple natural language sentences to a list of DisCoCirc circuits.
     """
-    tokenized_sentence = tokenizer.tokenise_sentence(sentence)
-    ccg = parser.sentence2tree(tokenized_sentence, tokenised=True)
-    expr = ccg_to_expr(ccg)
-    expr = pull_out(expr)
-    # unsure if it suffies for normal_form to be called once, 
-    # or if it needs to be called recursively inside coord_expand
-    expr = normal_form(expr)
-    expr = coordination_expand(expr)
-    expr = pull_out(expr)
-    expr = n_type_expand(expr)
-    expr = p_type_expand(expr)
-    expr = s_type_expand(expr)
     if spacy_model == None and if_expand_coref:
         warnings.warn('Spacy model not provided. Coreference resolution will not be performed.')
-    if spacy_model and if_expand_coref:
-        doc = spacy_model(sentence)
-        expr = expand_coref(expr, doc)
-    if add_indices_to_types:
-        expr = expr_add_indices_to_types(expr)
-    else: 
-        warnings.warn('If you do not add indices to the types, the composition of sentences might be incorrect.')
-    diag = expr_to_diag(expr)
-    if semantic_rewrites:
-        diag = rewrite(diag, rules='all')
-    if frame_expansion:
-        diag = (Frame.get_decompose_functor())(diag)
 
-    return diag
+    tokenized_sentences = [tokenizer.tokenise_sentence(sentence) for sentence in sentences]
+    ccgs = parser.sentences2trees(tokenized_sentences, tokenised=True)
+
+    diags = list()
+    for i, ccg in enumerate(ccgs):
+        expr = ccg_to_expr(ccg)
+        expr = pull_out(expr)
+        # unsure if it suffies for normal_form to be called once,
+        # or if it needs to be called recursively inside coord_expand
+        expr = normal_form(expr)
+        expr = coordination_expand(expr)
+        expr = pull_out(expr)
+        expr = n_type_expand(expr)
+        expr = p_type_expand(expr)
+        expr = s_type_expand(expr)
+
+        if spacy_model and if_expand_coref:
+            doc = spacy_model(sentences[i])
+            expr = expand_coref(expr, doc)
+        if add_indices_to_types:
+            expr = expr_add_indices_to_types(expr)
+        else:
+            warnings.warn('If you do not add indices to the types, the composition of sentences might be incorrect.')
+
+        diag = expr_to_diag(expr)
+        if semantic_rewrites:
+            diag = rewrite(diag, rules='all')
+        if frame_expansion:
+            diag = (Frame.get_decompose_functor())(diag)
+
+        diags.append(diag)
+
+    return diags

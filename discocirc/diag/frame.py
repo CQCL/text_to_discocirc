@@ -49,18 +49,18 @@ class Frame(monoidal.Box):
         return self._insides
 
 
-class Diagram(monoidal.Diagram):
-    """
-    A subclass of monoidal.Diagram
-    """
-    pass
+# class Diagram(monoidal.Diagram):
+#     """
+#     A subclass of monoidal.Diagram
+#     """
+#     pass
 
 class Functor(monoidal.Functor):
     """
     A subclass of monoidal.Functor that supports higher order boxes.
     """
-    def __init__(self, ob, ar, frame, ob_factory=monoidal.Ty, ar_factory=Diagram):
-        super().__init__(ob, ar, ob_factory, ar_factory)
+    def __init__(self, ob, ar, frame, ob_factory=monoidal.Ty, ar_factory=monoidal.Diagram):
+        super().__init__(ob, ar)
         self._frame = frame
 
     def __call__(self, diagram):
